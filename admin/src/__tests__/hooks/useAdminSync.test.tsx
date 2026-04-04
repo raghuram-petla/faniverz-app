@@ -1,19 +1,16 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { renderHook, waitFor, act } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 
 const mockFrom = vi.fn();
-const mockInvoke = vi.fn();
-
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
     from: (...args: unknown[]) => mockFrom(...args),
-    functions: { invoke: (...args: unknown[]) => mockInvoke(...args) },
   },
 }));
 
-import { useAdminSyncLogs, useTriggerSync } from '@/hooks/useAdminSync';
+import { useAdminSyncLogs } from '@/hooks/useAdminSync';
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -85,77 +82,6 @@ describe('useAdminSyncLogs', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     expect(chain.order).toHaveBeenCalledWith('started_at', { ascending: false });
-  });
-});
-
-describe('useTriggerSync', () => {
-  it('calls supabase.functions.invoke with the function name', async () => {
-    mockInvoke.mockResolvedValue({ error: null });
-
-    // Need to also mock from for the query invalidation
-    const { self } = buildChain([]);
-    mockFrom.mockReturnValue(self);
-
-    const { result } = renderHook(() => useTriggerSync(), { wrapper: createWrapper() });
-
-    await act(async () => {
-      result.current.mutate('sync-tmdb-movies');
-    });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-    expect(mockInvoke).toHaveBeenCalledWith('sync-tmdb-movies');
-  });
-
-  it('throws when invoke returns an error', async () => {
-    mockInvoke.mockResolvedValue({ error: new Error('Function not found') });
-
-    const { self } = buildChain([]);
-    mockFrom.mockReturnValue(self);
-
-    const { result } = renderHook(() => useTriggerSync(), { wrapper: createWrapper() });
-
-    await act(async () => {
-      result.current.mutate('bad-function');
-    });
-
-    await waitFor(() => expect(result.current.isError).toBe(true));
-  });
-
-  it('alerts on error with Error message', async () => {
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
-    mockInvoke.mockResolvedValue({ error: new Error('Some error') });
-
-    const { self } = buildChain([]);
-    mockFrom.mockReturnValue(self);
-
-    const { result } = renderHook(() => useTriggerSync(), { wrapper: createWrapper() });
-
-    await act(async () => {
-      result.current.mutate('bad-function');
-    });
-
-    await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(alertSpy).toHaveBeenCalledWith('Some error');
-    alertSpy.mockRestore();
-  });
-
-  it('alerts "Sync failed" on non-Error error', async () => {
-    const alertSpy = vi.spyOn(window, 'alert').mockImplementation(() => {});
-    mockInvoke.mockResolvedValue({ error: 'string error' });
-
-    const { self } = buildChain([]);
-    mockFrom.mockReturnValue(self);
-
-    const { result } = renderHook(() => useTriggerSync(), { wrapper: createWrapper() });
-
-    await act(async () => {
-      result.current.mutate('bad-function');
-    });
-
-    await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(alertSpy).toHaveBeenCalledWith('Sync failed');
-    alertSpy.mockRestore();
   });
 });
 

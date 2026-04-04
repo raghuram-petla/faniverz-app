@@ -8,7 +8,6 @@ import type { MoviePoster } from '@/lib/types';
 const {
   useList: useMoviePosters,
   useAdd: useAddPoster,
-  useUpdate: useUpdatePoster,
   useRemove: useRemovePoster,
 } = createMovieChildHooks<MoviePoster>({
   table: 'movie_images',
@@ -16,7 +15,7 @@ const {
   orderBy: 'display_order',
 });
 
-export { useMoviePosters, useAddPoster, useUpdatePoster, useRemovePoster };
+export { useMoviePosters, useAddPoster, useRemovePoster };
 
 // @contract createSimpleMutation — 3-step mutationFn: unset old, set new, sync movie row
 // @sideeffect: mutates movie_images (unset old, set new) AND movies.poster_url

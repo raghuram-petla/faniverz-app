@@ -11,13 +11,13 @@ import { useAuthGate } from '@/hooks/useAuthGate';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 
-export interface UseFeedActionsParams {
+interface UseFeedActionsParams {
   allItems: NewsFeedItem[];
   userVotes: Record<string, 'up' | 'down'>;
   setCommentSheetItemId: (id: string | null) => void;
 }
 
-export interface UseFeedActionsReturn {
+interface UseFeedActionsReturn {
   handleShare: (itemId: string) => void;
   handleEntityPress: (entityType: FeedEntityType, entityId: string) => void;
   handleFeedItemPress: (item: NewsFeedItem) => void;

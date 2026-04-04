@@ -20,4 +20,3 @@ export const borderRadius = {
 } as const;
 
 export type Spacing = typeof spacing;
-export type BorderRadius = typeof borderRadius;

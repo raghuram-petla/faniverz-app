@@ -6,42 +6,6 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { maybeUploadImage, R2_BUCKETS } from '@/lib/r2-sync';
 import { upsertActorPreserveType } from '@/lib/sync-actor';
 
-// @sideeffect: mirrors poster_url into movie_images so admin gallery stays in sync
-// @coupling: movie_images.image_url must match movies.poster_url for the admin gallery
-// to show the correct "Main Poster" badge. If this function is not called after a
-// poster_url change, the gallery and movie detail show different images.
-// @coupling: called from refresh-movie API route after poster_url changes — if the route
-// forgets to call this, movie_images table gets out of sync with movies.poster_url.
-export async function mirrorMainPoster(
-  movieId: string,
-  posterUrl: string,
-  supabase: ReturnType<typeof getSupabaseAdmin>,
-) {
-  const { data: existingMain } = await supabase
-    .from('movie_images')
-    .select('id')
-    .eq('movie_id', movieId)
-    .eq('is_main_poster', true)
-    .maybeSingle();
-  if (existingMain) {
-    const { error } = await supabase
-      .from('movie_images')
-      .update({ image_url: posterUrl })
-      .eq('id', existingMain.id);
-    if (error) console.warn('mirrorMainPoster: update failed', error.message);
-  } else {
-    const { error } = await supabase.from('movie_images').insert({
-      movie_id: movieId,
-      image_url: posterUrl,
-      image_type: 'poster',
-      title: 'Main Poster',
-      is_main_poster: true,
-      display_order: 0,
-    });
-    if (error) console.warn('mirrorMainPoster: insert failed', error.message);
-  }
-}
-
 // @contract: syncs ALL cast (no limit) with person_type preservation
 export async function syncCastCrew(
   movieId: string,

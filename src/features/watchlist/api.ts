@@ -95,18 +95,3 @@ export async function fetchWatchlistPaginated(
     return { ...entry, _platformCount: count };
   });
 }
-
-// @contract: returns the full WatchlistEntry (without movie join) or null. Uses .maybeSingle() so it returns null instead of throwing when not found (unlike .single()). The returned entry includes status field — callers can check if it's 'watchlist' vs 'watched'. The useIsWatchlisted hook in hooks.ts exposes this directly.
-export async function isMovieWatchlisted(
-  userId: string,
-  movieId: string,
-): Promise<WatchlistEntry | null> {
-  return unwrapOne(
-    await supabase
-      .from('watchlists')
-      .select('*')
-      .eq('user_id', userId)
-      .eq('movie_id', movieId)
-      .maybeSingle(),
-  );
-}

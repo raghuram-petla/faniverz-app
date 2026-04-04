@@ -64,7 +64,7 @@ export function useAdminReviews(search = '', ratingFilter = 0) {
   });
 }
 
-export interface UpdateReviewPayload {
+interface UpdateReviewPayload {
   id: string;
   title?: string | null;
   body?: string | null;

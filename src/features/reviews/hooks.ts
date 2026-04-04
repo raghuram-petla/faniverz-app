@@ -1,20 +1,16 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { STALE_5M } from '@/constants/queryConfig';
-import { REVIEWS_PAGINATION } from '@/constants/paginationConfig';
-import { useSmartInfiniteQuery } from '@/hooks/useSmartInfiniteQuery';
 import { Alert } from 'react-native';
 import i18n from '@/i18n';
 import {
   fetchMovieReviews,
   fetchUserReviews,
-  fetchMovieReviewsPaginated,
-  fetchUserReviewsPaginated,
   createReview,
   updateReview,
   deleteReview,
   toggleHelpful,
 } from './api';
-import { CreateReviewInput, UpdateReviewInput, Review } from '@/types';
+import { CreateReviewInput, UpdateReviewInput } from '@/types';
 
 // @coupling: fetchMovieReviews joins profile:profiles(id, display_name, avatar_url) — matches Review type.
 export function useMovieReviews(movieId: string) {
@@ -32,31 +28,6 @@ export function useUserReviews(userId: string) {
     queryFn: () => fetchUserReviews(userId),
     enabled: !!userId,
     staleTime: STALE_5M,
-  });
-}
-
-// --- Paginated review hooks ---
-
-/** @contract Uses smart pagination for movie reviews */
-// @coupling: query key ['reviews-paginated', movieId] is NOT invalidated by create.onSuccess which only invalidates ['reviews', movieId] (exact match). New reviews won't appear in the paginated list until staleTime expires. update/remove.onSuccess invalidates ['reviews'] prefix which DOES cover ['reviews-paginated'] — so edits/deletes propagate but creates don't.
-export function useMovieReviewsPaginated(movieId: string) {
-  return useSmartInfiniteQuery<Review>({
-    queryKey: ['reviews-paginated', movieId],
-    queryFn: (offset, limit) => fetchMovieReviewsPaginated(movieId, offset, limit),
-    config: REVIEWS_PAGINATION,
-    staleTime: STALE_5M,
-    enabled: !!movieId,
-  });
-}
-
-/** @contract Uses smart pagination for user reviews */
-export function useUserReviewsPaginated(userId: string) {
-  return useSmartInfiniteQuery<Review>({
-    queryKey: ['reviews-paginated', 'user', userId],
-    queryFn: (offset, limit) => fetchUserReviewsPaginated(userId, offset, limit),
-    config: REVIEWS_PAGINATION,
-    staleTime: STALE_5M,
-    enabled: !!userId,
   });
 }
 

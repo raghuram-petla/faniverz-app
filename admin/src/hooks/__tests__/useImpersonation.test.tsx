@@ -21,27 +21,6 @@ import {
   useEffectiveUser,
 } from '@/hooks/useImpersonation';
 
-// ─── Chain builder helpers ───
-function _makeSelectChain(value: unknown, single = false) {
-  const method = vi.fn().mockResolvedValue(value);
-  const eq2 = vi.fn().mockReturnValue({ [single ? 'maybeSingle' : 'eq']: method });
-  const eq = vi.fn().mockReturnValue(single ? { maybeSingle: method } : { eq: eq2 });
-  const select = vi.fn().mockReturnValue({ eq });
-  return { select, eq, eq2, method };
-}
-
-function _makeUpdateChain(value: unknown) {
-  const eqActive = vi.fn().mockResolvedValue(value);
-  const eqUser = vi.fn().mockReturnValue({ eq: eqActive });
-  const update = vi.fn().mockReturnValue({ eq: eqUser });
-  return { update, eqUser, eqActive };
-}
-
-function _makeInsertChain(value: unknown) {
-  const insert = vi.fn().mockResolvedValue(value);
-  return { insert };
-}
-
 const rootUser = {
   id: 'root-user',
   role: 'root' as const,

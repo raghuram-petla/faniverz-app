@@ -18,14 +18,10 @@ jest.mock('@/lib/supabase', () => ({
   },
 }));
 
-const mockRange = jest.fn();
-
 import { supabase } from '@/lib/supabase';
 import {
   fetchMovieReviews,
   fetchUserReviews,
-  fetchMovieReviewsPaginated,
-  fetchUserReviewsPaginated,
   createReview,
   updateReview,
   deleteReview,
@@ -80,88 +76,6 @@ describe('reviews api', () => {
       mockLimit.mockResolvedValue({ data: null, error: new Error('DB error') });
 
       await expect(fetchMovieReviews('movie-1')).rejects.toThrow('DB error');
-    });
-  });
-
-  describe('fetchMovieReviewsPaginated', () => {
-    it('queries reviews with pagination range for a movie', async () => {
-      mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockReturnValue({ order: mockOrder });
-      mockOrder.mockReturnValue({ range: mockRange });
-      mockRange.mockResolvedValue({ data: [], error: null });
-
-      await fetchMovieReviewsPaginated('movie-1', 0, 10);
-      expect(mockRange).toHaveBeenCalledWith(0, 9);
-    });
-
-    it('uses correct range for non-zero offset', async () => {
-      mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockReturnValue({ order: mockOrder });
-      mockOrder.mockReturnValue({ range: mockRange });
-      mockRange.mockResolvedValue({ data: [], error: null });
-
-      await fetchMovieReviewsPaginated('movie-1', 10, 10);
-      expect(mockRange).toHaveBeenCalledWith(10, 19);
-    });
-
-    it('uses default limit of 10 when not provided', async () => {
-      mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockReturnValue({ order: mockOrder });
-      mockOrder.mockReturnValue({ range: mockRange });
-      mockRange.mockResolvedValue({ data: [], error: null });
-
-      await fetchMovieReviewsPaginated('movie-1', 0);
-      expect(mockRange).toHaveBeenCalledWith(0, 9);
-    });
-
-    it('throws on error', async () => {
-      mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockReturnValue({ order: mockOrder });
-      mockOrder.mockReturnValue({ range: mockRange });
-      mockRange.mockResolvedValue({ data: null, error: new Error('DB error') });
-
-      await expect(fetchMovieReviewsPaginated('movie-1', 0)).rejects.toThrow('DB error');
-    });
-  });
-
-  describe('fetchUserReviewsPaginated', () => {
-    it('queries reviews with pagination range for a user', async () => {
-      mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockReturnValue({ order: mockOrder });
-      mockOrder.mockReturnValue({ range: mockRange });
-      mockRange.mockResolvedValue({ data: [], error: null });
-
-      await fetchUserReviewsPaginated('user-1', 0, 10);
-      expect(mockRange).toHaveBeenCalledWith(0, 9);
-    });
-
-    it('uses correct range for non-zero offset', async () => {
-      mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockReturnValue({ order: mockOrder });
-      mockOrder.mockReturnValue({ range: mockRange });
-      mockRange.mockResolvedValue({ data: [], error: null });
-
-      await fetchUserReviewsPaginated('user-1', 20, 10);
-      expect(mockRange).toHaveBeenCalledWith(20, 29);
-    });
-
-    it('uses default limit of 10 when not provided', async () => {
-      mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockReturnValue({ order: mockOrder });
-      mockOrder.mockReturnValue({ range: mockRange });
-      mockRange.mockResolvedValue({ data: [], error: null });
-
-      await fetchUserReviewsPaginated('user-1', 0);
-      expect(mockRange).toHaveBeenCalledWith(0, 9);
-    });
-
-    it('throws on error', async () => {
-      mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockReturnValue({ order: mockOrder });
-      mockOrder.mockReturnValue({ range: mockRange });
-      mockRange.mockResolvedValue({ data: null, error: new Error('DB error') });
-
-      await expect(fetchUserReviewsPaginated('user-1', 0)).rejects.toThrow('DB error');
     });
   });
 

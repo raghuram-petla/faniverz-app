@@ -4,7 +4,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
 const mockCrudFetch = vi.fn();
-const _mockFrom = vi.fn();
 
 vi.mock('@/lib/admin-crud-client', () => ({
   crudFetch: (...args: unknown[]) => mockCrudFetch(...args),
@@ -24,7 +23,6 @@ import {
   useMovieAvailability,
   useCountries,
   useAddMovieAvailability,
-  useUpdateMovieAvailability,
   useRemoveMovieAvailability,
 } from '@/hooks/useAdminMovieAvailability';
 
@@ -245,68 +243,6 @@ describe('useAdminMovieAvailability', () => {
           streaming_url: 'https://netflix.com/movie',
         }),
       });
-    });
-  });
-
-  describe('useUpdateMovieAvailability', () => {
-    it('calls crudFetch PATCH with id and updates', async () => {
-      const updatedRow = makeAvailabilityRow('avail-1', 'movie-1');
-      mockCrudFetch.mockResolvedValue(updatedRow);
-
-      const { Wrapper } = makeWrapper();
-      const { result } = renderHook(() => useUpdateMovieAvailability(), { wrapper: Wrapper });
-      await act(async () => {
-        await result.current.mutateAsync({
-          id: 'avail-1',
-          movie_id: 'movie-1',
-          available_from: '2024-06-01',
-        });
-      });
-
-      expect(mockCrudFetch).toHaveBeenCalledWith('PATCH', {
-        table: 'movie_platform_availability',
-        id: 'avail-1',
-        data: { available_from: '2024-06-01' },
-      });
-    });
-
-    it('invalidates movie_availability on success', async () => {
-      mockCrudFetch.mockResolvedValue(makeAvailabilityRow('avail-1', 'movie-1'));
-
-      const { qc, Wrapper } = makeWrapper();
-      const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
-      const { result } = renderHook(() => useUpdateMovieAvailability(), { wrapper: Wrapper });
-      await act(async () => {
-        await result.current.mutateAsync({ id: 'avail-1', movie_id: 'movie-1' });
-      });
-
-      expect(invalidateSpy).toHaveBeenCalledWith({
-        queryKey: ['admin', 'movie_availability', 'movie-1'],
-      });
-    });
-
-    it('shows alert on error', async () => {
-      mockCrudFetch.mockRejectedValue(new Error('Update failed'));
-
-      const { Wrapper } = makeWrapper();
-      const { result } = renderHook(() => useUpdateMovieAvailability(), { wrapper: Wrapper });
-      await act(async () => {
-        await result.current.mutateAsync({ id: 'avail-1', movie_id: 'movie-1' }).catch(() => {});
-      });
-
-      expect(window.alert).toHaveBeenCalledWith('Update failed');
-    });
-
-    it('shows fallback alert when error message is empty', async () => {
-      mockCrudFetch.mockRejectedValue(new Error(''));
-
-      const { Wrapper } = makeWrapper();
-      const { result } = renderHook(() => useUpdateMovieAvailability(), { wrapper: Wrapper });
-      await act(async () => {
-        await result.current.mutateAsync({ id: 'avail-1', movie_id: 'movie-1' }).catch(() => {});
-      });
-
-      expect(window.alert).toHaveBeenCalledWith('Failed to update availability');
     });
   });
 

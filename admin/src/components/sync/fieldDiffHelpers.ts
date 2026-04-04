@@ -131,7 +131,7 @@ export function getStatus(
   }
 }
 
-export interface FieldDef {
+interface FieldDef {
   key: FillableField;
   label: string;
   dbDisplay: string;

@@ -31,14 +31,6 @@ export interface SmartPaginationConfigWithPrefetch extends SmartPaginationConfig
   };
 }
 
-/** @contract Default config — used as fallback for screens without a specific preset */
-export const SMART_PAGINATION_DEFAULTS: SmartPaginationConfig = {
-  initialPageSize: 5,
-  expandedPageSize: 10,
-  prefetchItemsRemaining: 5,
-  backgroundExpand: true,
-};
-
 /** Home feed — fast first paint + comment prefetch */
 export const FEED_PAGINATION: SmartPaginationConfigWithPrefetch = {
   initialPageSize: 5,
@@ -98,34 +90,10 @@ export const COMMENTS_PAGINATION: SmartPaginationConfig = {
   backgroundExpand: true,
 };
 
-/** Notifications */
-export const NOTIFICATIONS_PAGINATION: SmartPaginationConfig = {
-  initialPageSize: 5,
-  expandedPageSize: 20,
-  prefetchItemsRemaining: 5,
-  backgroundExpand: true,
-};
-
 /** Search results */
 export const SEARCH_PAGINATION: SmartPaginationConfig = {
   initialPageSize: 5,
   expandedPageSize: 10,
   prefetchItemsRemaining: 3,
-  backgroundExpand: true,
-};
-
-/** Reviews (movie + user) */
-export const REVIEWS_PAGINATION: SmartPaginationConfig = {
-  initialPageSize: 5,
-  expandedPageSize: 10,
-  prefetchItemsRemaining: 3,
-  backgroundExpand: true,
-};
-
-/** Following list */
-export const FOLLOWING_PAGINATION: SmartPaginationConfig = {
-  initialPageSize: 5,
-  expandedPageSize: 10,
-  prefetchItemsRemaining: 5,
   backgroundExpand: true,
 };

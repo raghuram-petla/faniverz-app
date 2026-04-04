@@ -24,7 +24,7 @@ vi.mock('@/lib/sync-actor', () => ({
 
 // crypto is a Node built-in; no need to mock it
 
-import { mirrorMainPoster, syncCastCrew, syncCastCrewAdditive } from '@/lib/sync-cast';
+import { syncCastCrew, syncCastCrewAdditive } from '@/lib/sync-cast';
 import { extractKeyCrewMembers } from '@/lib/tmdbTypes';
 import { upsertActorPreserveType } from '@/lib/sync-actor';
 import { maybeUploadImage } from '@/lib/r2-sync';
@@ -35,94 +35,6 @@ function buildSupabase(overrides: Record<string, unknown> = {}) {
   };
   return { ...base, ...overrides };
 }
-
-describe('mirrorMainPoster', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('updates existing main poster row', async () => {
-    const updateFn = vi.fn().mockReturnValue({
-      eq: vi.fn().mockResolvedValue({ error: null }),
-    });
-    const sb = buildSupabase();
-    sb.from.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'img-1' } }),
-          }),
-        }),
-      }),
-      update: updateFn,
-    });
-
-    await mirrorMainPoster('movie-1', 'https://cdn/poster.jpg', sb as never);
-    expect(updateFn).toHaveBeenCalledWith({ image_url: 'https://cdn/poster.jpg' });
-  });
-
-  it('inserts new main poster row when none exists', async () => {
-    const insertFn = vi.fn().mockResolvedValue({ error: null });
-    const sb = buildSupabase();
-    sb.from.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: null }),
-          }),
-        }),
-      }),
-      insert: insertFn,
-    });
-
-    await mirrorMainPoster('movie-1', 'https://cdn/poster.jpg', sb as never);
-    expect(insertFn).toHaveBeenCalledWith(
-      expect.objectContaining({
-        movie_id: 'movie-1',
-        image_url: 'https://cdn/poster.jpg',
-        is_main_poster: true,
-      }),
-    );
-  });
-
-  it('warns on update failure', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const sb = buildSupabase();
-    sb.from.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: { id: 'img-1' } }),
-          }),
-        }),
-      }),
-      update: vi.fn().mockReturnValue({
-        eq: vi.fn().mockResolvedValue({ error: { message: 'update failed' } }),
-      }),
-    });
-
-    await mirrorMainPoster('movie-1', 'https://cdn/poster.jpg', sb as never);
-    expect(console.warn).toHaveBeenCalledWith('mirrorMainPoster: update failed', 'update failed');
-  });
-
-  it('warns on insert failure', async () => {
-    vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const sb = buildSupabase();
-    sb.from.mockReturnValue({
-      select: vi.fn().mockReturnValue({
-        eq: vi.fn().mockReturnValue({
-          eq: vi.fn().mockReturnValue({
-            maybeSingle: vi.fn().mockResolvedValue({ data: null }),
-          }),
-        }),
-      }),
-      insert: vi.fn().mockResolvedValue({ error: { message: 'insert failed' } }),
-    });
-
-    await mirrorMainPoster('movie-1', 'https://cdn/poster.jpg', sb as never);
-    expect(console.warn).toHaveBeenCalledWith('mirrorMainPoster: insert failed', 'insert failed');
-  });
-});
 
 describe('syncCastCrew', () => {
   beforeEach(() => {
@@ -144,9 +56,6 @@ describe('syncCastCrew', () => {
   });
 
   it('deletes and re-inserts when forceResync=true and cast exists', async () => {
-    const _deleteFn = vi.fn().mockReturnValue({
-      eq: vi.fn().mockResolvedValue({ error: null }),
-    });
     const insertFn = vi.fn().mockResolvedValue({ error: null });
     const sb = buildSupabase();
     sb.from.mockImplementation((table: string) => {

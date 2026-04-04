@@ -72,5 +72,3 @@ export const typography: Record<string, TextStyle> = {
     lineHeight: 14,
   },
 } as const;
-
-export type Typography = typeof typography;

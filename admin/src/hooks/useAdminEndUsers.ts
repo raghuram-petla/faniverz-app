@@ -15,7 +15,7 @@ export interface EndUserProfile {
   created_at: string;
 }
 
-export interface UseAdminEndUsersOptions {
+interface UseAdminEndUsersOptions {
   search: string;
   page: number;
   pageSize?: number;
@@ -132,12 +132,6 @@ export const useBanUser = createSimpleMutation<string>({
   mutationFn: (userId) => callManageUser('ban', userId),
   invalidateKeys: [['admin', 'end-users']],
   errorMessage: 'Failed to ban user',
-});
-
-export const useUnbanUser = createSimpleMutation<string>({
-  mutationFn: (userId) => callManageUser('unban', userId),
-  invalidateKeys: [['admin', 'end-users']],
-  errorMessage: 'Failed to unban user',
 });
 
 // @contract Only display_name, bio, location can be updated — other profile fields are read-only

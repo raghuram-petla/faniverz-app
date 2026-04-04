@@ -34,18 +34,6 @@ export async function removeFavoriteActor(userId: string, actorId: string): Prom
   if (error) throw error;
 }
 
-// @contract: uses search_actors RPC — hybrid tsvector + pg_trgm scoring; ordered by relevance score.
-// Handles typos (e.g. "Mahes" finds "Mahesh") via trigram fuzzy matching; limit 20.
-export async function searchActors(query: string): Promise<Actor[]> {
-  const { data, error } = await supabase.rpc('search_actors', {
-    search_term: query,
-    result_limit: 20,
-    result_offset: 0,
-  });
-  if (error) throw error;
-  return (data as Actor[]) ?? [];
-}
-
 // @contract: uses .maybeSingle() — returns null on not-found (unlike fetchMovieById which uses .single() and throws PGRST116). Callers can safely check null without try/catch.
 export async function fetchActorById(id: string): Promise<Actor | null> {
   return unwrapOne(await supabase.from('actors').select('*').eq('id', id).maybeSingle());

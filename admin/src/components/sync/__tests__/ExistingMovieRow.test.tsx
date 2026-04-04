@@ -174,8 +174,6 @@ describe('ExistingMovieRow', () => {
     render(
       <ExistingMovieRow movie={makeMovie()} justImported={false} prefetchedTmdb={makeTmdbData()} />,
     );
-    const _toggleBtn =
-      screen.getByRole('button', { name: /Test Movie/i }) ?? screen.getAllByRole('button')[0];
     expect(screen.queryByTestId('field-diff-panel')).not.toBeInTheDocument();
     // First click: open
     fireEvent.click(screen.getAllByRole('button')[0]);

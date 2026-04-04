@@ -17,9 +17,6 @@ import type {
   AvailabilityRow,
 } from './useMovieEditRowTypes';
 
-export type { CastRow, VideoRow, PosterRow, PlatformRow, PHRow, RunRow, AvailabilityRow };
-export type { AvailabilityType } from '@shared/types';
-
 // @contract MovieForm mirrors the editable subset of the movies table
 // spotlight_focus_* and detail_focus_* are preserved separately in movieData
 export interface MovieForm {

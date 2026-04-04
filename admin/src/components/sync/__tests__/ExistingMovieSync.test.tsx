@@ -392,7 +392,7 @@ describe('ExistingMovieSync', () => {
     });
 
     // Use a custom mock for ExistingMovieRow that passes updatedTmdb
-    const _ExistingMovieRow = await import('@/components/sync/ExistingMovieRow');
+    await import('@/components/sync/ExistingMovieRow');
 
     render(<ExistingMovieSync movies={[makeMovie(1, 'Original Title')]} />);
 

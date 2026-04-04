@@ -418,7 +418,6 @@ describe('BulkProgressPanel', () => {
       />,
     );
     // Empty current should not render the paragraph
-    const _progressItems = screen.queryAllByText('');
     // Just verify no crash
     expect(screen.getByText('2/5')).toBeInTheDocument();
   });

@@ -6,7 +6,6 @@ import {
   fetchFavoriteActors,
   addFavoriteActor,
   removeFavoriteActor,
-  searchActors,
   fetchActorById,
   fetchActorFilmography,
 } from './api';
@@ -18,15 +17,6 @@ export function useFavoriteActors(userId: string) {
     queryKey: ['actors', 'favorites', userId],
     queryFn: () => fetchFavoriteActors(userId),
     enabled: !!userId,
-    staleTime: STALE_5M,
-  });
-}
-
-export function useSearchActors(query: string) {
-  return useQuery({
-    queryKey: ['actors', 'search', query],
-    queryFn: () => searchActors(query),
-    enabled: query.length >= 2,
     staleTime: STALE_5M,
   });
 }

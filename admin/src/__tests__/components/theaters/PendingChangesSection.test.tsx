@@ -1,6 +1,10 @@
 import { render, screen, fireEvent } from '@testing-library/react';
-import { PendingChangesDock } from '@/components/theaters/PendingChangesSection';
-import type { PendingChangeItem } from '@/components/theaters/PendingChangesSection';
+import {
+  PendingChangesDock,
+  type PendingChangesDockProps,
+} from '@/components/theaters/PendingChangesSection';
+
+type PendingChangeItem = PendingChangesDockProps['changes'][number];
 
 const mockChanges: PendingChangeItem[] = [
   {

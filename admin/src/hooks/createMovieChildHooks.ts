@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 import { crudFetch } from '@/lib/admin-crud-client';
 
-export interface MovieChildConfig {
+interface MovieChildConfig {
   /** Supabase table name */
   table: string;
   /** Query key suffix, e.g. 'videos' → ['admin', 'videos', movieId] */

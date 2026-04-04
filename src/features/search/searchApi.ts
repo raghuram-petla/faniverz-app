@@ -49,33 +49,3 @@ export async function searchMoviesPaginated(
   if (error) throw error;
   return (data as Movie[]) ?? [];
 }
-
-// @contract: `offset` is absolute row offset, `limit` is number of rows to fetch.
-export async function searchActorsPaginated(
-  query: string,
-  offset: number,
-  limit: number = 10,
-): Promise<Actor[]> {
-  const { data, error } = await supabase.rpc('search_actors', {
-    search_term: query,
-    result_limit: limit,
-    result_offset: offset,
-  });
-  if (error) throw error;
-  return (data as Actor[]) ?? [];
-}
-
-// @contract: `offset` is absolute row offset, `limit` is number of rows to fetch.
-export async function searchProductionHousesPaginated(
-  query: string,
-  offset: number,
-  limit: number = 10,
-): Promise<ProductionHouse[]> {
-  const { data, error } = await supabase.rpc('search_production_houses', {
-    search_term: query,
-    result_limit: limit,
-    result_offset: offset,
-  });
-  if (error) throw error;
-  return (data as ProductionHouse[]) ?? [];
-}

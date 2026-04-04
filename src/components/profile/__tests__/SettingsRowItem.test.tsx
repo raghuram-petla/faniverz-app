@@ -1,7 +1,10 @@
 import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { SettingsRowItem } from '../SettingsRowItem';
-import type { ToggleRow, LinkRow, RadioRow } from '../settingsTypes';
+import type { ToggleRow, SettingsRow } from '../settingsTypes';
+
+type LinkRow = Extract<SettingsRow, { kind: 'link' }>;
+type RadioRow = Extract<SettingsRow, { kind: 'radio' }>;
 
 const baseStyles = new Proxy({}, { get: () => ({}) });
 const baseTheme = { textSecondary: '#888', textDisabled: '#ccc' };

@@ -7,7 +7,6 @@ import {
   removeFromWatchlist,
   markAsWatched,
   moveBackToWatchlist,
-  isMovieWatchlisted,
 } from './api';
 import { Alert } from 'react-native';
 import i18n from '@/i18n';
@@ -66,15 +65,6 @@ export function useWatchlistPaginated(userId: string) {
   const { available, upcoming, watched } = categorizeEntries(query.allItems);
 
   return { ...query, available, upcoming, watched };
-}
-
-export function useIsWatchlisted(userId: string, movieId: string) {
-  return useQuery({
-    queryKey: ['watchlist', 'check', userId, movieId],
-    queryFn: () => isMovieWatchlisted(userId, movieId),
-    enabled: !!userId && !!movieId,
-    staleTime: STALE_2M,
-  });
 }
 
 // @contract: invalidateAll covers 3 cache keys: ['watchlist', userId],

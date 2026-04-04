@@ -19,7 +19,6 @@ vi.mock('@/lib/admin-crud-client', () => ({
 import {
   useTheaterMovies,
   useUpcomingMovies,
-  useUpcomingRereleases,
   useTheaterSearch,
   useRemoveFromTheaters,
   useAddToTheaters,
@@ -104,36 +103,6 @@ describe('useUpcomingMovies', () => {
 
     const { Wrapper } = makeWrapper();
     const { result } = renderHook(() => useUpcomingMovies(), { wrapper: Wrapper });
-
-    await waitFor(() => expect(result.current.isError).toBe(true));
-  });
-});
-
-describe('useUpcomingRereleases', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('fetches theatrical runs with future dates', async () => {
-    const runs = [{ id: 'r1', release_date: '2026-04-01', movies: { id: '1', title: 'A' } }];
-    const chain = buildChain(runs);
-    mockSupabaseFrom.mockReturnValue(chain);
-
-    const { Wrapper } = makeWrapper();
-    const { result } = renderHook(() => useUpcomingRereleases(), { wrapper: Wrapper });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual(runs);
-    expect(chain.gt).toHaveBeenCalled();
-    expect(chain.lte).toHaveBeenCalled();
-  });
-
-  it('throws when Supabase returns an error', async () => {
-    const chain = buildChain(null, { message: 'Rerelease error' });
-    mockSupabaseFrom.mockReturnValue(chain);
-
-    const { Wrapper } = makeWrapper();
-    const { result } = renderHook(() => useUpcomingRereleases(), { wrapper: Wrapper });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
   });

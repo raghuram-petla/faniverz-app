@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
-export type ButtonVariant =
+type ButtonVariant =
   | 'primary'
   | 'secondary'
   | 'danger'
@@ -10,7 +10,7 @@ export type ButtonVariant =
   | 'overlay-yellow'
   | 'overlay-red';
 
-export type ButtonSize = 'sm' | 'md' | 'lg';
+type ButtonSize = 'sm' | 'md' | 'lg';
 
 const VARIANT_CLASSES: Record<ButtonVariant, string> = {
   primary: 'bg-red-600 text-white font-semibold hover:bg-red-700 disabled:opacity-50',

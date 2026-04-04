@@ -5,7 +5,6 @@ import React from 'react';
 
 const mockSupabaseQuery = vi.fn();
 const mockGetSession = vi.fn();
-const _mockInvalidateQueries = vi.fn();
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
@@ -25,23 +24,6 @@ vi.mock('@/lib/supabase-browser', () => ({
     },
   },
 }));
-
-// Override the from chain to resolve via mockSupabaseQuery
-const _buildChain = () => {
-  const chain: Record<string, unknown> = {};
-  const methods = ['select', 'order', 'range', 'eq', 'gte', 'lte', 'or', 'not'];
-  for (const m of methods) {
-    chain[m] = vi.fn(() => {
-      // last call resolves
-      return chain;
-    });
-  }
-  // Make the chain thenable
-  (chain as { then: unknown }).then = (resolve: (v: unknown) => void) => {
-    Promise.resolve(mockSupabaseQuery()).then(resolve);
-  };
-  return chain;
-};
 
 import { useAdminAuditLog, useRevertAuditEntry } from '@/hooks/useAdminAudit';
 

@@ -1,11 +1,6 @@
 import { renderHook, waitFor, act } from '@testing-library/react-native';
 import { createWrapper } from '@/__tests__/helpers/createWrapper';
-import {
-  useNotifications,
-  useUnreadCount,
-  useNotificationsPaginated,
-  useNotificationMutations,
-} from '../hooks';
+import { useNotifications, useUnreadCount, useNotificationMutations } from '../hooks';
 import * as api from '../api';
 
 jest.mock('../api');
@@ -70,32 +65,6 @@ describe('useUnreadCount', () => {
     const { result } = renderHook(() => useUnreadCount('u1'), { wrapper: createWrapper() });
 
     await waitFor(() => expect(result.current).toBe(0));
-  });
-});
-
-describe('useNotificationsPaginated', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('fetches paginated notifications for a user', async () => {
-    (api.fetchNotificationsPaginated as jest.Mock).mockResolvedValue(mockNotifications);
-
-    const { result } = renderHook(() => useNotificationsPaginated('u1'), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(api.fetchNotificationsPaginated).toHaveBeenCalledWith('u1', 0, expect.any(Number));
-  });
-
-  it('does not fetch when userId is empty', async () => {
-    const { result } = renderHook(() => useNotificationsPaginated(''), {
-      wrapper: createWrapper(),
-    });
-
-    expect(result.current.fetchStatus).toBe('idle');
-    expect(api.fetchNotificationsPaginated).not.toHaveBeenCalled();
   });
 });
 

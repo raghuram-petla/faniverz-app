@@ -9,7 +9,7 @@ import { ADMIN_STALE_5M } from '@/lib/query-config';
 // @edge: retry is set to 1 (not 0) — a transient 500 from a Supabase edge function
 // gets ONE automatic retry. If the retry also fails, the error bubbles to the UI.
 // Mutations are not configured here and use TanStack Query's default (no retry).
-export function makeQueryClient() {
+function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {

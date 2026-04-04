@@ -10,7 +10,7 @@ import type { ExistingMovieData, LookupMovieData } from '@/hooks/useSync';
 import { FILLABLE_DATA_FIELDS, type FillableDataField } from '@/lib/syncUtils';
 import { getStatus } from '@/components/sync/fieldDiffHelpers';
 
-export interface BulkFillState {
+interface BulkFillState {
   total: number;
   done: number;
   failed: number;

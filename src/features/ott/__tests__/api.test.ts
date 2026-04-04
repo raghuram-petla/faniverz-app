@@ -16,12 +16,7 @@ jest.mock('@/utils/getDeviceCountry', () => ({
 }));
 
 import { supabase } from '@/lib/supabase';
-import {
-  fetchPlatforms,
-  fetchOttReleases,
-  fetchMoviePlatformMap,
-  fetchMovieAvailability,
-} from '../api';
+import { fetchPlatforms, fetchMoviePlatformMap, fetchMovieAvailability } from '../api';
 
 describe('ott api', () => {
   beforeEach(() => {
@@ -71,43 +66,6 @@ describe('ott api', () => {
       mockOrder.mockResolvedValue({ data: null, error: new Error('DB error') });
 
       await expect(fetchPlatforms()).rejects.toThrow('DB error');
-    });
-  });
-
-  describe('fetchOttReleases', () => {
-    it('queries movie_platforms with joined platform data', async () => {
-      mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockResolvedValue({ data: [], error: null });
-
-      await fetchOttReleases('movie-1');
-
-      expect(supabase.from).toHaveBeenCalledWith('movie_platforms');
-      expect(mockSelect).toHaveBeenCalledWith('*, platform:platforms(*)');
-      expect(mockEq).toHaveBeenCalledWith('movie_id', 'movie-1');
-    });
-
-    it('returns release data', async () => {
-      const mockData = [{ id: 'mp1', movie_id: 'movie-1', platform: { id: 'netflix' } }];
-      mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockResolvedValue({ data: mockData, error: null });
-
-      const result = await fetchOttReleases('movie-1');
-      expect(result).toEqual(mockData);
-    });
-
-    it('returns empty array when data is null', async () => {
-      mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockResolvedValue({ data: null, error: null });
-
-      const result = await fetchOttReleases('movie-1');
-      expect(result).toEqual([]);
-    });
-
-    it('throws on error', async () => {
-      mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockResolvedValue({ data: null, error: new Error('Query error') });
-
-      await expect(fetchOttReleases('movie-1')).rejects.toThrow('Query error');
     });
   });
 

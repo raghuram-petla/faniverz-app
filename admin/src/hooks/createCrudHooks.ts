@@ -5,7 +5,7 @@ import { crudFetch } from '@/lib/admin-crud-client';
 
 const DEFAULT_PAGE_SIZE = 50;
 
-export interface CrudConfig {
+interface CrudConfig {
   /** Supabase table name */
   table: string;
   /** Base query key, e.g. 'movies' → ['admin', 'movies'] */

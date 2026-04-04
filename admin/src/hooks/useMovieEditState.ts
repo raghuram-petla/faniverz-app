@@ -19,8 +19,6 @@ export type {
   PendingPHAdd,
   PendingAvailabilityAdd,
 } from '@/hooks/useMovieEditTypes';
-export type { VideoType } from '@/lib/types';
-export type { OTTPlatform, ProductionHouse } from '@shared/types';
 
 // @contract Orchestrator hook for movie edit page — composes data fetching, state, derived, and handlers
 // @coupling Delegates to useMovieEditDerived for visible lists and createMovieEditHandlers for actions

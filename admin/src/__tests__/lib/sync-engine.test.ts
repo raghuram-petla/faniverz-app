@@ -15,7 +15,6 @@ vi.mock('../../lib/tmdb', () => ({
 }));
 
 vi.mock('../../lib/tmdbTypes', () => ({
-  extractTrailerUrl: vi.fn().mockReturnValue('https://youtube.com/watch?v=trailer1'),
   extractKeyCrewMembers: vi.fn().mockReturnValue([]),
   extractTeluguTranslation: vi.fn().mockReturnValue({ titleTe: null, synopsisTe: null }),
   extractIndiaCertification: vi.fn().mockReturnValue(null),

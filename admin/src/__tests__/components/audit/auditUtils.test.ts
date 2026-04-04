@@ -1,7 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
   getChangedFields,
-  formatDetails,
   actionStyles,
   getEntityDisplayName,
   canRevert,
@@ -75,75 +74,6 @@ describe('getChangedFields', () => {
     expect(result).toEqual({
       year: { from: undefined, to: 2025 },
     });
-  });
-});
-
-describe('formatDetails', () => {
-  it('returns diff JSON for update action with changes', () => {
-    const details = {
-      old: { title: 'Old' },
-      new: { title: 'New' },
-    };
-    const result = formatDetails('update', details);
-    const parsed = JSON.parse(result);
-    expect(parsed).toEqual({
-      title: { from: 'Old', to: 'New' },
-    });
-  });
-
-  it('returns full details JSON for update with no changes', () => {
-    const details = {
-      old: { title: 'Same' },
-      new: { title: 'Same' },
-    };
-    const result = formatDetails('update', details);
-    const parsed = JSON.parse(result);
-    expect(parsed).toEqual(details);
-  });
-
-  it('returns new data JSON for create action', () => {
-    const details = {
-      new: { title: 'Created Movie', year: 2025 },
-    };
-    const result = formatDetails('create', details);
-    const parsed = JSON.parse(result);
-    expect(parsed).toEqual({ title: 'Created Movie', year: 2025 });
-  });
-
-  it('returns old data JSON for delete action', () => {
-    const details = {
-      old: { title: 'Deleted Movie', year: 2024 },
-    };
-    const result = formatDetails('delete', details);
-    const parsed = JSON.parse(result);
-    expect(parsed).toEqual({ title: 'Deleted Movie', year: 2024 });
-  });
-
-  it('returns full details as fallback for unknown action', () => {
-    const details = { some: 'data', other: 123 };
-    const result = formatDetails('unknown', details);
-    const parsed = JSON.parse(result);
-    expect(parsed).toEqual(details);
-  });
-
-  it('returns full details for create without new field', () => {
-    const details = { title: 'Something' };
-    const result = formatDetails('create', details);
-    const parsed = JSON.parse(result);
-    expect(parsed).toEqual(details);
-  });
-
-  it('returns full details for delete without old field', () => {
-    const details = { title: 'Something' };
-    const result = formatDetails('delete', details);
-    const parsed = JSON.parse(result);
-    expect(parsed).toEqual(details);
-  });
-
-  it('formats output with 2-space indentation', () => {
-    const details = { new: { title: 'Test' } };
-    const result = formatDetails('create', details);
-    expect(result).toBe(JSON.stringify({ title: 'Test' }, null, 2));
   });
 });
 

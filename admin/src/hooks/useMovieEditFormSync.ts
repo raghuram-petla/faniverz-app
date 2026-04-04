@@ -54,7 +54,7 @@ function toFormState(movie: MovieFormSource): MovieForm {
   };
 }
 
-export interface UseMovieEditFormSyncResult {
+interface UseMovieEditFormSyncResult {
   form: MovieForm;
   setForm: Dispatch<SetStateAction<MovieForm>>;
   initialForm: MovieForm | null;

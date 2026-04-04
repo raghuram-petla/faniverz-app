@@ -5,7 +5,6 @@ import { createWrapper } from '@/__tests__/helpers/createWrapper';
 import {
   useWatchlist,
   useWatchlistPaginated,
-  useIsWatchlisted,
   useWatchlistMutations,
   useWatchlistSet,
 } from '../hooks';
@@ -158,40 +157,6 @@ describe('useWatchlistPaginated', () => {
     const { result } = renderHook(() => useWatchlistPaginated('u1'), { wrapper: createWrapper() });
 
     await waitFor(() => expect(result.current.hasNextPage).toBe(true));
-  });
-});
-
-describe('useIsWatchlisted', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('checks if a movie is watchlisted', async () => {
-    const entry = { id: 'w1', movie_id: 'm1', status: 'watchlist' };
-    (api.isMovieWatchlisted as jest.Mock).mockResolvedValue(entry);
-
-    const { result } = renderHook(() => useIsWatchlisted('u1', 'm1'), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual(entry);
-  });
-
-  it('does not fetch when userId is empty', async () => {
-    const { result } = renderHook(() => useIsWatchlisted('', 'm1'), {
-      wrapper: createWrapper(),
-    });
-
-    expect(result.current.isFetching).toBe(false);
-  });
-
-  it('does not fetch when movieId is empty', async () => {
-    const { result } = renderHook(() => useIsWatchlisted('u1', ''), {
-      wrapper: createWrapper(),
-    });
-
-    expect(result.current.isFetching).toBe(false);
   });
 });
 

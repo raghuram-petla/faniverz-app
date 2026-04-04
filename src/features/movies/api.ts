@@ -3,7 +3,7 @@ import { Movie, MovieWithDetails, MovieStatus } from '@/types';
 import { unwrapList } from '@/utils/supabaseQuery';
 
 /** Returns today's date as YYYY-MM-DD in local timezone (avoids UTC offset bug with toISOString). */
-export function getLocalDateString(date: Date = new Date()): string {
+function getLocalDateString(date: Date = new Date()): string {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
   const d = String(date.getDate()).padStart(2, '0');
@@ -203,34 +203,6 @@ export async function fetchMovieById(id: string): Promise<MovieWithDetails | nul
   };
 }
 
-// @edge: month param is 0-indexed (JavaScript Date convention) — new Date(year, 12, 1) wraps to January of next year. Callers must pass 0-11 not 1-12, but the parameter name 'month' doesn't signal this.
-// @assumes: release_date is stored as 'YYYY-MM-DD' string in Supabase. String comparison (gte/lte) works correctly only because the format is lexicographically sortable. A different date format would silently return wrong results.
-export async function fetchMoviesByMonth(year: number, month: number): Promise<Movie[]> {
-  const startDate = getLocalDateString(new Date(year, month, 1));
-  const endDate = getLocalDateString(new Date(year, month + 1, 0));
-
-  return unwrapList(
-    await supabase
-      .from('movies')
-      .select('*')
-      .gte('release_date', startDate)
-      .lte('release_date', endDate)
-      .order('release_date', { ascending: true }),
-  );
-}
-
-// @contract: uses search_movies RPC — hybrid tsvector + pg_trgm scoring with typo tolerance.
-// Searches title, director, and synopsis with relevance ranking; limit 20.
-export async function searchMovies(query: string): Promise<Movie[]> {
-  const { data, error } = await supabase.rpc('search_movies', {
-    search_term: query,
-    result_limit: 20,
-    result_offset: 0,
-  });
-  if (error) throw error;
-  return (data as Movie[]) ?? [];
-}
-
 // @sync: shares filter/sort logic with fetchMovies via applyMovieFilters helper — adding a new MovieStatus case or sort option only requires updating applyMovieFilters.
 // @sync: like fetchMovies, passes featuredFirst: true so featured movies surface first in paginated results too.
 // @contract: `offset` is absolute row offset, `limit` is number of rows to fetch.
@@ -264,31 +236,5 @@ export async function fetchUpcomingMovies(offset: number, limit: number = 10): P
       .gte('release_date', todayStr)
       .order('release_date', { ascending: true })
       .range(offset, to),
-  );
-}
-
-// @edge: limit defaults to 50 but applies to the junction table query (movie_platforms), not the final movies query. A platform with 100 movies only returns 50 — but there's no pagination or "load more" for this endpoint. The second query (movies) has no limit, returning all matched IDs.
-// @coupling: uses movie_platforms table (legacy), not movie_platform_availability. Country-specific availability is ignored — all movies linked to this platform globally are returned.
-export async function fetchMoviesByPlatform(
-  platformId: string,
-  limit: number = 50,
-): Promise<Movie[]> {
-  const { data: movieIds, error: platErr3 } = await supabase
-    .from('movie_platforms')
-    .select('movie_id')
-    .eq('platform_id', platformId)
-    .limit(limit);
-  if (platErr3) throw platErr3;
-  if (!movieIds || movieIds.length === 0) return [];
-
-  return unwrapList(
-    await supabase
-      .from('movies')
-      .select('*')
-      .in(
-        'id',
-        movieIds.map((m) => m.movie_id),
-      )
-      .order('release_date', { ascending: false }),
   );
 }

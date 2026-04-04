@@ -21,7 +21,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { createWrapper } from '@/__tests__/helpers/createWrapper';
 import {
   useNewsFeed,
-  useFeaturedFeed,
   usePersonalizedFeed,
   useFeedItem,
   useVoteFeedItem,
@@ -30,7 +29,6 @@ import {
 } from '../hooks';
 import {
   fetchNewsFeed,
-  fetchFeaturedFeedItems,
   fetchPersonalizedFeed,
   fetchFeedItemById,
   voteFeedItem,
@@ -39,9 +37,6 @@ import {
 } from '../api';
 
 const mockFetchNewsFeed = fetchNewsFeed as jest.MockedFunction<typeof fetchNewsFeed>;
-const mockFetchFeatured = fetchFeaturedFeedItems as jest.MockedFunction<
-  typeof fetchFeaturedFeedItems
->;
 const mockFetchPersonalized = fetchPersonalizedFeed as jest.MockedFunction<
   typeof fetchPersonalizedFeed
 >;
@@ -94,25 +89,6 @@ describe('useNewsFeed', () => {
   it('handles errors', async () => {
     mockFetchNewsFeed.mockRejectedValue(new Error('fail'));
     const { result } = renderHook(() => useNewsFeed(), { wrapper: createWrapper() });
-    await waitFor(() => expect(result.current.isError).toBe(true));
-  });
-});
-
-describe('useFeaturedFeed', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mockFetchFeatured.mockResolvedValue([mockItem]);
-  });
-
-  it('fetches featured items successfully', async () => {
-    const { result } = renderHook(() => useFeaturedFeed(), { wrapper: createWrapper() });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual([mockItem]);
-  });
-
-  it('handles errors', async () => {
-    mockFetchFeatured.mockRejectedValue(new Error('fail'));
-    const { result } = renderHook(() => useFeaturedFeed(), { wrapper: createWrapper() });
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
 });

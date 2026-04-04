@@ -4,7 +4,7 @@ import { getImageUrl, type ImageSize, type ImageBucket } from '@shared/imageUrl'
 import { VARIANT_SPECS, type VariantType } from '@/lib/variant-config';
 import { supabase } from '@/lib/supabase-browser';
 
-export interface VariantInfo {
+interface VariantInfo {
   label: string;
   url: string;
   width: number | null;

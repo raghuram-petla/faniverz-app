@@ -4,8 +4,10 @@ vi.mock('@/hooks/useImageUpload', () => ({
   uploadImage: vi.fn(),
 }));
 
-import { createCommonFormHandlers, type CommonFormDeps } from '@/hooks/createCommonFormHandlers';
+import { createCommonFormHandlers } from '@/hooks/createCommonFormHandlers';
 import type { MovieForm } from '@/hooks/useMovieEditTypes';
+
+type CommonFormDeps = Parameters<typeof createCommonFormHandlers>[0];
 
 function createMockDeps(): CommonFormDeps {
   return {

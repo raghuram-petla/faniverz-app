@@ -8,7 +8,7 @@ const PROGRAMMATIC_REFRESH_MIN_MS = 450;
  * @coupling usePullToRefresh — calls showRefreshIndicator/hideRefreshIndicator to bridge
  * the programmatic flow into the same visual indicator the pull gesture uses.
  */
-export interface UseProgrammaticRefreshParams {
+interface UseProgrammaticRefreshParams {
   refreshing: boolean;
   onRefresh: () => Promise<void>;
   showRefreshIndicator: () => void;

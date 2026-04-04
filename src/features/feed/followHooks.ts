@@ -4,15 +4,7 @@ import { Alert } from 'react-native';
 import i18n from '@/i18n';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { STALE_5M } from '@/constants/queryConfig';
-import { FOLLOWING_PAGINATION } from '@/constants/paginationConfig';
-import { useSmartInfiniteQuery } from '@/hooks/useSmartInfiniteQuery';
-import {
-  fetchUserFollows,
-  fetchEnrichedFollows,
-  fetchEnrichedFollowsPaginated,
-  followEntity,
-  unfollowEntity,
-} from './followApi';
+import { fetchUserFollows, fetchEnrichedFollows, followEntity, unfollowEntity } from './followApi';
 import { createOptimisticMutation } from './optimisticMutationFactory';
 import type { EntityFollow, EnrichedFollow, FeedEntityType } from '@shared/types';
 
@@ -93,22 +85,6 @@ export function useEnrichedFollows() {
     queryFn: () => fetchEnrichedFollows(userId ?? /* istanbul ignore next */ ''),
     enabled: !!userId,
     staleTime: STALE_5M,
-  });
-}
-
-/** @contract Paginated version of useEnrichedFollows using smart infinite query */
-// @coupling: invalidated by useFollowEntity/useUnfollowEntity via ['enriched-follows'] prefix, but this uses key ['enriched-follows-paginated'] which does NOT match that prefix. Follow/unfollow mutations won't refresh the paginated list — it only updates on staleTime expiry or manual refetch.
-export function useEnrichedFollowsPaginated() {
-  const { user } = useAuth();
-  const userId = user?.id;
-
-  return useSmartInfiniteQuery<EnrichedFollow & { id: string }>({
-    queryKey: ['enriched-follows-paginated', userId],
-    queryFn: (offset, limit) =>
-      fetchEnrichedFollowsPaginated(userId ?? /* istanbul ignore next */ '', offset, limit),
-    config: FOLLOWING_PAGINATION,
-    staleTime: STALE_5M,
-    enabled: !!userId,
   });
 }
 

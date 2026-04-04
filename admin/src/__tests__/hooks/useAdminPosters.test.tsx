@@ -16,7 +16,6 @@ vi.mock('@/lib/supabase-browser', () => ({
 import {
   useMoviePosters,
   useAddPoster,
-  useUpdatePoster,
   useRemovePoster,
   useSetMainPoster,
   useSetMainBackdrop,
@@ -122,40 +121,6 @@ describe('useAddPoster', () => {
             image_type: 'poster',
             display_order: 0,
           },
-        }),
-      }),
-    );
-
-    fetchSpy.mockRestore();
-  });
-});
-
-describe('useUpdatePoster', () => {
-  it('updates a poster via /api/admin-crud by id and invalidates the cache', async () => {
-    const fetchSpy = mockCrudApi({
-      id: 'p1',
-      movie_id: 'm1',
-      title: 'Updated Poster',
-    });
-
-    const { result } = renderHook(() => useUpdatePoster(), {
-      wrapper: createWrapper(),
-    });
-
-    await act(async () => {
-      result.current.mutate({ id: 'p1', movieId: 'm1', title: 'Updated Poster' });
-    });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-    expect(fetchSpy).toHaveBeenCalledWith(
-      '/api/admin-crud',
-      expect.objectContaining({
-        method: 'PATCH',
-        body: JSON.stringify({
-          table: 'movie_images',
-          id: 'p1',
-          data: { title: 'Updated Poster' },
         }),
       }),
     );

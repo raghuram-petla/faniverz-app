@@ -184,7 +184,6 @@ describe('POST /api/sync/discover', () => {
     vi.mocked(getSupabaseAdmin).mockReturnValue(sb as never);
 
     const res = await POST(makeRequest({ year: 2024, months: [1, 2], language: 'te' }));
-    const _body = await res.json();
     expect(res.status).toBe(200);
     expect(discoverMoviesByLanguageAndMonth).toHaveBeenCalledTimes(2);
   });

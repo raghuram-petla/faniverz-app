@@ -91,7 +91,6 @@ export const createStyles = (t: SemanticTheme) =>
     // Photos tab
     photosTab: {},
     photoFilterPills: { paddingBottom: 12 },
-    photoGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP },
     photoCard: { width: CARD_WIDTH },
     /** @contract Backdrops span full width so the 16:9 ratio renders at a usable size */
     photoCardBackdrop: { width: '100%' },

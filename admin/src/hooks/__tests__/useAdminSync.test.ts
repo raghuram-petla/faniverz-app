@@ -1,10 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor, act } from '@testing-library/react';
+import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
 const mockLimit = vi.fn();
-const mockInvoke = vi.fn();
 
 vi.mock('@/lib/supabase-browser', () => ({
   supabase: {
@@ -13,13 +12,10 @@ vi.mock('@/lib/supabase-browser', () => ({
       order: vi.fn().mockReturnThis(),
       limit: (...args: unknown[]) => mockLimit(...args),
     })),
-    functions: {
-      invoke: (...args: unknown[]) => mockInvoke(...args),
-    },
   },
 }));
 
-import { useAdminSyncLogs, useTriggerSync } from '@/hooks/useAdminSync';
+import { useAdminSyncLogs } from '@/hooks/useAdminSync';
 
 function makeWrapper() {
   const qc = new QueryClient({
@@ -78,62 +74,5 @@ describe('useAdminSyncLogs', () => {
     const { result } = renderHook(() => useAdminSyncLogs(), { wrapper: Wrapper });
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
-  });
-});
-
-describe('useTriggerSync', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    window.alert = vi.fn();
-  });
-
-  it('invokes supabase function and invalidates on success', async () => {
-    mockInvoke.mockResolvedValue({ error: null });
-    mockLimit.mockResolvedValue({ data: [], error: null });
-
-    const { qc, Wrapper } = makeWrapper();
-    const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
-    const { result } = renderHook(() => useTriggerSync(), { wrapper: Wrapper });
-
-    await act(async () => {
-      await result.current.mutateAsync('sync-movies');
-    });
-
-    expect(mockInvoke).toHaveBeenCalledWith('sync-movies');
-    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['admin', 'sync'] });
-  });
-
-  it('throws when function invocation fails', async () => {
-    mockInvoke.mockResolvedValue({ error: new Error('Function error') });
-
-    const { Wrapper } = makeWrapper();
-    const { result } = renderHook(() => useTriggerSync(), { wrapper: Wrapper });
-
-    await act(async () => {
-      try {
-        await result.current.mutateAsync('sync-movies');
-      } catch {
-        // expected
-      }
-    });
-
-    expect(window.alert).toHaveBeenCalledWith('Function error');
-  });
-
-  it('shows "Sync failed" when error is not an Error instance', async () => {
-    mockInvoke.mockResolvedValue({ error: { code: 'UNKNOWN' } });
-
-    const { Wrapper } = makeWrapper();
-    const { result } = renderHook(() => useTriggerSync(), { wrapper: Wrapper });
-
-    await act(async () => {
-      try {
-        await result.current.mutateAsync('sync-movies');
-      } catch {
-        // expected
-      }
-    });
-
-    await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Sync failed'));
   });
 });

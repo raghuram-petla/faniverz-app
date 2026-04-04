@@ -105,22 +105,3 @@ export function getEntityId(item: NewsFeedItem): string | null {
   if (item.source_id && item.source_table) return item.source_id;
   return null;
 }
-
-// @nullable returns null when entity ID cannot be determined — prevents broken navigation
-// @coupling route patterns must match Expo Router file-based routes in app/ directory
-export function getEntityRoute(item: NewsFeedItem): string | null {
-  const entityType = deriveEntityType(item);
-  const entityId = getEntityId(item);
-  if (!entityId) return null;
-  switch (entityType) {
-    case 'movie':
-      return `/movie/${entityId}`;
-    case 'actor':
-      return `/actor/${entityId}`;
-    case 'production_house':
-      return `/production-house/${entityId}`;
-    /* istanbul ignore next -- default unreachable; deriveEntityType only returns movie|actor|production_house */
-    default:
-      return null;
-  }
-}

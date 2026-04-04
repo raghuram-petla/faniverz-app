@@ -131,8 +131,6 @@ describe('CollapsibleProfileLayout', () => {
     const { UNSAFE_getByType: _UNSAFE_getByType } = render(
       <CollapsibleProfileLayout {...defaultProps} onScroll={onScroll} />,
     );
-    const _Animated =
-      require('react-native-reanimated').default ?? require('react-native').Animated;
     // Fire a scroll event on the ScrollView
     const { getByTestId: _getByTestId } = render(
       <CollapsibleProfileLayout {...defaultProps} onScroll={onScroll} />,

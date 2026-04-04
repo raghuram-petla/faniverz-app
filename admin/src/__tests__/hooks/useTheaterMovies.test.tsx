@@ -16,7 +16,6 @@ vi.mock('@/lib/supabase-browser', () => ({
 import {
   useTheaterMovies,
   useUpcomingMovies,
-  useUpcomingRereleases,
   useTheaterSearch,
   useRemoveFromTheaters,
   useAddToTheaters,
@@ -93,33 +92,6 @@ describe('useUpcomingMovies', () => {
     expect(mockFrom).toHaveBeenCalledWith('movies');
     expect(mockEq).toHaveBeenCalledWith('in_theaters', false);
     expect(result.current.data).toEqual(movies);
-  });
-});
-
-describe('useUpcomingRereleases', () => {
-  it('fetches theatrical runs with future dates', async () => {
-    const runs = [
-      {
-        id: 'r1',
-        movie_id: 'm1',
-        release_date: '2026-12-15',
-        label: 'Re-release',
-        movies: { id: 'm1', title: 'Classic Film', poster_url: null, in_theaters: false },
-      },
-    ];
-    const mockOrder = vi.fn().mockResolvedValue({ data: runs, error: null });
-    const mockLte = vi.fn().mockReturnValue({ order: mockOrder });
-    const mockGt = vi.fn().mockReturnValue({ lte: mockLte });
-
-    mockFrom.mockReturnValue({
-      select: vi.fn().mockReturnValue({ gt: mockGt }),
-    });
-
-    const { result } = renderHook(() => useUpcomingRereleases(), { wrapper: createWrapper() });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockFrom).toHaveBeenCalledWith('movie_theatrical_runs');
-    expect(result.current.data).toEqual(runs);
   });
 });
 

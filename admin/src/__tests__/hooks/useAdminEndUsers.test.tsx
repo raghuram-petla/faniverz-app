@@ -17,12 +17,7 @@ vi.mock('@/lib/supabase-browser', () => ({
   },
 }));
 
-import {
-  useAdminEndUsers,
-  useBanUser,
-  useUnbanUser,
-  useUpdateEndUserProfile,
-} from '@/hooks/useAdminEndUsers';
+import { useAdminEndUsers, useBanUser, useUpdateEndUserProfile } from '@/hooks/useAdminEndUsers';
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -588,61 +583,6 @@ describe('useBanUser', () => {
 
     await waitFor(() => {
       expect(window.alert).toHaveBeenCalledWith('Failed to ban user');
-    });
-  });
-});
-
-describe('useUnbanUser', () => {
-  const mockFetch = vi.fn();
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    window.alert = vi.fn();
-    global.fetch = mockFetch;
-  });
-
-  it('calls /api/manage-user with action=unban', async () => {
-    mockGetSession.mockResolvedValue({
-      data: { session: { access_token: 'tok-123' } },
-    });
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ success: true }),
-    });
-
-    const wrapper = createWrapper();
-    const { result } = renderHook(() => useUnbanUser(), { wrapper });
-
-    await act(async () => {
-      await result.current.mutateAsync('usr-1');
-    });
-
-    expect(mockFetch).toHaveBeenCalledWith('/api/manage-user', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: 'Bearer tok-123',
-      },
-      body: JSON.stringify({ action: 'unban', userId: 'usr-1' }),
-    });
-  });
-
-  it('shows alert on error', async () => {
-    mockGetSession.mockResolvedValue({ data: { session: null } });
-
-    const wrapper = createWrapper();
-    const { result } = renderHook(() => useUnbanUser(), { wrapper });
-
-    await act(async () => {
-      try {
-        await result.current.mutateAsync('usr-1');
-      } catch {
-        // expected
-      }
-    });
-
-    await waitFor(() => {
-      expect(window.alert).toHaveBeenCalled();
     });
   });
 });

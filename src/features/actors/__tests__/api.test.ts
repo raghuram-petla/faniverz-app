@@ -21,7 +21,6 @@ import {
   fetchFavoriteActors,
   addFavoriteActor,
   removeFavoriteActor,
-  searchActors,
   fetchActorById,
   fetchActorFilmography,
 } from '../api';
@@ -111,40 +110,6 @@ describe('actors api', () => {
       mockEq2.mockResolvedValue({ error: new Error('Not found') });
 
       await expect(removeFavoriteActor('u1', 'actor-1')).rejects.toThrow('Not found');
-    });
-  });
-
-  describe('searchActors', () => {
-    it('calls search_actors RPC with correct params', async () => {
-      (supabase.rpc as jest.Mock).mockResolvedValue({ data: [], error: null });
-
-      await searchActors('mahesh');
-      expect(supabase.rpc as jest.Mock).toHaveBeenCalledWith('search_actors', {
-        search_term: 'mahesh',
-        result_limit: 20,
-        result_offset: 0,
-      });
-    });
-
-    it('returns matching actors', async () => {
-      const actors = [{ id: 'a1', name: 'Mahesh Babu' }];
-      (supabase.rpc as jest.Mock).mockResolvedValue({ data: actors, error: null });
-
-      const result = await searchActors('mahesh');
-      expect(result).toEqual(actors);
-    });
-
-    it('returns empty array when data is null', async () => {
-      (supabase.rpc as jest.Mock).mockResolvedValue({ data: null, error: null });
-
-      const result = await searchActors('unknown');
-      expect(result).toEqual([]);
-    });
-
-    it('throws on error', async () => {
-      (supabase.rpc as jest.Mock).mockResolvedValue({ data: null, error: new Error('DB error') });
-
-      await expect(searchActors('test')).rejects.toThrow('DB error');
     });
   });
 

@@ -9,7 +9,7 @@ export interface ToggleRow {
   key: string;
 }
 
-export interface LinkRow {
+interface LinkRow {
   kind: 'link';
   icon: IconName;
   label: string;
@@ -17,7 +17,7 @@ export interface LinkRow {
   onPress?: () => void;
 }
 
-export interface RadioRow {
+interface RadioRow {
   kind: 'radio';
   icon: IconName;
   label: string;

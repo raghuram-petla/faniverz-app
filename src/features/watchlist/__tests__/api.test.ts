@@ -4,7 +4,6 @@ const mockEq = jest.fn();
 const mockOrder = jest.fn();
 const mockRange = jest.fn();
 const mockSingle = jest.fn();
-const mockMaybeSingle = jest.fn();
 const mockInsert = jest.fn();
 const mockDelete = jest.fn();
 const mockUpdate = jest.fn();
@@ -27,7 +26,6 @@ import {
   removeFromWatchlist,
   markAsWatched,
   moveBackToWatchlist,
-  isMovieWatchlisted,
   fetchWatchlistPaginated,
 } from '../api';
 
@@ -234,34 +232,6 @@ describe('watchlist api', () => {
       mockEq2.mockResolvedValue({ error: new Error('Failed') });
 
       await expect(moveBackToWatchlist('u1', 'm1')).rejects.toThrow('Failed');
-    });
-  });
-
-  describe('isMovieWatchlisted', () => {
-    it('checks if a movie is in the user watchlist', async () => {
-      const mockEq2 = jest.fn();
-      mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockReturnValue({ eq: mockEq2 });
-      mockEq2.mockReturnValue({ maybeSingle: mockMaybeSingle });
-      mockMaybeSingle.mockResolvedValue({
-        data: { id: '1', movie_id: 'm1' },
-      });
-
-      const result = await isMovieWatchlisted('u1', 'm1');
-      expect(supabase.from).toHaveBeenCalledWith('watchlists');
-      expect(mockSelect).toHaveBeenCalledWith('*');
-      expect(result).toEqual({ id: '1', movie_id: 'm1' });
-    });
-
-    it('returns null when not watchlisted', async () => {
-      const mockEq2 = jest.fn();
-      mockSelect.mockReturnValue({ eq: mockEq });
-      mockEq.mockReturnValue({ eq: mockEq2 });
-      mockEq2.mockReturnValue({ maybeSingle: mockMaybeSingle });
-      mockMaybeSingle.mockResolvedValue({ data: null });
-
-      const result = await isMovieWatchlisted('u1', 'm1');
-      expect(result).toBeNull();
     });
   });
 

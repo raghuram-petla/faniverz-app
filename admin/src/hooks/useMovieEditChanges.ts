@@ -4,8 +4,6 @@ import type { FieldConfig, FieldChange } from '@/hooks/useFormChanges';
 import type { MovieForm, UseMovieEditChangesParams } from '@/hooks/useMovieEditTypes';
 import { revertEntity } from './useMovieEditChangesRevert';
 
-export type { UseMovieEditChangesParams } from '@/hooks/useMovieEditTypes';
-
 // @contract Basic info fields tracked in the dock
 const BASIC_FIELD_CONFIG: FieldConfig[] = [
   { key: 'title', label: 'Title', type: 'text' },

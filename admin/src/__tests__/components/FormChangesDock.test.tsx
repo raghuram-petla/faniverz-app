@@ -170,7 +170,6 @@ describe('FormChangesDock', () => {
       fireEvent.scroll(scrollDiv);
 
       // Down arrow should appear
-      const _downBtn = screen.queryByRole('button', { name: '' });
       // Verify render without error
       expect(screen.getByText('20 unsaved changes')).toBeInTheDocument();
     }

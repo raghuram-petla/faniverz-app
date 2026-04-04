@@ -1,12 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { STALE_5M, STALE_24H } from '@/constants/queryConfig';
-import {
-  fetchPlatforms,
-  fetchOttReleases,
-  fetchMoviePlatformMap,
-  fetchMovieAvailability,
-} from './api';
+import { fetchPlatforms, fetchMoviePlatformMap, fetchMovieAvailability } from './api';
 
 // @coupling: staleTime 24h — platform list changes very rarely (new OTT service launch). Admin updates to
 // ott_platforms table won't reflect on mobile for up to 24 hours unless user force-refreshes.
@@ -16,17 +11,6 @@ export function usePlatforms() {
     queryKey: ['platforms'],
     queryFn: fetchPlatforms,
     staleTime: STALE_24H,
-  });
-}
-
-// @coupling: fetchOttReleases joins ott_releases with ott_platforms to get platform name/logo. If the join
-// column (platform_id) references a deleted platform, the row is silently excluded by the inner join.
-export function useOttReleases(movieId: string) {
-  return useQuery({
-    queryKey: ['ott', movieId],
-    queryFn: () => fetchOttReleases(movieId),
-    enabled: !!movieId,
-    staleTime: STALE_5M,
   });
 }
 

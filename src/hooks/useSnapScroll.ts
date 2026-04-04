@@ -12,7 +12,7 @@ export interface SnapScrollProps {
   snapThreshold: number;
 }
 
-export interface SnapScrollResult {
+interface SnapScrollResult {
   scrollRef: React.RefObject<ScrollView | null>;
   /** Apply as contentContainerStyle={{ minHeight }} to guarantee enough scroll room */
   contentMinHeight: number;

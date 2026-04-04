@@ -3,7 +3,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 // Re-export types so consumers can import from this module
-export type { FillableField } from '@/lib/syncUtils';
 export type {
   ExistingMovieData,
   DiscoverResult,

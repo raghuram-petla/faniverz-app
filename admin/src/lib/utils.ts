@@ -1,9 +1,3 @@
-// @contract: lightweight class-name joiner — NOT the npm 'clsx' package.
-// Intentionally avoids object syntax ({active: bool}) to keep bundle small.
-export function cn(...classes: (string | undefined | null | false)[]) {
-  return classes.filter(Boolean).join(' ');
-}
-
 // @edge TMDB can return "", " ", or malformed dates — only accept valid YYYY-MM-DD strings.
 export function safeDateOrNull(raw: string | null | undefined): string | null {
   if (!raw) return null;

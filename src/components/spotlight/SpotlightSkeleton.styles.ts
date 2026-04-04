@@ -14,10 +14,6 @@ export const createStyles = (_t: SemanticTheme) =>
     container: {
       gap: 0,
     },
-    heroSkeleton: {
-      width: SCREEN_WIDTH,
-      height: HERO_HEIGHT,
-    },
     sections: {
       paddingTop: 16,
       gap: SECTION_GAP,

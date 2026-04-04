@@ -13,7 +13,7 @@ import type { PendingCastAdd } from '@/components/movie-edit/CastSection';
 import type { PendingRun } from '@/components/movie-edit/TheatricalRunsSection';
 
 // @contract All setter functions must match the pending-state shape from useMovieEditPendingState
-export interface CommonFormDeps {
+interface CommonFormDeps {
   setForm: React.Dispatch<React.SetStateAction<MovieForm>>;
   setPendingVideoAdds: React.Dispatch<React.SetStateAction<PendingVideoAdd[]>>;
   setPendingVideoRemoveIds: React.Dispatch<React.SetStateAction<Set<string>>>;

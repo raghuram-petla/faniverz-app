@@ -15,7 +15,7 @@ import type { SharedValue } from 'react-native-reanimated';
 
 const INDICATOR_BOTTOM_GAP = 20;
 const INDICATOR_PILL_HEIGHT = 42;
-export const INDICATOR_HEIGHT = INDICATOR_PILL_HEIGHT + INDICATOR_BOTTOM_GAP;
+const INDICATOR_HEIGHT = INDICATOR_PILL_HEIGHT + INDICATOR_BOTTOM_GAP;
 
 /**
  * @contract Renders pull-to-refresh visual feedback above scroll content on both platforms.

@@ -8,7 +8,7 @@ import { useFormChanges, type FieldConfig, type FieldChange } from './useFormCha
  * save/discard/delete handlers, and unsaved changes warning.
  * @assumes dataHook returns { data, isLoading } matching TanStack Query shape.
  */
-export interface EditPageConfig<TForm extends object> {
+interface EditPageConfig<TForm extends object> {
   /** The entity ID from route params */
   id: string;
   /** Field configuration for change tracking */
@@ -25,7 +25,7 @@ export interface EditPageConfig<TForm extends object> {
   deleteMessage?: string;
 }
 
-export interface EditPageHooks {
+interface EditPageHooks {
   /** The data fetching hook result */
   dataResult: { data: unknown; isLoading: boolean; isError?: boolean; error?: unknown };
   /** The update mutation result */
@@ -36,7 +36,7 @@ export interface EditPageHooks {
   deleteMutation?: { mutateAsync: (id: any) => Promise<any> };
 }
 
-export interface EditPageStateReturn<TForm extends object> {
+interface EditPageStateReturn<TForm extends object> {
   form: TForm;
   setForm: React.Dispatch<React.SetStateAction<TForm>>;
   updateField: (key: keyof TForm, value: TForm[keyof TForm]) => void;

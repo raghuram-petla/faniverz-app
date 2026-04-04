@@ -2,7 +2,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
 import { crudFetch } from '@/lib/admin-crud-client';
-import type { Movie, MovieTheatricalRun } from '@/lib/types';
+import type { Movie } from '@/lib/types';
 
 const INVALIDATE_KEYS = [
   ['admin', 'theater-movies'],
@@ -57,28 +57,6 @@ export function useUpcomingMovies() {
         .order('release_date', { ascending: true });
       if (error) throw error;
       return data as Movie[];
-    },
-  });
-}
-
-// @contract Fetches theatrical runs with future dates (up to 1 month out), joined with movie data
-// @coupling !inner JOIN — only returns runs where the movie still exists (cascading FK safety)
-export function useUpcomingRereleases() {
-  const today = new Date().toISOString().split('T')[0];
-  const maxDate = oneMonthFromToday();
-  return useQuery({
-    queryKey: ['admin', 'upcoming-rereleases', today],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from('movie_theatrical_runs')
-        .select('*, movies!inner(id, title, poster_url, in_theaters)')
-        .gt('release_date', today)
-        .lte('release_date', maxDate)
-        .order('release_date', { ascending: true });
-      if (error) throw error;
-      return data as (MovieTheatricalRun & {
-        movies: { id: string; title: string; poster_url: string | null; in_theaters: boolean };
-      })[];
     },
   });
 }

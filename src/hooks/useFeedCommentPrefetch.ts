@@ -15,12 +15,12 @@ import type { SmartPaginationConfigWithPrefetch } from '@/constants/paginationCo
 import { COMMENTS_PAGINATION } from '@/constants/paginationConfig';
 import type { NewsFeedItem } from '@shared/types';
 
-export interface UseFeedCommentPrefetchOptions {
+interface UseFeedCommentPrefetchOptions {
   config: SmartPaginationConfigWithPrefetch;
   queryClient: QueryClient;
 }
 
-export interface UseFeedCommentPrefetchResult {
+interface UseFeedCommentPrefetchResult {
   /** Stable viewability config for FlashList */
   viewabilityConfig: ViewabilityConfig;
   /** @coupling Composed callback — handles both comment prefetch and view tracking */

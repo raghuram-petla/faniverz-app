@@ -423,7 +423,6 @@ describe('ImageViewerOverlay', () => {
 
   it('close button with gestureScale > 1.05 triggers zoom-out animation before fly-back', () => {
     // Set the gestureScale to > 1.05 via the shared value mock
-    const _useSharedValue = require('react-native-reanimated').useSharedValue;
     // The mock returns { value: v } - we need scale to be > 1.05
     // We can test by rendering with default (scale=1) which takes the else branch
     const onClose = jest.fn();

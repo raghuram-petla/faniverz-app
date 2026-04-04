@@ -59,10 +59,6 @@ vi.mock('@/lib/tmdb', () => ({
   getPersonDetails: (...args: unknown[]) => mockGetPersonDetails(...args),
   getMovieImages: (...args: unknown[]) => mockGetMovieImages(...args),
   getWatchProviders: (...args: unknown[]) => mockGetWatchProviders(...args),
-  extractTrailerUrl: (videos: Array<{ key: string; site: string; type: string }>) => {
-    const t = videos.find((v) => v.type === 'Trailer' && v.site === 'YouTube');
-    return t ? `https://www.youtube.com/watch?v=${t.key}` : null;
-  },
   TMDB_IMAGE: {
     poster: (path: string) => `https://image.tmdb.org/t/p/w500${path}`,
     backdrop: (path: string) => `https://image.tmdb.org/t/p/w1280${path}`,
@@ -71,10 +67,6 @@ vi.mock('@/lib/tmdb', () => ({
 }));
 
 vi.mock('@/lib/tmdbTypes', () => ({
-  extractTrailerUrl: (videos: Array<{ key: string; site: string; type: string }>) => {
-    const t = videos.find((v) => v.type === 'Trailer' && v.site === 'YouTube');
-    return t ? `https://www.youtube.com/watch?v=${t.key}` : null;
-  },
   extractIndiaCertification: () => null,
 }));
 

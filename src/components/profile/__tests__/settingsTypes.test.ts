@@ -1,11 +1,7 @@
-import type {
-  Section,
-  SettingsRow,
-  ToggleRow,
-  LinkRow,
-  RadioRow,
-  IconName,
-} from '../settingsTypes';
+import type { Section, SettingsRow, ToggleRow, IconName } from '../settingsTypes';
+
+type LinkRow = Extract<SettingsRow, { kind: 'link' }>;
+type RadioRow = Extract<SettingsRow, { kind: 'radio' }>;
 
 describe('settingsTypes', () => {
   it('ToggleRow type is constructable', () => {

@@ -2,7 +2,7 @@ import { supabase } from '@/lib/supabase';
 import type { FeedFilterOption } from '@/types';
 import type { NewsFeedItem, FeedVote } from '@shared/types';
 
-// @coupling: the movie join uses the explicit FK name 'news_feed_movie_id_fkey' — if this FK is renamed in a migration, Supabase returns data without the movie relation (silently null) rather than erroring. The same FK name is used in fetchFeaturedFeedItems and fetchFeedItemById below; all three must stay in sync.
+// @coupling: the movie join uses the explicit FK name 'news_feed_movie_id_fkey' — if this FK is renamed in a migration, Supabase returns data without the movie relation (silently null) rather than erroring. The same FK name is used in fetchFeedItemById below; both must stay in sync.
 // @nullable: movie_id on news_feed is nullable. When movie_id IS NULL, the join returns movie: null. The NewsFeedItem type declares movie as optional, so TypeScript won't catch UI code that assumes movie is always present.
 // @edge: filter 'trailers' matches feed_type='video' AND content_type IN ('trailer','teaser','glimpse','promo') — but the personalized feed RPC (get_personalized_feed) has its OWN copy of this filter logic in SQL. Adding a new content_type to one but not the other causes different results between the two feeds.
 // @contract: `offset` is the absolute row offset and `limit` is the number of rows to fetch.
@@ -48,20 +48,6 @@ export async function fetchNewsFeed(
   query = query.range(offset, to);
 
   const { data, error } = await query;
-  if (error) throw error;
-  return (data as unknown as NewsFeedItem[]) ?? [];
-}
-
-export async function fetchFeaturedFeedItems(): Promise<NewsFeedItem[]> {
-  const { data, error } = await supabase
-    .from('news_feed')
-    .select(
-      '*, movie:movies!news_feed_movie_id_fkey(id, title, poster_url, poster_image_type, release_date)',
-    )
-    .eq('is_featured', true)
-    .order('display_order')
-    .limit(5);
-
   if (error) throw error;
   return (data as unknown as NewsFeedItem[]) ?? [];
 }

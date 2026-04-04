@@ -18,25 +18,6 @@ export async function fetchNotifications(userId: string): Promise<Notification[]
   );
 }
 
-// @contract: Paginated version — `offset` is absolute row offset, `limit` is number of rows.
-export async function fetchNotificationsPaginated(
-  userId: string,
-  offset: number,
-  limit: number = 20,
-): Promise<Notification[]> {
-  const to = offset + limit - 1;
-  return unwrapList(
-    await supabase
-      .from('notifications')
-      .select(
-        '*, movie:movies(id, title, poster_url, poster_image_type), platform:platforms(id, name, logo, color), actor_profile:profiles!notifications_actor_user_id_fkey(display_name, avatar_url)',
-      )
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .range(offset, to),
-  );
-}
-
 // @assumes: no RLS policy restricts which user can mark which notification as read. If RLS requires user_id match, and the caller passes a notification owned by a different user, this silently updates 0 rows (no error). The UI still shows it as read due to optimistic update, but the next fetch reverts it.
 export async function markAsRead(notificationId: string): Promise<void> {
   const { error } = await supabase

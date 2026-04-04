@@ -1,23 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { cn, formatDate, formatDateTime, truncate } from '@/lib/utils';
-
-describe('cn', () => {
-  it('joins multiple class names', () => {
-    expect(cn('foo', 'bar', 'baz')).toBe('foo bar baz');
-  });
-
-  it('filters out falsy values', () => {
-    expect(cn('foo', undefined, 'bar', null, false, 'baz')).toBe('foo bar baz');
-  });
-
-  it('returns empty string when all values are falsy', () => {
-    expect(cn(undefined, null, false)).toBe('');
-  });
-
-  it('returns single class name unchanged', () => {
-    expect(cn('only')).toBe('only');
-  });
-});
+import { formatDate, formatDateTime, truncate } from '@/lib/utils';
 
 describe('formatDate', () => {
   it('formats a date string to en-US short month format', () => {

@@ -1,6 +1,5 @@
 import { describe, it, expect } from 'vitest';
 import {
-  ADMIN_STALE_NONE,
   ADMIN_STALE_30S,
   ADMIN_STALE_1M,
   ADMIN_STALE_5M,
@@ -9,10 +8,6 @@ import {
 } from '@/lib/query-config';
 
 describe('Admin query config constants', () => {
-  it('ADMIN_STALE_NONE should be 0', () => {
-    expect(ADMIN_STALE_NONE).toBe(0);
-  });
-
   it('ADMIN_STALE_30S should be 30 seconds in ms', () => {
     expect(ADMIN_STALE_30S).toBe(30_000);
   });
@@ -35,7 +30,6 @@ describe('Admin query config constants', () => {
 
   it('constants should be in ascending order', () => {
     const ordered = [
-      ADMIN_STALE_NONE,
       ADMIN_STALE_30S,
       ADMIN_STALE_1M,
       ADMIN_STALE_5M,

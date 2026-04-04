@@ -67,35 +67,6 @@ export function useAddMovieAvailability() {
   });
 }
 
-// @contract Only available_from and streaming_url are updatable; platform/country/type are immutable natural keys
-export function useUpdateMovieAvailability() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: async ({
-      id,
-      movie_id: _movie_id,
-      ...updates
-    }: {
-      id: string;
-      movie_id: string;
-      available_from?: string | null;
-      streaming_url?: string | null;
-    }) => {
-      return crudFetch<MoviePlatformAvailability>('PATCH', {
-        table: 'movie_platform_availability',
-        id,
-        data: updates,
-      });
-    },
-    onSuccess: (_, vars) => {
-      qc.invalidateQueries({ queryKey: ['admin', 'movie_availability', vars.movie_id] });
-    },
-    onError: (error: Error) => {
-      window.alert(error.message || 'Failed to update availability');
-    },
-  });
-}
-
 // @sideeffect Hard-deletes availability row by surrogate id via /api/admin-crud
 export function useRemoveMovieAvailability() {
   const qc = useQueryClient();

@@ -25,8 +25,3 @@ export function getFilmColor(theme: SemanticTheme): string {
   // Light theme: dark film strip — holes punch through as white, giving authentic reel look
   return theme.background === '#000000' ? '#2C2C2E' : '#9E9EA3';
 }
-
-/** @contract Returns usable content width between the two rails */
-export function getContentWidth(screenWidth: number): number {
-  return screenWidth - 2 * RAIL_WIDTH;
-}

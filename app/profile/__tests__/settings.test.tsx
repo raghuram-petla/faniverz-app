@@ -262,10 +262,6 @@ describe('SettingsScreen', () => {
     const touchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
     // The push toggle is the first toggle in the Notifications section
     // Appearance section has 3 theme radio chips + 1 animations toggle = 4 touchables before Notifications
-    const _pushToggle = touchables.find((_t: unknown, idx: number) => {
-      // Press each to find which calls setItem for push
-      return idx > 3;
-    });
     // Just verify setItem is available
     expect(AsyncStorage.setItem).toBeDefined();
   });

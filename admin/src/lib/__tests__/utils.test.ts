@@ -1,4 +1,4 @@
-import { safeDateOrNull, cn, formatDate, formatDateTime, truncate } from '../utils';
+import { safeDateOrNull, formatDate, formatDateTime, truncate } from '../utils';
 
 describe('safeDateOrNull', () => {
   it('returns valid date string as-is', () => {
@@ -35,16 +35,6 @@ describe('safeDateOrNull', () => {
 
   it('accepts ISO datetime strings', () => {
     expect(safeDateOrNull('2026-05-15T10:30:00Z')).toBe('2026-05-15T10:30:00Z');
-  });
-});
-
-describe('cn', () => {
-  it('joins class names', () => {
-    expect(cn('a', 'b')).toBe('a b');
-  });
-
-  it('filters falsy values', () => {
-    expect(cn('a', false, null, undefined, 'b')).toBe('a b');
   });
 });
 

@@ -75,7 +75,6 @@ jest.mock('@/lib/supabase', () => {
 
 import {
   fetchNewsFeed,
-  fetchFeaturedFeedItems,
   fetchPersonalizedFeed,
   fetchFeedItemById,
   voteFeedItem,
@@ -172,35 +171,6 @@ describe('fetchNewsFeed', () => {
   it('returns empty array when data is null', async () => {
     mocks.mockRange.mockResolvedValue({ data: null, error: null });
     const result = await fetchNewsFeed();
-    expect(result).toEqual([]);
-  });
-});
-
-describe('fetchFeaturedFeedItems', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-    mocks.mockLimit.mockResolvedValue({ data: [mockItem], error: null });
-    // Re-wire the chain for featured query
-    mocks.mockOrder.mockReturnValue({ limit: mocks.mockLimit });
-    mocks.mockEq.mockReturnValue({ order: mocks.mockOrder });
-    mocks.mockSelect.mockReturnValue({ eq: mocks.mockEq });
-  });
-
-  it('fetches featured items', async () => {
-    const result = await fetchFeaturedFeedItems();
-    expect(mocks.mockFrom).toHaveBeenCalledWith('news_feed');
-    expect(mocks.mockEq).toHaveBeenCalledWith('is_featured', true);
-    expect(result).toEqual([mockItem]);
-  });
-
-  it('throws on supabase error', async () => {
-    mocks.mockLimit.mockResolvedValue({ data: null, error: new Error('fail') });
-    await expect(fetchFeaturedFeedItems()).rejects.toThrow('fail');
-  });
-
-  it('returns empty array when data is null', async () => {
-    mocks.mockLimit.mockResolvedValue({ data: null, error: null });
-    const result = await fetchFeaturedFeedItems();
     expect(result).toEqual([]);
   });
 });

@@ -16,14 +16,14 @@ import {
 // @coupling: every API route that modifies data MUST use one of the wrappers
 // (withSyncAdmin or withMutationAdmin) to get audit attribution. Routes that
 // use getSupabaseAdmin() directly skip audit logging.
-export interface AdminRouteContext {
+interface AdminRouteContext {
   req: NextRequest;
   supabase: SupabaseClient;
   auth: { user: User; role: string };
 }
 
 // @contract: extended context for sync routes that also need the TMDB API key.
-export interface SyncRouteContext extends AdminRouteContext {
+interface SyncRouteContext extends AdminRouteContext {
   apiKey: string;
 }
 

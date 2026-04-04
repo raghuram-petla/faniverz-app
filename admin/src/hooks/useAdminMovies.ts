@@ -11,8 +11,6 @@ import {
   intersectIdSets,
 } from '@/hooks/useAdminMoviesFilters';
 
-export type { AdvancedFilters } from '@/hooks/useAdminMoviesFilters';
-
 const PAGE_SIZE = 50;
 
 const crud = createCrudHooks<Movie>({

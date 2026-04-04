@@ -118,7 +118,6 @@ export const createStyles = (t: SemanticTheme) =>
       borderRadius: 8,
       backgroundColor: colors.red600,
     },
-    tabActive: { backgroundColor: colors.red600 },
     tabText: { fontSize: 14, fontWeight: '600', color: t.textSecondary },
     tabTextActive: { color: colors.white },
 
@@ -158,16 +157,6 @@ export const createStyles = (t: SemanticTheme) =>
     },
     infoLabel: { fontSize: 12, color: t.textSecondary },
     infoValue: { fontSize: 14, fontWeight: '600', color: t.textPrimary },
-    trailerButton: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'center',
-      gap: 8,
-      backgroundColor: colors.red600_20,
-      paddingVertical: 14,
-      borderRadius: 12,
-    },
-    trailerButtonText: { color: colors.red400, fontSize: 16, fontWeight: '600' },
 
     // Production Houses
     productionHousesRow: { gap: 8 },

@@ -3,8 +3,6 @@ import { colors } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const VIDEO_WIDTH = SCREEN_WIDTH - 32;
-const VIDEO_HEIGHT = Math.round((VIDEO_WIDTH * 9) / 16);
 const CARD_WIDTH = (SCREEN_WIDTH - 16 * 2 - 16) / 2;
 
 export const createStyles = (t: SemanticTheme) =>
@@ -57,10 +55,6 @@ export const createStyles = (t: SemanticTheme) =>
       paddingTop: 40,
       alignItems: 'center',
     },
-    loadingText: {
-      color: t.textSecondary,
-      fontSize: 15,
-    },
 
     // ── Featured video ────────────────────────────────────────────────────────────
     featuredContainer: {
@@ -84,28 +78,8 @@ export const createStyles = (t: SemanticTheme) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    thumbnailImage: {
-      ...StyleSheet.absoluteFillObject,
-    },
-    thumbnailPlayBtn: {
-      width: 56,
-      height: 56,
-      borderRadius: 28,
-      backgroundColor: colors.red600,
-      alignItems: 'center',
-      justifyContent: 'center',
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 2 },
-      shadowOpacity: 0.5,
-      shadowRadius: 4,
-      elevation: 6,
-    },
     playIcon: {
       marginLeft: 3,
-    },
-    videoPlayer: {
-      width: VIDEO_WIDTH,
-      height: VIDEO_HEIGHT,
     },
     featuredMeta: {
       padding: 14,

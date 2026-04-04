@@ -7,7 +7,7 @@ import type { SharedValue } from 'react-native-reanimated';
 const POSTER_ASPECT = 3 / 2;
 const EASING = Easing.bezier(0.25, 0.1, 0.25, 1);
 
-export interface ImageTargetResize {
+interface ImageTargetResize {
   dynTgtW: SharedValue<number>;
   dynTgtH: SharedValue<number>;
   handleFullImageLoad: (event: ImageLoadEventData) => void;

@@ -189,7 +189,7 @@ export interface TmdbMovieDetailExtended extends TmdbMovieDetail {
 
 // ── Enriched crew member (after mapping through CREW_JOB_MAP) ───────────────
 
-export interface EnrichedCrewMember extends TmdbCrewMember {
+interface EnrichedCrewMember extends TmdbCrewMember {
   roleName: string;
   roleOrder: number;
 }
@@ -201,7 +201,7 @@ export interface EnrichedCrewMember extends TmdbCrewMember {
 // returns "Director", "Producer", etc. in English.
 // @edge: roles sharing the same roleOrder (e.g. Producer/Executive Producer) are deduped
 // in extractKeyCrewMembers by `${id}-${roleOrder}`.
-export const CREW_JOB_MAP: Record<string, { roleName: string; roleOrder: number }> = {
+const CREW_JOB_MAP: Record<string, { roleName: string; roleOrder: number }> = {
   Director: { roleName: 'Director', roleOrder: 1 },
   Producer: { roleName: 'Producer', roleOrder: 2 },
   'Executive Producer': { roleName: 'Producer', roleOrder: 2 },
@@ -235,13 +235,6 @@ export function extractKeyCrewMembers(crew: TmdbCrewMember[]): EnrichedCrewMembe
     result.push({ ...member, ...mapping });
   }
   return result;
-}
-
-// @edge: returns the FIRST video with type='Trailer' and site='YouTube'. If TMDB
-// has multiple trailers, only the first is stored. Teasers are ignored.
-export function extractTrailerUrl(videos: TmdbVideo[]): string | null {
-  const trailer = videos.find((v) => v.type === 'Trailer' && v.site === 'YouTube');
-  return trailer ? `https://www.youtube.com/watch?v=${trailer.key}` : null;
 }
 
 /** @nullable: returns nulls if no Telugu translation exists. */

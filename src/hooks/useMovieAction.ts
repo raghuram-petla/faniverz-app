@@ -8,7 +8,7 @@ import { useAuthGate } from '@/hooks/useAuthGate';
 
 export type MovieActionType = 'follow' | 'watchlist';
 
-export interface MovieActionResult {
+interface MovieActionResult {
   actionType: MovieActionType;
   isActive: boolean;
   onPress: () => void;

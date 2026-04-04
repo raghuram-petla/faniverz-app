@@ -296,7 +296,6 @@ describe('CastPage', () => {
 
   it('shows delete button when canDeleteTopLevel returns true', () => {
     render(<CastPage />);
-    const _deleteButtons = screen.getAllByRole('button').filter((btn) => btn.querySelector('svg'));
     // Should have delete buttons
     expect(screen.getAllByRole('button').length).toBeGreaterThan(0);
   });
@@ -370,12 +369,6 @@ describe('CastPage', () => {
     // actor-1 (created_by: 'user-1') — current user = 'user-1' → shows edit
     // actor-2 (created_by: 'user-2') — current user != 'user-2' → hides edit
     // There should only be 1 pencil edit link (for actor-1)
-    const _editLinks = screen
-      .getAllByRole('link')
-      .filter(
-        (link) =>
-          !link.textContent?.includes('Mahesh') && link.getAttribute('href')?.startsWith('/cast/'),
-      );
     // With isPHAdmin, actor-2's pencil link is hidden
     // The nav link (inside the card) still exists for both actors
     // But the standalone pencil link only shows for actors created by current user

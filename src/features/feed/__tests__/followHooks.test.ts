@@ -22,24 +22,14 @@ import { createWrapper } from '@/__tests__/helpers/createWrapper';
 import {
   useEntityFollows,
   useEnrichedFollows,
-  useEnrichedFollowsPaginated,
   useFollowEntity,
   useUnfollowEntity,
 } from '../followHooks';
-import {
-  fetchUserFollows,
-  fetchEnrichedFollows,
-  fetchEnrichedFollowsPaginated,
-  followEntity,
-  unfollowEntity,
-} from '../followApi';
+import { fetchUserFollows, fetchEnrichedFollows, followEntity, unfollowEntity } from '../followApi';
 
 const mockFetchUserFollows = fetchUserFollows as jest.MockedFunction<typeof fetchUserFollows>;
 const mockFetchEnrichedFollows = fetchEnrichedFollows as jest.MockedFunction<
   typeof fetchEnrichedFollows
->;
-const mockFetchEnrichedFollowsPaginated = fetchEnrichedFollowsPaginated as jest.MockedFunction<
-  typeof fetchEnrichedFollowsPaginated
 >;
 const mockFollowEntity = followEntity as jest.MockedFunction<typeof followEntity>;
 const mockUnfollowEntity = unfollowEntity as jest.MockedFunction<typeof unfollowEntity>;
@@ -188,45 +178,6 @@ describe('useEnrichedFollows', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(mockFetchEnrichedFollows).toHaveBeenCalledWith('user-123');
     expect(result.current.data).toEqual(enriched);
-  });
-});
-
-describe('useEnrichedFollowsPaginated', () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it('does not fetch when user is null', () => {
-    const { useAuth } = require('@/features/auth/providers/AuthProvider');
-    (useAuth as jest.Mock).mockReturnValueOnce({ user: null });
-
-    const { result } = renderHook(() => useEnrichedFollowsPaginated(), {
-      wrapper: createWrapper(),
-    });
-    expect(result.current.fetchStatus).toBe('idle');
-  });
-
-  it('fetches paginated enriched follows for authenticated user', async () => {
-    const enriched = [
-      {
-        id: 'ef-1',
-        entity_type: 'movie' as const,
-        entity_id: 'm1',
-        name: 'Movie',
-        image_url: null,
-        created_at: '',
-      },
-    ];
-    mockFetchEnrichedFollowsPaginated.mockResolvedValue(enriched);
-
-    const { result } = renderHook(() => useEnrichedFollowsPaginated(), {
-      wrapper: createWrapper(),
-    });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(mockFetchEnrichedFollowsPaginated).toHaveBeenCalledWith(
-      'user-123',
-      0,
-      expect.any(Number),
-    );
   });
 });
 

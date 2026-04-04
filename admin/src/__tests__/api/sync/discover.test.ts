@@ -197,13 +197,6 @@ describe('POST /api/sync/discover', () => {
 
   it('discovers using all DB languages when language param is omitted', async () => {
     // Mock the languages table query
-    const _mockLangSelect = vi.fn().mockResolvedValue({
-      data: [{ code: 'te' }, { code: 'hi' }],
-    });
-    // Override supabase mock for this specific test
-    const origMock = vi.mocked(await import('@/lib/supabase-admin'));
-    const adminFn = origMock.getSupabaseAdmin;
-    const _origImpl = adminFn as unknown as { getMockImplementation: () => unknown };
     // We need to call with language undefined to hit the "All" path
     mockDiscoverMoviesByLanguage.mockResolvedValue([{ id: 100, title: 'Pushpa' }]);
     mockSelectIn.mockResolvedValue({ data: [] });

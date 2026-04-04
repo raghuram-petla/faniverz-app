@@ -175,30 +175,3 @@ describe('useRemoveMovieAvailability', () => {
     });
   });
 });
-
-describe('useUpdateMovieAvailability', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  it('calls crudFetch with PATCH and correct data', async () => {
-    mockCrudFetch.mockResolvedValue({ id: 'avail-1', movie_id: 'm1' });
-
-    const { useUpdateMovieAvailability } = await import('@/hooks/useAdminMovieAvailability');
-    const { result } = renderHook(() => useUpdateMovieAvailability(), { wrapper });
-
-    result.current.mutate({
-      id: 'avail-1',
-      movie_id: 'm1',
-      available_from: '2024-06-01',
-    });
-
-    await waitFor(() => {
-      expect(mockCrudFetch).toHaveBeenCalledWith('PATCH', {
-        table: 'movie_platform_availability',
-        id: 'avail-1',
-        data: { available_from: '2024-06-01' },
-      });
-    });
-  });
-});

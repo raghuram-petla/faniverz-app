@@ -2,14 +2,13 @@ import { useMemo } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   fetchNewsFeed,
-  fetchFeaturedFeedItems,
   fetchPersonalizedFeed,
   fetchFeedItemById,
   voteFeedItem,
   removeFeedVote,
   fetchUserVotes,
 } from './api';
-import { STALE_2M, STALE_5M, STALE_10M } from '@/constants/queryConfig';
+import { STALE_2M, STALE_5M } from '@/constants/queryConfig';
 import { NEWS_FEED_PAGINATION, FEED_PAGINATION } from '@/constants/paginationConfig';
 import { useSmartInfiniteQuery } from '@/hooks/useSmartInfiniteQuery';
 import { Alert } from 'react-native';
@@ -31,14 +30,6 @@ export function useNewsFeed(filter?: FeedFilterOption) {
     queryFn: (offset, limit) => fetchNewsFeed(filter, offset, limit),
     config: NEWS_FEED_PAGINATION,
     staleTime: STALE_5M,
-  });
-}
-
-export function useFeaturedFeed() {
-  return useQuery({
-    queryKey: ['news-feed', 'featured'],
-    queryFn: fetchFeaturedFeedItems,
-    staleTime: STALE_10M,
   });
 }
 

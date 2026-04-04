@@ -20,12 +20,7 @@ vi.mock('@/lib/supabase-browser', () => ({
 
 global.fetch = mockFetch;
 
-import {
-  useAdminEndUsers,
-  useBanUser,
-  useUnbanUser,
-  useUpdateEndUserProfile,
-} from '@/hooks/useAdminEndUsers';
+import { useAdminEndUsers, useBanUser, useUpdateEndUserProfile } from '@/hooks/useAdminEndUsers';
 
 function makeWrapper() {
   const qc = new QueryClient({
@@ -111,9 +106,6 @@ describe('useAdminEndUsers', () => {
   it('calls search_profiles RPC when search is non-empty', async () => {
     // Phase 1a: search_profiles RPC
     mockRpc.mockResolvedValue({ data: [{ id: 'u-1' }], error: null });
-    // Phase 1b: email ILIKE — from('profiles').select('id').ilike().limit()
-    const emailIlikeMock = vi.fn().mockResolvedValue({ data: [], error: null });
-    const _emailLimitMock = vi.fn().mockReturnValue(emailIlikeMock);
     // Phase 2: fetch full profiles — from('profiles').select(...).in().order().range()
     const rangeMock = vi.fn().mockResolvedValue({ data: [], error: null, count: 0 });
     const orderMock = vi.fn().mockReturnValue({ range: rangeMock });
@@ -276,52 +268,6 @@ describe('useBanUser', () => {
     });
 
     await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Failed to ban user'));
-  });
-});
-
-describe('useUnbanUser', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    window.alert = vi.fn();
-    mockGetSession.mockResolvedValue({
-      data: { session: { access_token: 'mock-token' } },
-    });
-  });
-
-  it('calls POST /api/manage-user with action=unban', async () => {
-    mockFetch.mockResolvedValue({ ok: true, json: async () => ({ success: true }) });
-    mockFrom.mockReturnValue(makeProfilesChain({ data: [], error: null, count: 0 }));
-
-    const { Wrapper } = makeWrapper();
-    const { result } = renderHook(() => useUnbanUser(), { wrapper: Wrapper });
-
-    await act(async () => {
-      await result.current.mutateAsync('user-1');
-    });
-
-    const postCall = mockFetch.mock.calls.find((c) => c[0] === '/api/manage-user');
-    const body = JSON.parse(postCall![1].body);
-    expect(body.action).toBe('unban');
-  });
-
-  it('calls alert with fallback message when error has no message', async () => {
-    mockFetch.mockResolvedValue({
-      ok: false,
-      json: async () => ({}),
-    });
-
-    const { Wrapper } = makeWrapper();
-    const { result } = renderHook(() => useUnbanUser(), { wrapper: Wrapper });
-
-    await act(async () => {
-      try {
-        await result.current.mutateAsync('user-1');
-      } catch {
-        // expected
-      }
-    });
-
-    await waitFor(() => expect(window.alert).toHaveBeenCalledWith('Failed to unban user'));
   });
 });
 

@@ -11,8 +11,9 @@ vi.mock('@/lib/utils', () => ({
   formatDate: (d: string) => d,
 }));
 
-import { PendingChangesDock } from '../PendingChangesSection';
-import type { PendingChangeItem } from '../PendingChangesSection';
+import { PendingChangesDock, type PendingChangesDockProps } from '../PendingChangesSection';
+
+type PendingChangeItem = PendingChangesDockProps['changes'][number];
 
 const makeChange = (overrides: Partial<PendingChangeItem> = {}): PendingChangeItem => ({
   movieId: 'movie-1',

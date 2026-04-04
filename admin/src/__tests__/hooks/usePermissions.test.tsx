@@ -7,7 +7,9 @@ vi.mock('@/hooks/useImpersonation', () => ({
 }));
 
 import { usePermissions } from '@/hooks/usePermissions';
-import type { AdminPage, AdminEntity } from '@/hooks/usePermissions';
+import type { AdminPage } from '@/hooks/usePermissions';
+
+type AdminEntity = Parameters<ReturnType<typeof usePermissions>['canUpdate']>[0];
 import { useEffectiveUser } from '@/hooks/useImpersonation';
 
 const ALL_PAGES: AdminPage[] = [

@@ -10,7 +10,6 @@ import {
   getEntityAvatarUrl,
   getEntityName,
   getEntityId,
-  getEntityRoute,
 } from '../feedHelpers';
 import { formatRelativeTime } from '@/utils/formatDate';
 import type { NewsFeedItem } from '@shared/types';
@@ -357,29 +356,5 @@ describe('getEntityId', () => {
     expect(
       getEntityId(makeFeedItem({ movie_id: null, source_table: null, source_id: 'orphan-1' })),
     ).toBeNull();
-  });
-});
-
-describe('getEntityRoute', () => {
-  it('returns movie route for movie items', () => {
-    expect(getEntityRoute(makeFeedItem({ movie_id: 'm1' }))).toBe('/movie/m1');
-  });
-
-  it('returns actor route for actor items', () => {
-    expect(
-      getEntityRoute(makeFeedItem({ movie_id: null, source_table: 'actors', source_id: 'a1' })),
-    ).toBe('/actor/a1');
-  });
-
-  it('returns production-house route for studio items', () => {
-    expect(
-      getEntityRoute(
-        makeFeedItem({ movie_id: null, source_table: 'production_houses', source_id: 'ph1' }),
-      ),
-    ).toBe('/production-house/ph1');
-  });
-
-  it('returns null when no entity ID', () => {
-    expect(getEntityRoute(makeFeedItem({ movie_id: null }))).toBeNull();
   });
 });

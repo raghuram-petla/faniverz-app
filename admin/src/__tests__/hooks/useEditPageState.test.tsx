@@ -2,11 +2,10 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import {
-  useEditPageState,
-  type EditPageConfig,
-  type EditPageHooks,
-} from '@/hooks/useEditPageState';
+import { useEditPageState } from '@/hooks/useEditPageState';
+
+type EditPageConfig<T extends object> = Parameters<typeof useEditPageState<T>>[0];
+type EditPageHooks = Parameters<typeof useEditPageState>[1];
 
 const mockPush = vi.fn();
 vi.mock('next/navigation', () => ({

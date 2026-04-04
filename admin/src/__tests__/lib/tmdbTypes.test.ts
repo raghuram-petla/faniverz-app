@@ -1,13 +1,10 @@
 import { describe, it, expect } from 'vitest';
 import {
   extractKeyCrewMembers,
-  extractTrailerUrl,
   extractTeluguTranslation,
   extractIndiaCertification,
   mapTmdbVideoType,
-  CREW_JOB_MAP,
   TmdbCrewMember,
-  TmdbVideo,
 } from '@/lib/tmdbTypes';
 
 // ── Helpers ────────────────────────────────────────────────────────────────
@@ -20,17 +17,6 @@ function makeCrew(
     department: 'Directing',
     profile_path: null,
     gender: 0,
-    ...overrides,
-  };
-}
-
-function makeVideo(overrides: Partial<TmdbVideo> = {}): TmdbVideo {
-  return {
-    key: 'abc123',
-    site: 'YouTube',
-    type: 'Trailer',
-    name: 'Official Trailer',
-    published_at: '2024-01-01',
     ...overrides,
   };
 }
@@ -96,43 +82,6 @@ describe('extractKeyCrewMembers', () => {
     expect(result).toHaveLength(2);
     expect(result[0].roleName).toBe('Director of Photography');
     expect(result[1].roleName).toBe('Director of Photography');
-  });
-});
-
-// ── extractTrailerUrl ──────────────────────────────────────────────────────
-
-describe('extractTrailerUrl', () => {
-  it('returns YouTube trailer URL', () => {
-    const videos = [makeVideo({ key: 'xyz789' })];
-    expect(extractTrailerUrl(videos)).toBe('https://www.youtube.com/watch?v=xyz789');
-  });
-
-  it('ignores teasers', () => {
-    const videos = [makeVideo({ type: 'Teaser', key: 'tease1' })];
-    expect(extractTrailerUrl(videos)).toBeNull();
-  });
-
-  it('ignores non-YouTube trailers', () => {
-    const videos = [makeVideo({ site: 'Vimeo' })];
-    expect(extractTrailerUrl(videos)).toBeNull();
-  });
-
-  it('returns first trailer when multiple exist', () => {
-    const videos = [makeVideo({ key: 'first' }), makeVideo({ key: 'second' })];
-    expect(extractTrailerUrl(videos)).toBe('https://www.youtube.com/watch?v=first');
-  });
-
-  it('returns null for empty videos array', () => {
-    expect(extractTrailerUrl([])).toBeNull();
-  });
-
-  it('skips non-matching videos and finds trailer', () => {
-    const videos = [
-      makeVideo({ type: 'Teaser', key: 'skip' }),
-      makeVideo({ type: 'Clip', key: 'skip2' }),
-      makeVideo({ type: 'Trailer', key: 'found' }),
-    ];
-    expect(extractTrailerUrl(videos)).toBe('https://www.youtube.com/watch?v=found');
   });
 });
 
@@ -215,44 +164,6 @@ describe('mapTmdbVideoType', () => {
   it('returns other for unknown types', () => {
     expect(mapTmdbVideoType('Interview')).toBe('other');
     expect(mapTmdbVideoType('')).toBe('other');
-  });
-});
-
-// ── CREW_JOB_MAP ───────────────────────────────────────────────────────────
-
-describe('CREW_JOB_MAP', () => {
-  it('contains all expected job titles', () => {
-    const expectedJobs = [
-      'Director',
-      'Producer',
-      'Executive Producer',
-      'Original Music Composer',
-      'Director of Photography',
-      'Cinematography',
-      'Editor',
-      'Screenplay',
-      'Writer',
-      'Art Direction',
-      'Production Design',
-      'Choreographer',
-      'Stunt Coordinator',
-      'Costume Design',
-      'Casting',
-    ];
-    for (const job of expectedJobs) {
-      expect(CREW_JOB_MAP).toHaveProperty(job);
-    }
-  });
-
-  it('has roleOrder values for ordering', () => {
-    for (const mapping of Object.values(CREW_JOB_MAP)) {
-      expect(mapping.roleOrder).toBeGreaterThan(0);
-      expect(typeof mapping.roleName).toBe('string');
-    }
-  });
-
-  it('Director has roleOrder 1 (highest priority)', () => {
-    expect(CREW_JOB_MAP['Director'].roleOrder).toBe(1);
   });
 });
 

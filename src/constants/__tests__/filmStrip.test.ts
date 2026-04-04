@@ -5,7 +5,6 @@ import {
   SPROCKET_SPACING,
   FRAME_RADIUS,
   getFilmColor,
-  getContentWidth,
 } from '../filmStrip';
 
 describe('filmStrip constants', () => {
@@ -27,15 +26,5 @@ describe('getFilmColor', () => {
   it('returns zinc-700 for light theme (non-black background)', () => {
     const lightTheme = { background: '#FFFFFF' } as Parameters<typeof getFilmColor>[0];
     expect(getFilmColor(lightTheme)).toBe('#9E9EA3');
-  });
-});
-
-describe('getContentWidth', () => {
-  it('subtracts both rails from screen width', () => {
-    expect(getContentWidth(390)).toBe(390 - 2 * RAIL_WIDTH);
-  });
-
-  it('returns 0 when screen width equals rail widths', () => {
-    expect(getContentWidth(2 * RAIL_WIDTH)).toBe(0);
   });
 });

@@ -3,9 +3,6 @@
  * Import these instead of hardcoding staleTime values in hooks.
  */
 
-/** No caching — always refetch (audit logs, real-time data) */
-export const ADMIN_STALE_NONE = 0;
-
 /** 30 seconds — rapidly changing data (search suggestions) */
 export const ADMIN_STALE_30S = 30_000;
 

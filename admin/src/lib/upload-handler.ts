@@ -6,7 +6,7 @@ import { getR2Client } from '@/lib/r2-client';
 import { MAX_FILE_SIZE, ALLOWED_MIME_TYPES } from '@/lib/upload-config';
 import { verifyAdminWithRole } from '@/lib/sync-helpers';
 
-export interface UploadConfig {
+interface UploadConfig {
   bucket: string;
   variants: ImageVariant[];
   // @contract: baseUrlEnvVar is no longer used to construct the stored URL — upload handler

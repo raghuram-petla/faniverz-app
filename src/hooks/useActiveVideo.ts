@@ -9,7 +9,7 @@ interface VideoLayout {
 const PRELOAD_VIEWPORT_PADDING_RATIO = 0.35;
 const MOUNT_VISIBLE_RATIO = 0.15;
 
-export interface UseActiveVideoReturn {
+interface UseActiveVideoReturn {
   activeVideoId: string | null;
   preloadedVideoId: string | null;
   mountedVideoIds: string[];

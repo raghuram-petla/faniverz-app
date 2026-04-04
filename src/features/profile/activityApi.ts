@@ -1,8 +1,8 @@
 import { supabase } from '@/lib/supabase';
 
 // @edge: 'review' action_type exists in this union but is NOT covered by any ActivityFilter in FILTER_MAP below — review activities only appear under the 'all' filter tab, never under a dedicated tab.
-export type ActivityActionType = 'vote' | 'follow' | 'unfollow' | 'comment' | 'review';
-export type ActivityEntityType = 'movie' | 'actor' | 'production_house' | 'feed_item' | 'comment';
+type ActivityActionType = 'vote' | 'follow' | 'unfollow' | 'comment' | 'review';
+type ActivityEntityType = 'movie' | 'actor' | 'production_house' | 'feed_item' | 'comment';
 export type ActivityFilter = 'all' | 'votes' | 'follows' | 'comments';
 
 export interface UserActivity {
@@ -15,7 +15,7 @@ export interface UserActivity {
   created_at: string;
 }
 
-export const PAGE_SIZE = 20;
+const PAGE_SIZE = 20;
 
 // @coupling: FILTER_MAP must stay in sync with ActivityActionType union. If a new action_type (e.g., 'review')
 // is added to the union but not added to a filter group here, those activities only appear under 'all' —

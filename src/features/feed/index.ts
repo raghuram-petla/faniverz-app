@@ -1,6 +1,5 @@
 export {
   useNewsFeed,
-  useFeaturedFeed,
   usePersonalizedFeed,
   useFeedItem,
   useVoteFeedItem,

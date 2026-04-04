@@ -7,7 +7,7 @@ import { formatDate } from '@/lib/utils';
 // @contract Displays all pending changes as a staging area before Save
 export type DateAction = 'premiere' | 'release_changed' | 'none';
 
-export interface PendingChangeItem {
+interface PendingChangeItem {
   movieId: string;
   title: string;
   posterUrl: string | null;

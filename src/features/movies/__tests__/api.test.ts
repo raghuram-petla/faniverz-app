@@ -48,16 +48,7 @@ jest.mock('@/lib/supabase', () => ({
 }));
 
 import { supabase } from '@/lib/supabase';
-import {
-  fetchMovies,
-  fetchMovieById,
-  searchMovies,
-  fetchMoviesByMonth,
-  fetchMoviesByPlatform,
-  fetchMoviesPaginated,
-  fetchUpcomingMovies,
-  getLocalDateString,
-} from '../api';
+import { fetchMovies, fetchMovieById, fetchMoviesPaginated, fetchUpcomingMovies } from '../api';
 
 describe('movies api', () => {
   beforeEach(() => {
@@ -236,47 +227,6 @@ describe('movies api', () => {
     });
   });
 
-  describe('searchMovies', () => {
-    it('calls search_movies RPC with correct params', async () => {
-      (supabase.rpc as jest.Mock).mockResolvedValue({ data: [], error: null });
-      await searchMovies('test');
-      expect(supabase.rpc as jest.Mock).toHaveBeenCalledWith('search_movies', {
-        search_term: 'test',
-        result_limit: 20,
-        result_offset: 0,
-      });
-    });
-
-    it('returns matching movies', async () => {
-      const movies = [{ id: 'm1', title: 'Test Movie' }];
-      (supabase.rpc as jest.Mock).mockResolvedValue({ data: movies, error: null });
-      const result = await searchMovies('test');
-      expect(result).toEqual(movies);
-    });
-  });
-
-  describe('fetchMoviesByMonth', () => {
-    it('fetches movies for a specific month', async () => {
-      mockSelect.mockReturnValue({ gte: mockGte });
-      mockGte.mockReturnValue({ lte: mockLte });
-      mockLte.mockReturnValue({ order: mockOrder });
-      mockOrder.mockResolvedValue({ data: [], error: null });
-
-      await fetchMoviesByMonth(2025, 1);
-      expect(supabase.from).toHaveBeenCalledWith('movies');
-      expect(mockGte).toHaveBeenCalledWith('release_date', '2025-02-01');
-    });
-
-    it('throws on error in fetchMoviesByMonth', async () => {
-      mockSelect.mockReturnValue({ gte: mockGte });
-      mockGte.mockReturnValue({ lte: mockLte });
-      mockLte.mockReturnValue({ order: mockOrder });
-      mockOrder.mockResolvedValue({ data: null, error: new Error('Month query failed') });
-
-      await expect(fetchMoviesByMonth(2025, 1)).rejects.toThrow('Month query failed');
-    });
-  });
-
   describe('fetchMovies — additional sort variants', () => {
     it('orders by release_date ascending when sortBy is upcoming', async () => {
       await fetchMovies({ sortBy: 'upcoming' });
@@ -293,17 +243,6 @@ describe('movies api', () => {
       mockOrder.mockReturnValue(makeOrderResult(mockData));
       const result = await fetchMovies();
       expect(result).toEqual(mockData);
-    });
-  });
-
-  describe('searchMovies — additional', () => {
-    it('throws on error in searchMovies', async () => {
-      (supabase.rpc as jest.Mock).mockResolvedValue({
-        data: null,
-        error: new Error('Search failed'),
-      });
-
-      await expect(searchMovies('test')).rejects.toThrow('Search failed');
     });
   });
 
@@ -349,78 +288,6 @@ describe('movies api', () => {
 
       const result = await fetchMovies({ platformId: 'nonexistent' });
       expect(result).toEqual([]);
-    });
-  });
-
-  describe('fetchMoviesByPlatform', () => {
-    it('queries movie_platforms then fetches movies', async () => {
-      const mockPlatformSelect = jest.fn();
-      const mockPlatformEq = jest.fn();
-      const mockPlatformLimit = jest.fn();
-      const mockMoviesIn = jest.fn();
-
-      (supabase.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === 'movie_platforms') {
-          return { select: mockPlatformSelect };
-        }
-        return { select: mockSelect };
-      });
-
-      mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
-      mockPlatformEq.mockReturnValue({ limit: mockPlatformLimit });
-      mockPlatformLimit.mockResolvedValue({
-        data: [{ movie_id: 'm1' }, { movie_id: 'm2' }],
-        error: null,
-      });
-      mockSelect.mockReturnValue({ in: mockMoviesIn });
-      mockMoviesIn.mockReturnValue({ order: mockOrder });
-      mockOrder.mockResolvedValue({
-        data: [{ id: 'm1', title: 'Movie 1' }],
-        error: null,
-      });
-
-      const result = await fetchMoviesByPlatform('netflix');
-      expect(mockPlatformEq).toHaveBeenCalledWith('platform_id', 'netflix');
-      expect(result).toHaveLength(1);
-    });
-
-    it('returns empty array when no movies for platform', async () => {
-      const mockPlatformSelect = jest.fn();
-      const mockPlatformEq = jest.fn();
-      const mockPlatformLimit = jest.fn();
-      (supabase.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === 'movie_platforms') {
-          return { select: mockPlatformSelect };
-        }
-        return { select: mockSelect };
-      });
-      mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
-      mockPlatformEq.mockReturnValue({ limit: mockPlatformLimit });
-      mockPlatformLimit.mockResolvedValue({ data: [], error: null });
-
-      const result = await fetchMoviesByPlatform('unknown');
-      expect(result).toEqual([]);
-    });
-
-    it('throws on error', async () => {
-      const mockPlatformSelect = jest.fn();
-      const mockPlatformEq = jest.fn();
-      const mockPlatformLimit = jest.fn();
-      const mockMoviesIn = jest.fn();
-      (supabase.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === 'movie_platforms') {
-          return { select: mockPlatformSelect };
-        }
-        return { select: mockSelect };
-      });
-      mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
-      mockPlatformEq.mockReturnValue({ limit: mockPlatformLimit });
-      mockPlatformLimit.mockResolvedValue({ data: [{ movie_id: 'm1' }], error: null });
-      mockSelect.mockReturnValue({ in: mockMoviesIn });
-      mockMoviesIn.mockReturnValue({ order: mockOrder });
-      mockOrder.mockResolvedValue({ data: null, error: new Error('Platform fetch failed') });
-
-      await expect(fetchMoviesByPlatform('netflix')).rejects.toThrow('Platform fetch failed');
     });
   });
 
@@ -607,7 +474,6 @@ describe('movies api', () => {
   describe('fetchMovies — streaming and released filters', () => {
     it('filters by streaming status when matching movie_platform ids exist', async () => {
       const mockPlatformSelect = jest.fn();
-      const _mockPlatformResolved = jest.fn();
       (supabase.from as jest.Mock).mockImplementation((table: string) => {
         if (table === 'movie_platforms') {
           return { select: mockPlatformSelect };
@@ -705,43 +571,6 @@ describe('movies api', () => {
 
       const result = await fetchMovieById('unknown');
       expect(result).toBeNull();
-    });
-  });
-
-  describe('fetchMoviesByPlatform — null data branch', () => {
-    it('returns empty array when movieIds data is null', async () => {
-      const mockPlatformSelect = jest.fn();
-      const mockPlatformEq = jest.fn();
-      const mockPlatformLimit = jest.fn();
-      (supabase.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === 'movie_platforms') {
-          return { select: mockPlatformSelect };
-        }
-        return { select: mockSelect };
-      });
-      mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
-      mockPlatformEq.mockReturnValue({ limit: mockPlatformLimit });
-      mockPlatformLimit.mockResolvedValue({ data: null, error: null });
-
-      const result = await fetchMoviesByPlatform('netflix');
-      expect(result).toEqual([]);
-    });
-
-    it('throws when platform_id filter errors in fetchMoviesByPlatform', async () => {
-      const mockPlatformSelect = jest.fn();
-      const mockPlatformEq = jest.fn();
-      const mockPlatformLimit = jest.fn();
-      (supabase.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === 'movie_platforms') {
-          return { select: mockPlatformSelect };
-        }
-        return { select: mockSelect };
-      });
-      mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
-      mockPlatformEq.mockReturnValue({ limit: mockPlatformLimit });
-      mockPlatformLimit.mockResolvedValue({ data: null, error: new Error('Platform ID error') });
-
-      await expect(fetchMoviesByPlatform('broken')).rejects.toThrow('Platform ID error');
     });
   });
 
@@ -888,49 +717,6 @@ describe('movies api', () => {
     });
   });
 
-  describe('fetchMoviesByMonth — null data fallback', () => {
-    it('returns empty array when data is null', async () => {
-      mockSelect.mockReturnValue({ gte: mockGte });
-      mockGte.mockReturnValue({ lte: mockLte });
-      mockLte.mockReturnValue({ order: mockOrder });
-      mockOrder.mockResolvedValue({ data: null, error: null });
-
-      const result = await fetchMoviesByMonth(2025, 1);
-      expect(result).toEqual([]);
-    });
-  });
-
-  describe('searchMovies — null data fallback', () => {
-    it('returns empty array when data is null', async () => {
-      (supabase.rpc as jest.Mock).mockResolvedValue({ data: null, error: null });
-
-      const result = await searchMovies('test');
-      expect(result).toEqual([]);
-    });
-  });
-
-  describe('fetchMoviesByPlatform — null data fallback for movies query', () => {
-    it('returns empty array when movies data is null', async () => {
-      const mockPlatformSelect = jest.fn();
-      const mockPlatformEq = jest.fn();
-      const mockPlatformLimit = jest.fn();
-      const mockMoviesIn = jest.fn();
-      (supabase.from as jest.Mock).mockImplementation((table: string) => {
-        if (table === 'movie_platforms') return { select: mockPlatformSelect };
-        return { select: mockSelect };
-      });
-      mockPlatformSelect.mockReturnValue({ eq: mockPlatformEq });
-      mockPlatformEq.mockReturnValue({ limit: mockPlatformLimit });
-      mockPlatformLimit.mockResolvedValue({ data: [{ movie_id: 'm1' }], error: null });
-      mockSelect.mockReturnValue({ in: mockMoviesIn });
-      mockMoviesIn.mockReturnValue({ order: mockOrder });
-      mockOrder.mockResolvedValue({ data: null, error: null });
-
-      const result = await fetchMoviesByPlatform('netflix');
-      expect(result).toEqual([]);
-    });
-  });
-
   describe('fetchMovies — no featuredFirst option (internal applyMovieFilters)', () => {
     it('applies popular sort without featuredFirst when calling fetchMoviesPaginated with no filters', async () => {
       // fetchMoviesPaginated passes featuredFirst: true, so test via direct fetchMovies which also passes it
@@ -974,31 +760,6 @@ describe('movies api', () => {
 
       const result = await fetchMoviesPaginated(0, 10, { movieStatus: 'streaming' });
       expect(result).toEqual([]);
-    });
-  });
-
-  describe('getLocalDateString', () => {
-    it('formats a date as YYYY-MM-DD in local timezone', () => {
-      const date = new Date(2025, 2, 15); // March 15, 2025 (month is 0-indexed)
-      expect(getLocalDateString(date)).toBe('2025-03-15');
-    });
-
-    it('pads single-digit month and day with leading zeros', () => {
-      const date = new Date(2025, 0, 5); // January 5, 2025
-      expect(getLocalDateString(date)).toBe('2025-01-05');
-    });
-
-    it('uses local date, not UTC (avoids timezone offset bug)', () => {
-      // Simulate 11:30 PM on March 11 in a UTC-5 timezone
-      // toISOString() would return 2025-03-12T04:30:00Z (next day in UTC)
-      // getLocalDateString should return the LOCAL date
-      const date = new Date(2025, 2, 11, 23, 30, 0);
-      expect(getLocalDateString(date)).toBe('2025-03-11');
-    });
-
-    it('defaults to current date when no argument', () => {
-      const result = getLocalDateString();
-      expect(result).toMatch(/^\d{4}-\d{2}-\d{2}$/);
     });
   });
 });

@@ -588,7 +588,6 @@ describe('DiscoverByYear', () => {
     );
     renderWithProvider(<DiscoverByYear data={data} />);
     // No new movies, so Import all new button should be disabled or absent
-    const _btn = screen.queryByText(/Import all new/);
     // Since newMovies.length === 0, the handler returns early
     expect(mockImportMutateAsync).not.toHaveBeenCalled();
   });

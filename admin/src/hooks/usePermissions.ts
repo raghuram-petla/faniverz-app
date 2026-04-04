@@ -22,7 +22,7 @@ export type AdminPage =
   | 'users';
 
 /** Entity types that support CRUD */
-export type AdminEntity =
+type AdminEntity =
   | 'movie'
   | 'actor'
   | 'production_house'

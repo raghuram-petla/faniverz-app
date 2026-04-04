@@ -39,7 +39,7 @@ vi.mock('crypto', async (importOriginal) => {
   };
 });
 
-import { mirrorMainPoster, syncCastCrew, syncCastCrewAdditive } from '../../lib/sync-cast';
+import { syncCastCrew, syncCastCrewAdditive } from '../../lib/sync-cast';
 import { extractKeyCrewMembers } from '../../lib/tmdbTypes';
 import { upsertActorPreserveType } from '../../lib/sync-actor';
 
@@ -128,46 +128,6 @@ function createAdditiveMockSupabase() {
 }
 
 const MOVIE_ID = 'movie-uuid-123';
-
-describe('mirrorMainPoster', () => {
-  let supabase: ReturnType<typeof createBasicMockSupabase>;
-
-  beforeEach(() => {
-    vi.clearAllMocks();
-    supabase = createBasicMockSupabase();
-  });
-
-  it('inserts new main poster when none exists', async () => {
-    supabase.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
-
-    await mirrorMainPoster(MOVIE_ID, 'poster.jpg', supabase as never);
-
-    expect(supabase.from).toHaveBeenCalledWith('movie_images');
-    expect(supabase.insert).toHaveBeenCalledWith(
-      expect.objectContaining({
-        movie_id: MOVIE_ID,
-        image_url: 'poster.jpg',
-        image_type: 'poster',
-        title: 'Main Poster',
-        is_main_poster: true,
-        display_order: 0,
-      }),
-    );
-  });
-
-  it('updates existing main poster when one exists', async () => {
-    supabase.maybeSingle.mockResolvedValueOnce({
-      data: { id: 'existing-poster-id' },
-      error: null,
-    });
-    supabase.update = vi.fn().mockReturnThis();
-
-    await mirrorMainPoster(MOVIE_ID, 'new-poster.jpg', supabase as never);
-
-    expect(supabase.update).toHaveBeenCalledWith({ image_url: 'new-poster.jpg' });
-    expect(supabase.eq).toHaveBeenCalledWith('id', 'existing-poster-id');
-  });
-});
 
 describe('syncCastCrew', () => {
   let supabase: ReturnType<typeof createBasicMockSupabase>;
@@ -369,39 +329,6 @@ describe('syncCastCrew', () => {
     expect(consoleWarn).toHaveBeenCalledWith(
       expect.stringContaining('cast insert failed'),
       'cast insert error',
-    );
-    consoleWarn.mockRestore();
-  });
-
-  it('warns when mirrorMainPoster update fails', async () => {
-    const mockSub = createBasicMockSupabase();
-    mockSub.maybeSingle.mockResolvedValueOnce({
-      data: { id: 'existing-poster-id' },
-      error: null,
-    });
-    // After update().eq('id', ...) must resolve with error
-    const mockUpdateEq = vi.fn().mockResolvedValue({ error: { message: 'update failed' } });
-    mockSub.update = vi.fn().mockReturnValue({ eq: mockUpdateEq });
-
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    await mirrorMainPoster(MOVIE_ID, 'poster.jpg', mockSub as never);
-    expect(consoleWarn).toHaveBeenCalledWith(
-      expect.stringContaining('mirrorMainPoster: update failed'),
-      'update failed',
-    );
-    consoleWarn.mockRestore();
-  });
-
-  it('warns when mirrorMainPoster insert fails', async () => {
-    const mockSub = createBasicMockSupabase();
-    mockSub.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
-    mockSub.insert.mockResolvedValueOnce({ error: { message: 'insert failed' } });
-
-    const consoleWarn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    await mirrorMainPoster(MOVIE_ID, 'poster.jpg', mockSub as never);
-    expect(consoleWarn).toHaveBeenCalledWith(
-      expect.stringContaining('mirrorMainPoster: insert failed'),
-      'insert failed',
     );
     consoleWarn.mockRestore();
   });

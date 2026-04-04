@@ -63,9 +63,6 @@ export const createFeedStyles = (t: SemanticTheme) =>
       textAlign: 'center',
       lineHeight: 20,
     },
-    feedList: {
-      paddingHorizontal: 0,
-    },
   });
 
 // ── Feed card styles (YouTube-style stacked layout, edge-to-edge media) ──────────
@@ -152,17 +149,6 @@ export const createFeedCardStyles = (t: SemanticTheme) =>
     },
     media: {
       ...StyleSheet.absoluteFillObject,
-    },
-    playBtn: {
-      position: 'absolute',
-      alignSelf: 'center',
-      top: '40%',
-      width: 48,
-      height: 48,
-      borderRadius: 24,
-      backgroundColor: 'rgba(220, 38, 38, 0.85)',
-      alignItems: 'center',
-      justifyContent: 'center',
     },
     playIcon: {
       marginLeft: 2,

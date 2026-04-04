@@ -613,7 +613,6 @@ describe('CalendarScreen', () => {
     const { getByText: _getByText } = render(<CalendarScreen />);
     // Find the "×" close button next to the year pill "2025"
     const { TouchableOpacity } = require('react-native');
-    const _allTouchables = screen.UNSAFE_queryAllByType(TouchableOpacity);
     // The close icon is inside FilterPill — find the one associated with the year pill
     const closeIcons = screen.UNSAFE_queryAllByProps({ name: 'close' });
     if (closeIcons.length > 0) {

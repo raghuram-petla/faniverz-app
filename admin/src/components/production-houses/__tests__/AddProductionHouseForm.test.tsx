@@ -323,7 +323,6 @@ describe('AddProductionHouseForm', () => {
     });
 
     // Click the X button to remove
-    const _xButton = screen.queryByRole('button', { name: /x/i });
     // Find the X button by its position in the logo section
     const logoSection = screen.getByText('Logo uploaded').closest('div');
     const buttons = logoSection?.querySelectorAll('button');

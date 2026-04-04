@@ -1,6 +1,6 @@
 import { renderHook, waitFor } from '@testing-library/react-native';
 import { createWrapper } from '@/__tests__/helpers/createWrapper';
-import { usePlatforms, useOttReleases, useMoviePlatformMap, useMovieAvailability } from '../hooks';
+import { usePlatforms, useMoviePlatformMap, useMovieAvailability } from '../hooks';
 import * as api from '../api';
 
 jest.mock('../api');
@@ -32,43 +32,6 @@ describe('usePlatforms', () => {
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     // Second call should use cache
     expect(api.fetchPlatforms).toHaveBeenCalledTimes(1);
-  });
-});
-
-const mockOttReleases = [
-  { id: 'mp1', movie_id: 'm1', platform: { id: 'netflix', name: 'Netflix' } },
-  { id: 'mp2', movie_id: 'm1', platform: { id: 'aha', name: 'Aha' } },
-];
-
-describe('useOttReleases', () => {
-  beforeEach(() => {
-    jest.clearAllMocks();
-  });
-
-  it('fetches OTT releases for a movie', async () => {
-    (api.fetchOttReleases as jest.Mock).mockResolvedValue(mockOttReleases);
-
-    const { result } = renderHook(() => useOttReleases('m1'), { wrapper: createWrapper() });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual(mockOttReleases);
-    expect(api.fetchOttReleases).toHaveBeenCalledWith('m1');
-  });
-
-  it('does not fetch when movieId is empty', async () => {
-    const { result } = renderHook(() => useOttReleases(''), { wrapper: createWrapper() });
-
-    expect(result.current.isFetching).toBe(false);
-    expect(api.fetchOttReleases).not.toHaveBeenCalled();
-  });
-
-  it('handles empty releases', async () => {
-    (api.fetchOttReleases as jest.Mock).mockResolvedValue([]);
-
-    const { result } = renderHook(() => useOttReleases('m1'), { wrapper: createWrapper() });
-
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-    expect(result.current.data).toEqual([]);
   });
 });
 

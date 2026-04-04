@@ -95,5 +95,3 @@ export const colors = {
     etvwin: '#FF0000',
   },
 } as const;
-
-export type Colors = typeof colors;

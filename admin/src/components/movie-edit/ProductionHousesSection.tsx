@@ -18,7 +18,7 @@ interface MovieProductionHouse {
 }
 
 // @contract controlled typeahead — parent provides filtered list and manages search state
-export interface Props {
+interface Props {
   visibleProductionHouses: MovieProductionHouse[];
   productionHouses: ProductionHouse[];
   searchQuery: string;

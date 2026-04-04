@@ -17,7 +17,7 @@ import { recordFeedViews } from '@/features/feed/viewTrackingApi';
 const FLUSH_INTERVAL_MS = 5000;
 const FLUSH_BATCH_THRESHOLD = 10;
 
-export interface UseTrackFeedViewsResult {
+interface UseTrackFeedViewsResult {
   /** Callback for FlashList onViewableItemsChanged — compose with prefetch callback */
   onViewableItemsChanged: (info: { viewableItems: ViewToken[] }) => void;
   /** Call on pull-to-refresh to clear session dedup set */

@@ -5,7 +5,7 @@ import { HomeFeedHeaderChrome, HOME_FEED_HEADER_CONTENT_HEIGHT } from './HomeFee
 
 export { HOME_FEED_HEADER_CONTENT_HEIGHT };
 
-export interface CollapsibleHeaderState {
+interface CollapsibleHeaderState {
   headerTranslateY: Animated.Value;
   totalHeaderHeight: number;
   handleScroll: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;

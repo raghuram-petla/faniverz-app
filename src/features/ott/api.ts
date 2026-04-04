@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { OTTPlatform, MoviePlatform, MoviePlatformAvailability, AvailabilityType } from '@/types';
+import { OTTPlatform, MoviePlatformAvailability, AvailabilityType } from '@/types';
 import { getDeviceCountry } from '@/utils/getDeviceCountry';
 import { unwrapList } from '@/utils/supabaseQuery';
 
@@ -38,17 +38,6 @@ export async function fetchMovieAvailability(
     }
   }
   return result;
-}
-
-// @sync: legacy endpoint — used by older components that haven't migrated to fetchMovieAvailability. Both query different tables (movie_platforms vs movie_platform_availability). movie_platforms has no country_code filter, so it returns global results. Callers should migrate to fetchMovieAvailability for region-aware data.
-// @coupling: movie_platforms table is also queried by fetchMoviesByPlatform (movies/api.ts) and the 'streaming' filter in applyMovieFilters. If movie_platforms is deprecated in favor of movie_platform_availability, all three callsites must migrate.
-export async function fetchOttReleases(movieId: string): Promise<MoviePlatform[]> {
-  return unwrapList(
-    await supabase
-      .from('movie_platforms')
-      .select('*, platform:platforms(*)')
-      .eq('movie_id', movieId),
-  );
 }
 
 // @edge: only returns 'flatrate' availability — rent/buy/ads/free platforms are excluded from card badges. If a movie is only available for rent (no flatrate), its card shows no platform badges even though the movie IS available.

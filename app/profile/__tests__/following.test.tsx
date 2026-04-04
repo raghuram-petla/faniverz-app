@@ -142,7 +142,6 @@ describe('FollowingScreen', () => {
   });
 
   it('calls unfollow mutation when unfollow button is pressed', () => {
-    const _mockMutate = jest.fn();
     const { useUnfollowEntity: _useUnfollowEntity } = require('@/features/feed');
     // Override the mock for this specific test is not possible via jest.mock at top,
     // but we can still test the button fires

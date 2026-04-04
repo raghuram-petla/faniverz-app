@@ -26,42 +26,6 @@ export async function fetchUserReviews(userId: string): Promise<Review[]> {
   );
 }
 
-// --- Paginated review APIs ---
-
-// @contract: `offset` is absolute row offset, `limit` is number of rows to fetch.
-export async function fetchMovieReviewsPaginated(
-  movieId: string,
-  offset: number,
-  limit: number = 10,
-): Promise<Review[]> {
-  const to = offset + limit - 1;
-  return unwrapList(
-    await supabase
-      .from('reviews')
-      .select('*, profile:profiles(id, display_name, avatar_url)')
-      .eq('movie_id', movieId)
-      .order('created_at', { ascending: false })
-      .range(offset, to),
-  );
-}
-
-// @contract: `offset` is absolute row offset, `limit` is number of rows to fetch.
-export async function fetchUserReviewsPaginated(
-  userId: string,
-  offset: number,
-  limit: number = 10,
-): Promise<Review[]> {
-  const to = offset + limit - 1;
-  return unwrapList(
-    await supabase
-      .from('reviews')
-      .select('*, movie:movies(id, title, poster_url, poster_image_type)')
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .range(offset, to),
-  );
-}
-
 // @sideeffect: insert triggers the DB function update_movie_rating which recalculates movies.rating (AVG of all review ratings) and movies.review_count. This happens synchronously in the same transaction. The returned Review has the old movie rating snapshot — the caller must refetch the movie to see the updated rating.
 // @contract: .select() after insert returns the review WITHOUT profile or movie joins. The returned Review has profile=undefined and movie=undefined. useReviewMutations.create.onSuccess doesn't use the returned data — it just invalidates caches. But if onSuccess logic is added that reads the returned review's profile, it will be null.
 export async function createReview(input: CreateReviewInput): Promise<Review> {

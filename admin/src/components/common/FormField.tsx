@@ -32,9 +32,9 @@ const TEXTAREA_CLASSES = {
     'w-full bg-input border border-outline rounded-lg px-4 py-2.5 text-on-surface placeholder:text-on-surface-disabled focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-transparent resize-none',
 } as const;
 
-export { LABEL_CLASSES, INPUT_CLASSES, TEXTAREA_CLASSES };
+export { INPUT_CLASSES, TEXTAREA_CLASSES };
 
-export type FormFieldVariant = 'default' | 'compact' | 'bordered';
+type FormFieldVariant = 'default' | 'compact' | 'bordered';
 
 // ── FormField wrapper (label + children) ──
 
@@ -99,7 +99,7 @@ export function FormInput({
 
 // ── FormSelect (label + <select>) ──
 
-export interface FormSelectOption {
+interface FormSelectOption {
   value: string;
   label: string;
 }

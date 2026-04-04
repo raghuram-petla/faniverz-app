@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 
 // @contract Field type determines how old/new values are formatted in the dock
-export type FieldType = 'text' | 'date' | 'boolean' | 'select' | 'image' | 'number';
+type FieldType = 'text' | 'date' | 'boolean' | 'select' | 'image' | 'number';
 
 // @contract Each field config defines how to display and format a field's changes
 export interface FieldConfig {
@@ -23,7 +23,7 @@ export interface FieldChange {
   newDisplay: string;
 }
 
-export interface UseFormChangesReturn {
+interface UseFormChangesReturn {
   changes: FieldChange[];
   isDirty: boolean;
   changeCount: number;

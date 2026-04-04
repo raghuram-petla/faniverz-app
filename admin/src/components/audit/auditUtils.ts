@@ -19,21 +19,6 @@ export function getChangedFields(details: Record<string, unknown>): Record<strin
   return Object.keys(changes).length > 0 ? changes : null;
 }
 
-/** Format details for display — show diff for updates, relevant data for create/delete */
-export function formatDetails(action: string, details: Record<string, unknown>): string {
-  if (action === 'update') {
-    const diff = getChangedFields(details);
-    if (diff) return JSON.stringify(diff, null, 2);
-  }
-  if (action === 'create' && details.new) {
-    return JSON.stringify(details.new, null, 2);
-  }
-  if (action === 'delete' && details.old) {
-    return JSON.stringify(details.old, null, 2);
-  }
-  return JSON.stringify(details, null, 2);
-}
-
 // @contract Extracts a human-readable name from audit details based on entity_type.
 // Falls back to null if no recognizable name field is found.
 // @coupling Field names MUST match actual DB column names (not denormalized names).

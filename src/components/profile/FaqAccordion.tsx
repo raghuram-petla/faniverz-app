@@ -4,7 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import type { SemanticTheme } from '@shared/themes';
 
-export interface FaqItem {
+interface FaqItem {
   question: string;
   answer: string;
 }

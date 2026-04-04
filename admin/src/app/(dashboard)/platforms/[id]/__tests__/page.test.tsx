@@ -309,9 +309,6 @@ describe('EditPlatformPage', () => {
 
   it('removes a country chip when X is clicked', () => {
     render(<EditPlatformPage />);
-    const _removeButtons = screen
-      .getAllByRole('button')
-      .filter((b) => b.className.includes('hover:text-status-red') || b.querySelector('svg'));
     // Find X buttons near country badges
     const xButtons = document.querySelectorAll('button[class*="hover:text-status-red"]');
     if (xButtons.length > 0) {

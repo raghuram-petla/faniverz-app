@@ -5,53 +5,7 @@
  */
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { QueryClient } from '@tanstack/react-query';
-import { makeQueryClient, getQueryClient } from '@/lib/query-client';
-
-describe('makeQueryClient — default options', () => {
-  it('returns a QueryClient instance', () => {
-    expect(makeQueryClient()).toBeInstanceOf(QueryClient);
-  });
-
-  it('each call returns a new instance', () => {
-    expect(makeQueryClient()).not.toBe(makeQueryClient());
-  });
-
-  it('configures staleTime to 5 minutes', () => {
-    const client = makeQueryClient();
-    // Access defaults via the internal options store
-
-    const staleTime = client.getDefaultOptions()?.queries?.staleTime;
-    expect(staleTime).toBe(5 * 60 * 1000);
-  });
-
-  it('configures gcTime to 10 minutes', () => {
-    const client = makeQueryClient();
-
-    const gcTime = client.getDefaultOptions()?.queries?.gcTime;
-    expect(gcTime).toBe(10 * 60 * 1000);
-  });
-
-  it('disables refetchOnWindowFocus', () => {
-    const client = makeQueryClient();
-
-    const refetchOnWindowFocus = client.getDefaultOptions()?.queries?.refetchOnWindowFocus;
-    expect(refetchOnWindowFocus).toBe(false);
-  });
-
-  it('disables refetchOnReconnect', () => {
-    const client = makeQueryClient();
-
-    const refetchOnReconnect = client.getDefaultOptions()?.queries?.refetchOnReconnect;
-    expect(refetchOnReconnect).toBe(false);
-  });
-
-  it('sets retry to 1', () => {
-    const client = makeQueryClient();
-
-    const retry = client.getDefaultOptions()?.queries?.retry;
-    expect(retry).toBe(1);
-  });
-});
+import { getQueryClient } from '@/lib/query-client';
 
 describe('getQueryClient — browser singleton', () => {
   it('returns same instance on repeated calls (browser env with window defined)', () => {

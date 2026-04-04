@@ -7,7 +7,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
  * @assumes When both invalidateKeys and getInvalidateKeys are provided,
  *   both sets of keys are invalidated on success.
  */
-export interface SimpleMutationConfig<TPayload, TReturn = void> {
+interface SimpleMutationConfig<TPayload, TReturn = void> {
   /** The async mutation function */
   mutationFn: (payload: TPayload) => Promise<TReturn>;
   /** Static query key arrays to invalidate on success */

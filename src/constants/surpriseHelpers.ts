@@ -4,7 +4,7 @@ import type { SurpriseCategory } from '@/types';
 
 type FilterOption = 'all' | SurpriseCategory;
 
-export interface PillConfig {
+interface PillConfig {
   label: string;
   value: FilterOption;
   activeColor: string;
