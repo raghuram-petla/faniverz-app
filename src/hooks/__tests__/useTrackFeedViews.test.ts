@@ -172,4 +172,30 @@ describe('useTrackFeedViews', () => {
 
     expect(mockRecordFeedViews).toHaveBeenCalledWith(['valid']);
   });
+
+  it('cancels a pending RAF when unmounting (rafRef.current !== null cleanup branch)', () => {
+    // Override requestAnimationFrame to NOT execute synchronously so rafRef stays non-null
+    const origRAF = global.requestAnimationFrame;
+    const origCancelRAF = global.cancelAnimationFrame;
+    const pendingId = 42;
+    global.requestAnimationFrame = jest.fn(() => pendingId) as unknown as typeof requestAnimationFrame;
+    global.cancelAnimationFrame = jest.fn();
+
+    const { result, unmount } = renderHook(() => useTrackFeedViews());
+
+    act(() => {
+      // Trigger onViewableItemsChanged — RAF is scheduled but not executed (non-sync mock)
+      result.current.onViewableItemsChanged({ viewableItems: [makeViewToken('pending-item')] });
+    });
+
+    // RAF is now pending (rafRef.current === pendingId, not null)
+    unmount();
+
+    // cancelAnimationFrame should have been called with the pending RAF id
+    expect(global.cancelAnimationFrame).toHaveBeenCalledWith(pendingId);
+
+    // Restore globals
+    global.requestAnimationFrame = origRAF;
+    global.cancelAnimationFrame = origCancelRAF;
+  });
 });
