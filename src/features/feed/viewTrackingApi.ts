@@ -24,6 +24,6 @@ export async function recordFeedViews(feedItemIds: string[]): Promise<void> {
   });
   if (error) {
     circuitOpen = true;
-    console.warn('[view-tracking] Failed to record feed views:', error.message);
+    // Silently ignore — news_feed table may not exist locally
   }
 }
