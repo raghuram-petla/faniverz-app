@@ -51,7 +51,7 @@ function ThemedStack() {
         <Stack.Screen name="index" />
         <Stack.Screen name="(auth)" />
         <Stack.Screen name="(tabs)" />
-        <Stack.Screen name="movie" />
+        <Stack.Screen name="movie/[id]" />
         <Stack.Screen name="actor/[id]" />
         <Stack.Screen name="discover" />
         <Stack.Screen name="search" />
