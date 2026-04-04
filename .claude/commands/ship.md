@@ -87,9 +87,11 @@ EOF
 
 8. Run `git status` after the commit (or in Scenario B) to verify state.
 
-9. **Merge into master and push:**
+9. **Squash-merge into master and push:**
 
    **If in a worktree** (path contains `.claude/worktrees/`):
+
+   Worktree branches are squash-merged into master so the history stays linear and clean. All worktree commits collapse into a single commit on master.
 
    ```bash
    # Get the current branch name
@@ -98,11 +100,22 @@ EOF
    # Switch to master in the MAIN repo (not the worktree)
    cd <main-repo-root>   # the parent of .claude/worktrees/
    git checkout master
-   git merge --no-ff "$BRANCH" -m "Merge branch '$BRANCH'"
+   git merge --squash "$BRANCH"
+   git commit -m "$(cat <<'EOF'
+   <type>: <short summary from the worktree work>
+
+   - Detail 1
+   - Detail 2
+
+   Co-Authored-By: <github_display_name> <github_username>@users.noreply.github.com
+   EOF
+   )"
    git push
    ```
 
-   After merging, inform the user the worktree branch has been merged into master and pushed. The worktree can now be cleaned up with `git worktree remove .claude/worktrees/<name>`.
+   The commit message should summarize the entire worktree's work (not repeat "Merge branch"). Use the same conventional commit format as step 6.
+
+   After merging, inform the user the worktree branch has been squash-merged into master and pushed. The worktree can now be cleaned up with `git worktree remove .claude/worktrees/<name>`.
 
    **If NOT in a worktree** (working directly on master or a branch):
 
@@ -145,20 +158,34 @@ When work was done in a worktree (via `isolation: "worktree"` Agent), the change
 
 5. **Stage ALL changes, commit, and verify** in the worktree. Since the worktree is owned entirely by this session, use `git add -A` to stage everything — do NOT selectively pick files. Then follow steps 5-8 from the normal flow above.
 
-6. **Switch back to the main branch directory** and merge:
+6. **Switch back to the main branch directory** and squash-merge:
 
    ```bash
    cd <original-repo-path>
-   git merge <worktree-branch> --no-edit
+   git merge --squash <worktree-branch>
    ```
 
-7. **Push master** and report the merge commit hash.
+7. **Craft a single summary commit** for the squash. Use the same conventional commit format as the normal flow (step 6). The message should describe what the worktree accomplished, not "Merge branch X".
 
-8. **Clean up**: Remove the worktree and delete the branch after merge:
+   ```bash
+   git commit -m "$(cat <<'EOF'
+   <type>: <summary of all worktree work>
+
+   - Detail 1
+   - Detail 2
+
+   Co-Authored-By: <github_display_name> <github_username>@users.noreply.github.com
+   EOF
+   )"
+   ```
+
+8. **Push master** and report the commit hash.
+
+9. **Clean up**: Remove the worktree and delete the branch after merge:
    ```bash
    git worktree remove <worktree-path>
-   git branch -d <worktree-branch>
-   git push origin --delete <worktree-branch>
+   git branch -D <worktree-branch>
+   git push origin --delete <worktree-branch> 2>/dev/null || true
    ```
 
 ## Rules
