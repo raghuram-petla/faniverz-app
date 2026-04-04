@@ -7,7 +7,7 @@ echo "============================"
 # 1. Install dependencies
 echo ""
 echo "▸ Installing dependencies..."
-npm install --silent
+yarn install --frozen-lockfile --silent
 echo "  ✓ Dependencies installed"
 
 # 2. Quality gates

@@ -13,7 +13,7 @@ echo ""
 
 # Install dependencies
 echo "Installing dependencies..."
-npm install --silent
+yarn install --frozen-lockfile --silent
 echo "  Dependencies installed"
 echo ""
 
