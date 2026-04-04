@@ -12,7 +12,11 @@ Use `isolation: "worktree"` when launching Agents. This automatically creates a 
 git worktree add ~/faniverz-worktrees/<branch-name> -b <branch-name>
 ```
 
-**Important:** Worktrees must live OUTSIDE the main repo (in `~/faniverz-worktrees/`) so that Metro bundler works correctly in both the main repo and worktrees. Never create worktrees inside the project directory. After creating a worktree, run `yarn install` before starting the dev server.
+**Important:** Worktrees must live OUTSIDE the main repo (in `~/faniverz-worktrees/`) so that Metro bundler works correctly in both the main repo and worktrees. Never create worktrees inside the project directory. After creating a worktree, run `yarn install` and copy `.env.local`:
+
+```bash
+cp ~/faniverz-app/.env.local ~/faniverz-worktrees/<branch-name>/.env.local
+```
 
 ### Rules
 
