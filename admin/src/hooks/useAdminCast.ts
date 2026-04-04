@@ -67,6 +67,10 @@ export function useAddCast() {
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['admin', 'cast', variables.movie_id] });
+      // @sideeffect: movie list actor filter depends on movie_cast junction
+      qc.invalidateQueries({ queryKey: ['admin', 'actor-movie-ids'] });
+      // @sideeffect: PH-scoped dashboard totalActors counts unique actors via movie_cast
+      qc.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
     },
     onError: (error: Error) => {
       window.alert(error.message || 'Operation failed');
@@ -84,6 +88,10 @@ export function useRemoveCast() {
     },
     onSuccess: (_data, variables) => {
       qc.invalidateQueries({ queryKey: ['admin', 'cast', variables.movieId] });
+      // @sideeffect: movie list actor filter depends on movie_cast junction
+      qc.invalidateQueries({ queryKey: ['admin', 'actor-movie-ids'] });
+      // @sideeffect: PH-scoped dashboard totalActors counts unique actors via movie_cast
+      qc.invalidateQueries({ queryKey: ['admin', 'dashboard'] });
     },
     onError: (error: Error) => {
       window.alert(error.message || 'Operation failed');
