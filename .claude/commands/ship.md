@@ -67,21 +67,39 @@ EOF
 
 8. Run `git status` after the commit (or in Scenario B) to verify state.
 
-9. Push to remote:
+9. **Merge into master and push:**
 
-```bash
-git push
-```
+   **If in a worktree** (path contains `.claude/worktrees/`):
 
-If the branch has no upstream, use:
+   ```bash
+   # Get the current branch name
+   BRANCH=$(git branch --show-current)
 
-```bash
-git push -u origin HEAD
-```
+   # Switch to master in the MAIN repo (not the worktree)
+   cd <main-repo-root>   # the parent of .claude/worktrees/
+   git checkout master
+   git merge --no-ff "$BRANCH" -m "Merge branch '$BRANCH'"
+   git push
+   ```
+
+   After merging, inform the user the worktree branch has been merged into master and pushed. The worktree can now be cleaned up with `git worktree remove .claude/worktrees/<name>`.
+
+   **If NOT in a worktree** (working directly on master or a branch):
+
+   ```bash
+   git push
+   ```
+
+   If the branch has no upstream, use:
+
+   ```bash
+   git push -u origin HEAD
+   ```
 
 10. Report to the user:
     - If committed: the commit hash and summary
     - Push status (success/failure)
+    - If worktree: confirm branch was merged into master
     - Any remaining uncommitted changes (from other sessions)
 
 ## Worktree Ship Flow
