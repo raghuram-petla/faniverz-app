@@ -68,6 +68,7 @@ export function CommentInput({
     onSubmit(body, replyTarget?.parentCommentId);
     setText('');
     onCancelReply?.();
+    inputRef.current?.blur();
   };
 
   /** @sideeffect Appends emoji to current text */

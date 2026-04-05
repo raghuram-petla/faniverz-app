@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -16,6 +16,8 @@ import Animated, {
   useSharedValue,
   useAnimatedStyle,
   withSpring,
+  withTiming,
+  Easing,
   runOnJS,
 } from 'react-native-reanimated';
 import { useTranslation } from 'react-i18next';
@@ -86,6 +88,13 @@ export function CommentsBottomSheet({ visible, feedItemId, onClose }: CommentsBo
 
   // --- Reply state ---
   const [replyTarget, setReplyTarget] = useState<ReplyTarget | null>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
+  const commentPositions = useRef<Record<string, number>>({});
+
+  /** @contract Track each comment's Y position within the ScrollView for scroll-to-reply */
+  const handleCommentLayout = useCallback((commentId: string, y: number) => {
+    commentPositions.current[commentId] = y;
+  }, []);
 
   /** @contract Resolve parentCommentId: if replying to nested, use its parent; if top-level, use its id */
   const handleReply = useCallback(
@@ -97,6 +106,11 @@ export function CommentsBottomSheet({ visible, feedItemId, onClose }: CommentsBo
         displayName:
           comment.profile?.display_name ?? /* istanbul ignore next */ t('feed.anonymous'),
       });
+      // @sideeffect Scroll to the comment being replied to so it stays visible above the keyboard
+      const y = commentPositions.current[comment.id];
+      if (y != null) {
+        setTimeout(() => scrollViewRef.current?.scrollTo({ y, animated: true }), 100);
+      }
     },
     [t],
   );
@@ -104,13 +118,24 @@ export function CommentsBottomSheet({ visible, feedItemId, onClose }: CommentsBo
   // --- Animation shared values ---
   const sheetHeight = useSharedValue(SNAP_SMALL);
   const startHeight = useSharedValue(SNAP_SMALL);
+  // @sync Mirror keyboardHeight into a shared value so the pan gesture worklet can read it
+  const isKeyboardOpen = useSharedValue(false);
+  useEffect(() => {
+    isKeyboardOpen.value = keyboardHeight > 0;
+  }, [keyboardHeight, isKeyboardOpen]);
 
   const dismiss = useCallback(() => {
     onClose();
   }, [onClose]);
 
+  const dismissKeyboard = useCallback(() => {
+    Keyboard.dismiss();
+  }, []);
+
   const animateClose = useCallback(() => {
-    sheetHeight.value = withSpring(0, SPRING_CONFIG, () => runOnJS(dismiss)());
+    sheetHeight.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) }, () =>
+      runOnJS(dismiss)(),
+    );
   }, [sheetHeight, dismiss]);
 
   const snapToNearest = useCallback(
@@ -119,7 +144,9 @@ export function CommentsBottomSheet({ visible, feedItemId, onClose }: CommentsBo
       const snaps = [SNAP_SMALL, SNAP_LARGE];
       const dismissThreshold = SNAP_SMALL * 0.5;
       if (h < dismissThreshold) {
-        sheetHeight.value = withSpring(0, SPRING_CONFIG, () => runOnJS(dismiss)());
+        sheetHeight.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) }, () =>
+          runOnJS(dismiss)(),
+        );
         return;
       }
       let closest = snaps[0];
@@ -143,6 +170,9 @@ export function CommentsBottomSheet({ visible, feedItemId, onClose }: CommentsBo
     .onStart(
       /* istanbul ignore next */ () => {
         startHeight.value = sheetHeight.value;
+        if (isKeyboardOpen.value) {
+          runOnJS(dismissKeyboard)();
+        }
       },
     )
     .onUpdate(
@@ -159,15 +189,26 @@ export function CommentsBottomSheet({ visible, feedItemId, onClose }: CommentsBo
           // Any upward swipe expands to full screen
           sheetHeight.value = withSpring(SNAP_LARGE, SPRING_CONFIG);
         } else if (e.velocityY > FLING_VELOCITY) {
-          // Force fling down always dismisses regardless of state
-          sheetHeight.value = withSpring(0, SPRING_CONFIG, () => runOnJS(dismiss)());
+          // Force fling down: dismiss keyboard if open, then close the sheet
+          if (isKeyboardOpen.value) {
+            runOnJS(dismissKeyboard)();
+          }
+          sheetHeight.value = withTiming(
+            0,
+            { duration: 400, easing: Easing.out(Easing.cubic) },
+            () => runOnJS(dismiss)(),
+          );
         } else if (e.translationY > SWIPE_THRESHOLD) {
           // Gentle swipe down: step down one level (large → small, small → dismiss)
           const wasAtLarge = startHeight.value > (SNAP_SMALL + SNAP_LARGE) / 2;
           if (wasAtLarge) {
             sheetHeight.value = withSpring(SNAP_SMALL, SPRING_CONFIG);
           } else {
-            sheetHeight.value = withSpring(0, SPRING_CONFIG, () => runOnJS(dismiss)());
+            sheetHeight.value = withTiming(
+              0,
+              { duration: 400, easing: Easing.out(Easing.cubic) },
+              () => runOnJS(dismiss)(),
+            );
           }
         } else {
           // Micro-drag — snap back to where it started
@@ -236,6 +277,7 @@ export function CommentsBottomSheet({ visible, feedItemId, onClose }: CommentsBo
             </GestureDetector>
 
             <ScrollView
+              ref={scrollViewRef}
               contentContainerStyle={styles.scrollContent}
               showsVerticalScrollIndicator
               keyboardShouldPersistTaps="handled"
@@ -249,6 +291,7 @@ export function CommentsBottomSheet({ visible, feedItemId, onClose }: CommentsBo
                 isLoading={isLoading}
                 hasNextPage={hasNextPage}
                 onLoadMore={() => fetchNextPage()}
+                onCommentLayout={handleCommentLayout}
                 onDelete={(id, parentId) =>
                   deleteMutation.mutate(
                     { commentId: id, parentCommentId: parentId },

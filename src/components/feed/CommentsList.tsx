@@ -20,6 +20,8 @@ export interface CommentsListProps {
   onReply?: (comment: FeedComment) => void;
   onLike?: (commentId: string) => void;
   onUnlike?: (commentId: string) => void;
+  /** @contract Reports each comment's Y position for scroll-to-reply */
+  onCommentLayout?: (commentId: string, y: number) => void;
 }
 
 /** @contract three states: loading spinner, empty state, or comment list with replies + pagination */
@@ -34,6 +36,7 @@ export function CommentsList({
   onReply,
   onLike,
   onUnlike,
+  onCommentLayout,
 }: CommentsListProps) {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
@@ -59,7 +62,12 @@ export function CommentsList({
   return (
     <View>
       {comments.map((comment) => (
-        <View key={comment.id}>
+        <View
+          key={comment.id}
+          onLayout={
+            onCommentLayout ? (e) => onCommentLayout(comment.id, e.nativeEvent.layout.y) : undefined
+          }
+        >
           <CommentItem
             comment={comment}
             isOwn={comment.user_id === userId}
@@ -77,7 +85,11 @@ export function CommentsList({
               onReply={onReply ?? /* istanbul ignore next */ (() => {})}
               onLike={onLike ?? /* istanbul ignore next */ (() => {})}
               onUnlike={onUnlike ?? /* istanbul ignore next */ (() => {})}
-              onDelete={onDelete ? (id, parentId) => onDelete(id, parentId) : /* istanbul ignore next */ () => {}}
+              onDelete={
+                onDelete
+                  ? (id, parentId) => onDelete(id, parentId)
+                  : /* istanbul ignore next */ () => {}
+              }
             />
           ) : null}
         </View>

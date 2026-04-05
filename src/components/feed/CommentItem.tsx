@@ -106,7 +106,7 @@ export function CommentItem({
       >
         <Ionicons
           name={isLiked ? 'heart' : 'heart-outline'}
-          size={14}
+          size={20}
           color={isLiked ? colors.red600 : colors.gray500}
         />
         {comment.like_count > 0 ? (
