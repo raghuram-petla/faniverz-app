@@ -1,7 +1,6 @@
 import React, { useMemo, useState, useCallback } from 'react';
 import { View, StyleSheet, type LayoutChangeEvent } from 'react-native';
 import { useTheme } from '@/theme';
-import { colors } from '@/theme/colors';
 import { useFilmStripStore } from '@/stores/useFilmStripStore';
 import {
   RAIL_WIDTH,
@@ -43,11 +42,9 @@ function FilmStripFrameInner({ children }: FilmStripFrameProps) {
   }, [height]);
 
   // @contract when disabled, render children in a simple rounded card
-  // @edge dark: pure black cards; light: pure white cards — divider line provides separation
-  const isDark = theme.statusBarStyle === 'light';
-  const cardBg = isDark ? colors.neutral900 : colors.neutral100;
+  // @edge uses theme.background so cards blend seamlessly with the screen
   if (!enabled) {
-    return <View style={[styles.card, { backgroundColor: cardBg }]}>{children}</View>;
+    return <View style={[styles.card, { backgroundColor: theme.background }]}>{children}</View>;
   }
 
   return (

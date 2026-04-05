@@ -178,7 +178,7 @@ export default function PostDetailScreen() {
           onPress={() => router.back()}
           accessibilityLabel="Go back"
         >
-          <Ionicons name="arrow-back" size={20} color={colors.white} />
+          <Ionicons name="arrow-back" size={20} color={theme.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('postDetail.title')}</Text>
       </View>
