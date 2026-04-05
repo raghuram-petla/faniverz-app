@@ -464,6 +464,165 @@ describe('useDeleteComment — non-parent comment survives reply deletion', () =
   });
 });
 
+describe('useAddComment — optimistic feed comment_count', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('increments comment_count in feed caches for top-level comment', async () => {
+    mockAddComment.mockResolvedValue(newComment);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const feedItem = { id: 'f1', comment_count: 3 };
+    client.setQueryData(['news-feed', 'all'], { pages: [[feedItem]] });
+    client.setQueryData(['personalized-feed', 'all', 'user-123'], { pages: [[feedItem]] });
+    client.setQueryData(['feed-item', 'f1'], { ...feedItem });
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useAddComment('f1'), { wrapper });
+    await act(async () => {
+      result.current.mutate({ body: 'Nice!' });
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const nf = client.getQueryData<{ pages: { id: string; comment_count: number }[][] }>([
+      'news-feed',
+      'all',
+    ]);
+    expect(nf?.pages[0][0].comment_count).toBe(4);
+
+    const pf = client.getQueryData<{ pages: { id: string; comment_count: number }[][] }>([
+      'personalized-feed',
+      'all',
+      'user-123',
+    ]);
+    expect(pf?.pages[0][0].comment_count).toBe(4);
+
+    const fi = client.getQueryData<{ id: string; comment_count: number }>(['feed-item', 'f1']);
+    expect(fi?.comment_count).toBe(4);
+  });
+
+  it('does not increment comment_count for replies', async () => {
+    const reply = { ...newComment, parent_comment_id: 'c1' };
+    mockAddComment.mockResolvedValue(reply);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const feedItem = { id: 'f1', comment_count: 3 };
+    client.setQueryData(['news-feed', 'all'], { pages: [[feedItem]] });
+    client.setQueryData(['feed-comments', 'f1'], { pages: [[baseComment]], pageParams: [0] });
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useAddComment('f1'), { wrapper });
+    await act(async () => {
+      result.current.mutate({ body: 'reply', parentCommentId: 'c1' });
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const nf = client.getQueryData<{ pages: { id: string; comment_count: number }[][] }>([
+      'news-feed',
+      'all',
+    ]);
+    expect(nf?.pages[0][0].comment_count).toBe(3);
+  });
+});
+
+describe('useDeleteComment — optimistic feed comment_count', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('decrements comment_count in feed caches for top-level delete', async () => {
+    mockDeleteComment.mockResolvedValue(undefined);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const feedItem = { id: 'f1', comment_count: 5 };
+    client.setQueryData(['news-feed', 'all'], { pages: [[feedItem]] });
+    client.setQueryData(['feed-item', 'f1'], { ...feedItem });
+    client.setQueryData(['feed-comments', 'f1'], {
+      pages: [[baseComment]],
+      pageParams: [0],
+    });
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useDeleteComment('f1'), { wrapper });
+    await act(async () => {
+      result.current.mutate({ commentId: 'c1' });
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const nf = client.getQueryData<{ pages: { id: string; comment_count: number }[][] }>([
+      'news-feed',
+      'all',
+    ]);
+    expect(nf?.pages[0][0].comment_count).toBe(4);
+
+    const fi = client.getQueryData<{ id: string; comment_count: number }>(['feed-item', 'f1']);
+    expect(fi?.comment_count).toBe(4);
+  });
+
+  it('does not decrement comment_count for reply deletes', async () => {
+    mockDeleteComment.mockResolvedValue(undefined);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const feedItem = { id: 'f1', comment_count: 5 };
+    client.setQueryData(['news-feed', 'all'], { pages: [[feedItem]] });
+    client.setQueryData(['feed-comments', 'f1'], { pages: [[baseComment]], pageParams: [0] });
+    client.setQueryData(
+      ['comment-replies', 'c1'],
+      [{ ...baseComment, id: 'r1', parent_comment_id: 'c1' }],
+    );
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useDeleteComment('f1'), { wrapper });
+    await act(async () => {
+      result.current.mutate({ commentId: 'r1', parentCommentId: 'c1' });
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const nf = client.getQueryData<{ pages: { id: string; comment_count: number }[][] }>([
+      'news-feed',
+      'all',
+    ]);
+    expect(nf?.pages[0][0].comment_count).toBe(5);
+  });
+
+  it('clamps comment_count to 0 when decrementing past zero', async () => {
+    mockDeleteComment.mockResolvedValue(undefined);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const feedItem = { id: 'f1', comment_count: 0 };
+    client.setQueryData(['news-feed', 'all'], { pages: [[feedItem]] });
+    client.setQueryData(['feed-comments', 'f1'], {
+      pages: [[baseComment]],
+      pageParams: [0],
+    });
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useDeleteComment('f1'), { wrapper });
+    await act(async () => {
+      result.current.mutate({ commentId: 'c1' });
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    const nf = client.getQueryData<{ pages: { id: string; comment_count: number }[][] }>([
+      'news-feed',
+      'all',
+    ]);
+    expect(nf?.pages[0][0].comment_count).toBe(0);
+  });
+});
+
 describe('useComments — error handling', () => {
   beforeEach(() => jest.clearAllMocks());
 

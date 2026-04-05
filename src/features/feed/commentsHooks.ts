@@ -1,15 +1,43 @@
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, QueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useSmartInfiniteQuery } from '@/hooks/useSmartInfiniteQuery';
 import { COMMENTS_PAGINATION } from '@/constants/paginationConfig';
 import { STALE_2M } from '@/constants/queryConfig';
 import { fetchComments, fetchReplies, addComment, deleteComment } from './commentsApi';
 import type { FeedComment } from '@shared/types';
+import type { NewsFeedItem } from '@shared/types';
 
 const COMMENTS_KEY = 'feed-comments';
 const REPLIES_KEY = 'comment-replies';
+const FEED_KEYS = ['news-feed', 'personalized-feed'] as const;
 
 type CommentsCache = { pages: FeedComment[][]; pageParams: number[] };
+type FeedPages = { pages: NewsFeedItem[][] };
+
+// @sideeffect: Optimistically adjusts comment_count in all feed caches for a given feedItemId.
+// This prevents a race condition in production where invalidateQueries refetches before the
+// DB trigger (trg_feed_comment_count) has committed the updated count.
+function adjustFeedCommentCount(queryClient: QueryClient, feedItemId: string, delta: number) {
+  for (const key of FEED_KEYS) {
+    queryClient.setQueriesData<FeedPages>({ queryKey: [key] }, (old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        pages: old.pages.map((page) =>
+          page.map((item) =>
+            item.id === feedItemId
+              ? { ...item, comment_count: Math.max(0, item.comment_count + delta) }
+              : item,
+          ),
+        ),
+      };
+    });
+  }
+  // @sideeffect: Also update the single feed-item cache (post detail screen)
+  queryClient.setQueryData<NewsFeedItem>(['feed-item', feedItemId], (old) =>
+    old ? { ...old, comment_count: Math.max(0, old.comment_count + delta) } : old,
+  );
+}
 
 // @contract: Uses smart pagination — loads top-level comments only (parent_comment_id IS NULL).
 export function useComments(feedItemId: string) {
@@ -72,7 +100,12 @@ export function useAddComment(feedItemId: string) {
           return { ...old, pages };
         });
       }
-      // @sideeffect: invalidate feed caches so comment_count refreshes on feed cards and post detail
+      // @sideeffect: Optimistically update comment_count in feed caches immediately, then
+      // invalidate so the authoritative server count overwrites once the DB trigger has committed.
+      // Only increment for top-level comments — replies don't affect comment_count.
+      if (!parentCommentId) {
+        adjustFeedCommentCount(queryClient, feedItemId, 1);
+      }
       queryClient.invalidateQueries({ queryKey: ['news-feed'] });
       queryClient.invalidateQueries({ queryKey: ['personalized-feed'] });
       queryClient.invalidateQueries({ queryKey: ['feed-item', feedItemId] });
@@ -123,6 +156,10 @@ export function useDeleteComment(feedItemId: string) {
         });
         // @sideeffect: CASCADE deletes replies in DB; remove stale client-side replies cache
         queryClient.removeQueries({ queryKey: [REPLIES_KEY, commentId] });
+      }
+      // @sideeffect: Optimistically decrement comment_count for top-level deletes, then invalidate.
+      if (!parentCommentId) {
+        adjustFeedCommentCount(queryClient, feedItemId, -1);
       }
       queryClient.invalidateQueries({ queryKey: ['news-feed'] });
       queryClient.invalidateQueries({ queryKey: ['personalized-feed'] });
