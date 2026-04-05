@@ -37,10 +37,10 @@ yarn-error.*
 .DS_Store
 *.pem
 
-# local env files
+# local env files — .env.production must NOT be gitignored because EAS local builds
+# exclude gitignored files from the build context, causing missing env vars and crash on launch
 .env*.local
 .env
-.env.production
 
 # typescript
 *.tsbuildinfo
