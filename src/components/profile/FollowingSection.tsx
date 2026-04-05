@@ -18,8 +18,8 @@ export interface FollowingSectionProps {
 
 // @contract imported from @/constants/entityLabels — do not redefine locally
 
-/** @invariant shows at most 6 items in the preview grid; overflow triggers "See more" link */
-const MAX_PREVIEW = 6;
+/** @invariant shows at most 3 items (one row) in the preview grid; overflow triggers "See more" link */
+const MAX_PREVIEW = 3;
 
 export function FollowingSection({ follows, onEntityPress, onViewAll }: FollowingSectionProps) {
   const { t } = useTranslation();
@@ -70,15 +70,15 @@ export function FollowingSection({ follows, onEntityPress, onViewAll }: Followin
               onPress={() => onEntityPress(f.entity_type, f.entity_id)}
               accessibilityLabel={f.name}
             >
-              <Image
-                source={{ uri: imageUrl }}
-                style={[
-                  styles.image,
-                  f.entity_type === 'actor' ? styles.imageRound : styles.imageSquare,
-                ]}
-                contentFit="cover"
-                transition={200}
-              />
+              {/** @invariant imageSlot keeps 2:3 ratio so all items share the same height */}
+              <View style={styles.imageSlot}>
+                <Image
+                  source={{ uri: imageUrl }}
+                  style={f.entity_type === 'actor' ? styles.imageRound : styles.imagePoster}
+                  contentFit="cover"
+                  transition={200}
+                />
+              </View>
               <Text style={styles.name} numberOfLines={1}>
                 {f.name}
               </Text>
@@ -153,19 +153,26 @@ const createStyles = (t: SemanticTheme) =>
       alignItems: 'center',
       gap: 6,
     },
-    /** @contract poster-format image: full-width with 2:3 aspect ratio */
-    image: {
+    /** @invariant fixed 2:3 slot so actor circles and movie posters share the same row height */
+    imageSlot: {
       width: '100%',
       aspectRatio: 2 / 3,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    /** @contract poster fills the entire slot */
+    imagePoster: {
+      width: '100%',
+      height: '100%',
+      borderRadius: 8,
       backgroundColor: t.input,
     },
-    /** @edge actors use 1:1 aspect with full-round corners */
+    /** @edge actor circle is 75% width, centered within the 2:3 slot */
     imageRound: {
+      width: '75%',
       aspectRatio: 1,
       borderRadius: 999,
-    },
-    imageSquare: {
-      borderRadius: 8,
+      backgroundColor: t.input,
     },
     name: {
       fontSize: 11,

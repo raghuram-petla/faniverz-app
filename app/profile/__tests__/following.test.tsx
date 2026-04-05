@@ -39,8 +39,16 @@ jest.mock('@/features/feed', () => ({
 }));
 
 jest.mock('@/components/common/ScreenHeader', () => {
-  const { Text } = require('react-native');
-  return { __esModule: true, default: ({ title }: { title: string }) => <Text>{title}</Text> };
+  const { View, Text } = require('react-native');
+  return {
+    __esModule: true,
+    default: ({ title, rightAction }: { title: string; rightAction?: React.ReactNode }) => (
+      <View>
+        <Text>{title}</Text>
+        {rightAction}
+      </View>
+    ),
+  };
 });
 
 jest.mock('@/components/ui/EmptyState', () => ({
@@ -110,9 +118,11 @@ describe('FollowingScreen', () => {
     expect(screen.queryByText('Pushpa 2')).toBeNull();
   });
 
-  it('shows unfollow button for each entity', () => {
+  it('hides unfollow buttons by default and shows them in edit mode', () => {
     render(<FollowingScreen />);
-    // t() mock returns the key, so both unfollow buttons have label 'common.unfollowName'
+    expect(screen.queryAllByLabelText('common.unfollowName')).toHaveLength(0);
+    // Enter edit mode
+    fireEvent.press(screen.getByText('common.edit'));
     expect(screen.getAllByLabelText('common.unfollowName')).toHaveLength(2);
   });
 
@@ -141,14 +151,11 @@ describe('FollowingScreen', () => {
     expect(screen.queryByText('Allu Arjun')).toBeNull();
   });
 
-  it('calls unfollow mutation when unfollow button is pressed', () => {
-    const { useUnfollowEntity: _useUnfollowEntity } = require('@/features/feed');
-    // Override the mock for this specific test is not possible via jest.mock at top,
-    // but we can still test the button fires
+  it('calls unfollow mutation when unfollow button is pressed in edit mode', () => {
     render(<FollowingScreen />);
+    fireEvent.press(screen.getByText('common.edit'));
     const unfollowButtons = screen.getAllByLabelText('common.unfollowName');
     fireEvent.press(unfollowButtons[0]);
-    // The mutation should have been called (default mock returns jest.fn())
   });
 
   it('shows empty state when data is undefined (defaults to empty array)', () => {
@@ -167,6 +174,7 @@ describe('FollowingScreen', () => {
     mockUseAuth.mockReturnValueOnce({ user: null as unknown as { id: string } });
     useUnfollowEntity.mockReturnValueOnce({ mutate: mockMutate, isPending: false });
     render(<FollowingScreen />);
+    fireEvent.press(screen.getByText('common.edit'));
     const unfollowButtons = screen.getAllByLabelText('common.unfollowName');
     fireEvent.press(unfollowButtons[0]);
     expect(mockMutate).not.toHaveBeenCalled();
@@ -175,11 +183,14 @@ describe('FollowingScreen', () => {
   it('calls unfollow even when mutation is pending (idempotent)', () => {
     const mockMutate = jest.fn();
     const { useUnfollowEntity } = require('@/features/feed');
-    useUnfollowEntity.mockReturnValueOnce({ mutate: mockMutate, isPending: true });
+    useUnfollowEntity.mockReturnValue({ mutate: mockMutate, isPending: true });
     render(<FollowingScreen />);
+    fireEvent.press(screen.getByText('common.edit'));
     const unfollowButtons = screen.getAllByLabelText('common.unfollowName');
     fireEvent.press(unfollowButtons[0]);
     expect(mockMutate).toHaveBeenCalled();
+    // Restore default mock
+    useUnfollowEntity.mockReturnValue({ mutate: jest.fn(), isPending: false });
   });
 
   it('renders production_house entity type label', () => {

@@ -124,6 +124,6 @@ describe('FollowingSection', () => {
         onViewAll={onViewAll}
       />,
     );
-    expect(screen.getByText('See 2 more')).toBeTruthy();
+    expect(screen.getByText('See 5 more')).toBeTruthy();
   });
 });
