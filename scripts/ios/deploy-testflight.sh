@@ -31,11 +31,10 @@ if [ -z "$IPA_FILE" ]; then
 fi
 echo ""
 echo "▸ Submitting $IPA_FILE to TestFlight..."
-fastlane pilot upload \
-  --ipa "$IPA_FILE" \
-  --notify_external_testers false
+eas submit --platform ios --profile production --path "$IPA_FILE" --non-interactive
 
 echo ""
 echo "================================"
-echo "✓ Deployed to TestFlight (email notifications suppressed)"
-echo "  Testers can update from the TestFlight app — no email was sent."
+echo "✓ Submitted to App Store Connect"
+echo "  Internal testers: auto-distributed after Apple's processing (~5-15 min)."
+echo "  External testers: manually distribute in App Store Connect → TestFlight."
