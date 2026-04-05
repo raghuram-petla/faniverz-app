@@ -2,6 +2,9 @@ import { FEED_PILLS } from '@/constants/feedHelpers';
 import { FilterPillBar } from '@/components/common/FilterPillBar';
 import type { FeedFilterOption } from '@/types';
 
+/** @invariant Measured pill bar height — paddingVertical(6)*2 + fontSize(18) + border(1)*2 + paddingBottom(8) */
+export const FEED_PILL_BAR_HEIGHT = 40;
+
 export interface FeedFilterPillsProps {
   filter: FeedFilterOption;
   setFilter: (f: FeedFilterOption) => void;

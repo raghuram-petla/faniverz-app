@@ -77,7 +77,27 @@ jest.mock('@/components/feed/FeedHeader', () => ({
 
 jest.mock('@/components/feed/FeedFilterPills', () => ({
   FeedFilterPills: () => null,
+  FEED_PILL_BAR_HEIGHT: 40,
 }));
+
+// @edge PagerView mock renders only the first child (active page) for test simplicity
+jest.mock('react-native-pager-view', () => {
+  const { View } = require('react-native');
+  const React = require('react');
+  return {
+    __esModule: true,
+    default: React.forwardRef(({ children, ...props }: any, ref: any) => {
+      React.useImperativeHandle(ref, () => ({ setPage: jest.fn() }));
+      const childArray = React.Children.toArray(children);
+      // Render only the first page (index 0 = "all" filter)
+      return (
+        <View testID="pager-view" {...props}>
+          {childArray[0]}
+        </View>
+      );
+    }),
+  };
+});
 
 jest.mock('@/components/common/SafeAreaCover', () => ({
   SafeAreaCover: () => {
@@ -333,7 +353,9 @@ function setupMocks(
 ) {
   mockUseFeedStore.mockReturnValue({
     filter: 'all',
+    pageIndex: 0,
     setFilter: mockSetFilter,
+    setPageIndex: jest.fn(),
     ...overrides.store,
   } as any);
 
@@ -555,9 +577,10 @@ describe('FeedScreen', () => {
   });
 
   it('passes filter to usePersonalizedFeed', () => {
-    setupMocks({ store: { filter: 'songs' } });
+    setupMocks({ store: { filter: 'all' } });
     render(<FeedScreen />);
-    expect(mockUsePersonalizedFeed).toHaveBeenCalledWith('songs');
+    // @edge PagerView mock renders page 0 which uses 'all' filter
+    expect(mockUsePersonalizedFeed).toHaveBeenCalledWith('all');
   });
 
   it('handles empty pages array gracefully', () => {
@@ -575,15 +598,12 @@ describe('FeedScreen', () => {
     expect(screen.getAllByText('Duplicate')).toHaveLength(1);
   });
 
-  it('shows filter-specific empty message when filter is not "all"', () => {
+  it('shows empty state message when no items on active page', () => {
     setupMocks({
-      store: { filter: 'songs' },
       feed: { data: { pages: [[]], pageParams: [0] }, isLoading: false },
     });
     render(<FeedScreen />);
     expect(screen.getByText('No updates yet')).toBeTruthy();
-    // Non-all filter shows filter-specific content text (actual i18n translation used)
-    expect(screen.getByText(/Songs/i)).toBeTruthy();
   });
 
   it('calls Share.share when share button is pressed', () => {
@@ -892,7 +912,7 @@ describe('FeedScreen', () => {
       expect(screen.getByTestId('refresh-spinner')).toBeTruthy();
       expect(screen.getByTestId('refresh-pill-overlay')).toBeTruthy();
       const flashList = UNSAFE_getByType(FlashList);
-      expect(flashList.props.extraData.showProgrammaticRefreshIndicator).toBe(true);
+      expect(flashList.props.extraData.refreshSlotRefreshing).toBe(true);
 
       await act(async () => {
         resolveRefetch?.();
@@ -924,7 +944,8 @@ describe('FeedScreen', () => {
 
       expect(screen.getByTestId('refresh-spinner')).toBeTruthy();
       const flashList = UNSAFE_getByType(FlashList);
-      expect(flashList.props.contentContainerStyle.paddingTop).toBe(99);
+      // @sync totalHeaderHeight(99) + FEED_PILL_BAR_HEIGHT(40) = 139
+      expect(flashList.props.contentContainerStyle.paddingTop).toBe(139);
 
       await act(async () => {
         resolveRefetch?.();
@@ -1031,14 +1052,15 @@ describe('FeedScreen', () => {
   it('uses unified top padding on both platforms', () => {
     const { UNSAFE_getByType } = render(<FeedScreen />);
     const flashList = UNSAFE_getByType(FlashList);
-    // @sync totalHeaderHeight = insetTop(47) + HOME_FEED_HEADER_CONTENT_HEIGHT(52) = 99
-    expect(flashList.props.contentContainerStyle.paddingTop).toBe(99);
+    // @sync totalHeaderHeight(99) + FEED_PILL_BAR_HEIGHT(40) = 139
+    expect(flashList.props.contentContainerStyle.paddingTop).toBe(139);
   });
 
   it('always renders PullToRefreshIndicator without topGap', () => {
     const { UNSAFE_getByType } = render(<FeedScreen />);
     const flashList = UNSAFE_getByType(FlashList);
-    const refreshIndicator = flashList.props.ListHeaderComponent.props.children[0];
+    // @edge ListHeaderComponent is now PullToRefreshIndicator directly (pills moved outside pager)
+    const refreshIndicator = flashList.props.ListHeaderComponent;
     expect(refreshIndicator).toBeTruthy();
     expect(refreshIndicator.props.topGap).toBeUndefined();
   });

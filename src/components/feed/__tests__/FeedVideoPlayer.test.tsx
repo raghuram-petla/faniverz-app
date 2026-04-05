@@ -39,20 +39,21 @@ describe('FeedVideoPlayer', () => {
     expect(player.props.mountShellWhenIdle).toBe(false);
   });
 
-  it('mounts the interactive shell without autoplay when preloading a nearby video', () => {
+  it('does not eagerly mount WebView shell for preloading — uses native thumbnail instead', () => {
     render(<FeedVideoPlayer {...defaultProps} isActive={false} shouldMount={true} />);
     const player = screen.getByTestId('youtube-player');
     expect(player.props.isActive).toBe(false);
     expect(player.props.autoPlay).toBe(false);
-    expect(player.props.mountShellWhenIdle).toBe(true);
+    // @edge WebView shells are no longer eagerly mounted — iOS paint bug causes black screens
+    expect(player.props.mountShellWhenIdle).toBe(false);
   });
 
-  it('keeps active feed cards mounted without autoplay until the user taps', () => {
+  it('does not mount WebView shell for active cards until user taps', () => {
     render(<FeedVideoPlayer {...defaultProps} isActive={true} />);
     const player = screen.getByTestId('youtube-player');
     expect(player.props.isActive).toBe(false);
     expect(player.props.autoPlay).toBe(false);
-    expect(player.props.mountShellWhenIdle).toBe(true);
+    expect(player.props.mountShellWhenIdle).toBe(false);
   });
 
   it('keeps feed videos unmuted until manual playback starts', () => {
@@ -120,9 +121,9 @@ describe('FeedVideoPlayer', () => {
     expect(screen.getByTestId('youtube-player').props.borderRadius).toBe(0);
   });
 
-  it('requests idle shell mounting in feed mode when a card should be kept ready', () => {
+  it('does not eagerly mount shell even when shouldMount=true (deferred to tap)', () => {
     render(<FeedVideoPlayer {...defaultProps} shouldMount={true} />);
-    expect(screen.getByTestId('youtube-player').props.mountShellWhenIdle).toBe(true);
+    expect(screen.getByTestId('youtube-player').props.mountShellWhenIdle).toBe(false);
   });
 
   it('does not pass the legacy ready-gated overlay prop anymore', () => {

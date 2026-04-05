@@ -16,10 +16,11 @@ interface CollapsibleHeaderState {
  * @contract returns scroll handler that collapses header on scroll-down, reveals on scroll-up
  * @sync Uses RN Animated.Value (not Reanimated) — setValue runs on JS thread, not worklet
  */
-export function useCollapsibleHeader(insetTop: number): CollapsibleHeaderState {
+export function useCollapsibleHeader(insetTop: number, extraHeight = 0): CollapsibleHeaderState {
   const headerTranslateY = useRef(new Animated.Value(0)).current;
   const lastScrollY = useRef(0);
-  /** @sync headerOffset tracks cumulative scroll diff, clamped to [0, HOME_FEED_HEADER_CONTENT_HEIGHT] */
+  const collapseRange = HOME_FEED_HEADER_CONTENT_HEIGHT + extraHeight;
+  /** @sync headerOffset tracks cumulative scroll diff, clamped to [0, collapseRange] */
   const headerOffset = useRef(0);
   const totalHeaderHeight = insetTop + HOME_FEED_HEADER_CONTENT_HEIGHT;
 
@@ -37,10 +38,7 @@ export function useCollapsibleHeader(insetTop: number): CollapsibleHeaderState {
       }
 
       const diff = currentY - lastScrollY.current;
-      headerOffset.current = Math.min(
-        Math.max(headerOffset.current + diff, 0),
-        HOME_FEED_HEADER_CONTENT_HEIGHT,
-      );
+      headerOffset.current = Math.min(Math.max(headerOffset.current + diff, 0), collapseRange);
       headerTranslateY.setValue(-headerOffset.current);
       lastScrollY.current = currentY;
     },
@@ -58,10 +56,17 @@ export interface FeedHeaderProps {
   insetTop: number;
   headerTranslateY: Animated.Value;
   totalHeaderHeight: number;
+  /** @contract Optional slot rendered below the chrome inside the animated header */
+  children?: React.ReactNode;
 }
 
 /** @coupling logo-full.png asset must exist at assets/logo-full.png — build fails silently if missing */
-export function FeedHeader({ insetTop, headerTranslateY, totalHeaderHeight }: FeedHeaderProps) {
+export function FeedHeader({
+  insetTop,
+  headerTranslateY,
+  totalHeaderHeight,
+  children,
+}: FeedHeaderProps) {
   const router = useRouter();
 
   return (
@@ -80,6 +85,7 @@ export function FeedHeader({ insetTop, headerTranslateY, totalHeaderHeight }: Fe
         onSearchPress={() => router.push('/discover')}
         onNotificationsPress={() => router.push('/notifications')}
       />
+      {children}
     </Animated.View>
   );
 }

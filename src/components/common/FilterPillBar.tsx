@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { ScrollView, TouchableOpacity, Text } from 'react-native';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { ScrollView, TouchableOpacity, Text, type LayoutChangeEvent } from 'react-native';
 import { useTheme } from '@/theme';
 import { colors } from '@/theme/colors';
 import { createFilterPillBarStyles } from './FilterPillBar.styles';
@@ -37,13 +37,30 @@ export function FilterPillBar({
 }: FilterPillBarProps) {
   const { theme } = useTheme();
   const styles = useMemo(() => createFilterPillBarStyles(theme), [theme]);
+  const scrollRef = useRef<ScrollView>(null);
+  const pillLayouts = useRef<Map<string, { x: number; width: number }>>(new Map());
+  const scrollWidth = useRef(0);
+
+  const handleScrollLayout = useCallback((e: LayoutChangeEvent) => {
+    scrollWidth.current = e.nativeEvent.layout.width;
+  }, []);
+
+  // @sideeffect Auto-scroll to keep the active pill visible (e.g. when pager swipe changes tab)
+  useEffect(() => {
+    const layout = pillLayouts.current.get(activeValue);
+    if (!layout || !scrollRef.current || scrollWidth.current === 0) return;
+    const targetX = layout.x - scrollWidth.current / 2 + layout.width / 2;
+    scrollRef.current.scrollTo({ x: Math.max(0, targetX), animated: true });
+  }, [activeValue]);
 
   return (
     <ScrollView
+      ref={scrollRef}
       horizontal
       showsHorizontalScrollIndicator={false}
       style={[styles.scroll, !showBackground && { backgroundColor: 'transparent' }]}
       contentContainerStyle={styles.scrollContent}
+      onLayout={handleScrollLayout}
     >
       {pills.map((pill) => {
         const active = activeValue === pill.value;
@@ -51,6 +68,10 @@ export function FilterPillBar({
         return (
           <TouchableOpacity
             key={pill.value}
+            onLayout={(e) => {
+              const { x, width } = e.nativeEvent.layout;
+              pillLayouts.current.set(pill.value, { x, width });
+            }}
             style={[
               styles.pill,
               active ? { backgroundColor: pillColor, borderColor: pillColor } : styles.pillInactive,

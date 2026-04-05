@@ -99,10 +99,7 @@ export function PullToRefreshIndicator({
   if (!isSpinnerVisible && caughtUp) {
     return (
       <View
-        style={[
-          styles.container,
-          { height: indicatorHeight, opacity: 1, paddingBottom: INDICATOR_BOTTOM_GAP },
-        ]}
+        style={[styles.container, { height: indicatorHeight, opacity: 1 }]}
         testID="refresh-container"
       >
         <View
@@ -124,10 +121,7 @@ export function PullToRefreshIndicator({
   if (isSpinnerVisible) {
     return (
       <View
-        style={[
-          styles.container,
-          { height: indicatorHeight, opacity: 1, paddingBottom: INDICATOR_BOTTOM_GAP },
-        ]}
+        style={[styles.container, { height: indicatorHeight, opacity: 1 }]}
         testID="refresh-container"
       >
         <View
@@ -172,7 +166,7 @@ function PullArrowIndicator({
     );
     return {
       height: pullHeight,
-      paddingBottom: pullHeight > 0 ? INDICATOR_BOTTOM_GAP : 0,
+      paddingBottom: 0,
       opacity: interpolate(pullDistance.value, [0, 20], [0, 1], Extrapolation.CLAMP),
     };
   });

@@ -5,7 +5,7 @@ const INDICATOR_BOTTOM_GAP = 20;
 export const styles = StyleSheet.create({
   container: {
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'center',
     overflow: 'hidden',
   },
   pill: {
