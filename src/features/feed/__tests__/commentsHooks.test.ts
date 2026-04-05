@@ -126,7 +126,7 @@ describe('useAddComment', () => {
     expect(cached?.pages[0][0].reply_count).toBe(3);
   });
 
-  it('appends top-level comment to existing cache', async () => {
+  it('prepends top-level comment to first page of existing cache', async () => {
     mockAddComment.mockResolvedValue(newComment);
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -137,11 +137,16 @@ describe('useAddComment', () => {
       React.createElement(QueryClientProvider, { client }, children);
 
     const { result } = renderHook(() => useAddComment('f1'), { wrapper });
-    await act(async () => { result.current.mutate({ body: 'Nice!' }); });
+    await act(async () => {
+      result.current.mutate({ body: 'Nice!' });
+    });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     const cached = client.getQueryData<{ pages: FeedComment[][] }>(['feed-comments', 'f1']);
     expect(cached?.pages[0]).toHaveLength(2);
+    // New comment should be first (prepended), not last
+    expect(cached?.pages[0][0].id).toBe('c2');
+    expect(cached?.pages[0][1].id).toBe('c1');
   });
 
   it('creates new cache entry when no existing cache', async () => {
@@ -154,7 +159,9 @@ describe('useAddComment', () => {
       React.createElement(QueryClientProvider, { client }, children);
 
     const { result } = renderHook(() => useAddComment('f1'), { wrapper });
-    await act(async () => { result.current.mutate({ body: 'Nice!' }); });
+    await act(async () => {
+      result.current.mutate({ body: 'Nice!' });
+    });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     const cached = client.getQueryData<{ pages: FeedComment[][] }>(['feed-comments', 'f1']);
@@ -172,7 +179,9 @@ describe('useAddComment', () => {
       React.createElement(QueryClientProvider, { client }, children);
 
     const { result } = renderHook(() => useAddComment('f1'), { wrapper });
-    await act(async () => { result.current.mutate({ body: 'Nice!' }); });
+    await act(async () => {
+      result.current.mutate({ body: 'Nice!' });
+    });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
     const cached = client.getQueryData<{ pages: FeedComment[][] }>(['feed-comments', 'f1']);
@@ -183,15 +192,25 @@ describe('useAddComment', () => {
     mockAddComment.mockRejectedValue(new Error('add failed'));
     const { result } = renderHook(() => useAddComment('f1'), { wrapper: createWrapper() });
 
-    await act(async () => { result.current.mutate({ body: 'Nice!' }); });
+    await act(async () => {
+      result.current.mutate({ body: 'Nice!' });
+    });
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
 
   it('throws when user is not authenticated', async () => {
-    mockUseAuth.mockReturnValueOnce({ user: null, session: null, isLoading: false, isGuest: false, setIsGuest: jest.fn() });
+    mockUseAuth.mockReturnValueOnce({
+      user: null,
+      session: null,
+      isLoading: false,
+      isGuest: false,
+      setIsGuest: jest.fn(),
+    });
     const { result } = renderHook(() => useAddComment('f1'), { wrapper: createWrapper() });
 
-    await act(async () => { result.current.mutate({ body: 'Nice!' }); });
+    await act(async () => {
+      result.current.mutate({ body: 'Nice!' });
+    });
     await waitFor(() => expect(result.current.isError).toBe(true));
     expect(mockAddComment).not.toHaveBeenCalled();
   });
@@ -235,9 +254,10 @@ describe('useDeleteComment', () => {
       pages: [[baseComment]],
       pageParams: [0],
     });
-    client.setQueryData(['comment-replies', 'c1'], [
-      { ...baseComment, id: 'r1', parent_comment_id: 'c1' },
-    ]);
+    client.setQueryData(
+      ['comment-replies', 'c1'],
+      [{ ...baseComment, id: 'r1', parent_comment_id: 'c1' }],
+    );
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
       React.createElement(QueryClientProvider, { client }, children);
@@ -259,15 +279,25 @@ describe('useDeleteComment', () => {
     mockDeleteComment.mockRejectedValue(new Error('delete failed'));
     const { result } = renderHook(() => useDeleteComment('f1'), { wrapper: createWrapper() });
 
-    await act(async () => { result.current.mutate({ commentId: 'c1' }); });
+    await act(async () => {
+      result.current.mutate({ commentId: 'c1' });
+    });
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
 
   it('throws when user is not authenticated', async () => {
-    mockUseAuth.mockReturnValueOnce({ user: null, session: null, isLoading: false, isGuest: false, setIsGuest: jest.fn() });
+    mockUseAuth.mockReturnValueOnce({
+      user: null,
+      session: null,
+      isLoading: false,
+      isGuest: false,
+      setIsGuest: jest.fn(),
+    });
     const { result } = renderHook(() => useDeleteComment('f1'), { wrapper: createWrapper() });
 
-    await act(async () => { result.current.mutate({ commentId: 'c1' }); });
+    await act(async () => {
+      result.current.mutate({ commentId: 'c1' });
+    });
     await waitFor(() => expect(result.current.isError).toBe(true));
   });
 
@@ -275,7 +305,9 @@ describe('useDeleteComment', () => {
     mockDeleteComment.mockResolvedValue(undefined);
     const { result } = renderHook(() => useDeleteComment('f1'), { wrapper: createWrapper() });
 
-    await act(async () => { result.current.mutate({ commentId: 'c1' }); });
+    await act(async () => {
+      result.current.mutate({ commentId: 'c1' });
+    });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
 
@@ -286,9 +318,10 @@ describe('useDeleteComment', () => {
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
     // Seed the replies cache but NOT the comments cache
-    client.setQueryData(['comment-replies', 'c1'], [
-      { ...baseComment, id: 'r1', parent_comment_id: 'c1' },
-    ]);
+    client.setQueryData(
+      ['comment-replies', 'c1'],
+      [{ ...baseComment, id: 'r1', parent_comment_id: 'c1' }],
+    );
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
       React.createElement(QueryClientProvider, { client }, children);
@@ -409,9 +442,10 @@ describe('useDeleteComment — non-parent comment survives reply deletion', () =
       pages: [[baseComment, otherComment]],
       pageParams: [0],
     });
-    client.setQueryData(['comment-replies', 'c1'], [
-      { ...baseComment, id: 'r1', parent_comment_id: 'c1' },
-    ]);
+    client.setQueryData(
+      ['comment-replies', 'c1'],
+      [{ ...baseComment, id: 'r1', parent_comment_id: 'c1' }],
+    );
 
     const wrapper = ({ children }: { children: React.ReactNode }) =>
       React.createElement(QueryClientProvider, { client }, children);

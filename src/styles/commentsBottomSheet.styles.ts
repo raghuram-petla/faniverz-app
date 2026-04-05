@@ -12,15 +12,12 @@ export const createCommentsSheetStyles = (t: SemanticTheme) =>
       backgroundColor: t.surface,
       overflow: 'hidden',
     },
-    dragZone: {
-      position: 'absolute',
-      top: 0,
-      left: 0,
-      right: 50,
-      height: 70,
-      justifyContent: 'flex-start',
+    headerPanel: {
+      alignItems: 'center',
       paddingTop: 10,
-      zIndex: 10,
+      paddingBottom: 14,
+      borderBottomWidth: StyleSheet.hairlineWidth,
+      borderBottomColor: t.border,
     },
     dragHandle: {
       width: 36,
@@ -28,11 +25,14 @@ export const createCommentsSheetStyles = (t: SemanticTheme) =>
       borderRadius: 2,
       backgroundColor: t.textTertiary,
       opacity: 0.4,
-      alignSelf: 'center',
-      marginRight: -50,
+    },
+    headerTitle: {
+      marginTop: 10,
+      fontSize: 16,
+      fontWeight: '700',
+      color: t.textPrimary,
     },
     scrollContent: {
-      marginTop: 24,
       flexGrow: 1,
       paddingHorizontal: 16,
       paddingTop: 8,

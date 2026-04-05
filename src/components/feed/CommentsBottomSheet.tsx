@@ -1,11 +1,20 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { View, Modal, Pressable, Dimensions, Alert } from 'react-native';
+import {
+  View,
+  Text,
+  Modal,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Dimensions,
+  Alert,
+  Keyboard,
+} from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
-  useAnimatedScrollHandler,
   withSpring,
   runOnJS,
 } from 'react-native-reanimated';
@@ -60,10 +69,14 @@ export function CommentsBottomSheet({ visible, feedItemId, onClose }: CommentsBo
   const addMutation = useAddComment(feedItemId);
   const deleteMutation = useDeleteComment(feedItemId);
 
-  const comments = useMemo(
-    () => commentsData?.pages.flatMap((page) => page) ?? [],
-    [commentsData?.pages],
-  );
+  // @contract: user's own comments float to top, then newest-first order from API
+  const comments = useMemo(() => {
+    const all = commentsData?.pages.flatMap((page) => page) ?? [];
+    if (!user?.id) return all;
+    const own = all.filter((c) => c.user_id === user.id);
+    const others = all.filter((c) => c.user_id !== user.id);
+    return [...own, ...others];
+  }, [commentsData?.pages, user?.id]);
 
   // @contract: collect all visible comment IDs for likes query
   const commentIds = useMemo(() => comments.map((c) => c.id), [comments]);
@@ -123,16 +136,9 @@ export function CommentsBottomSheet({ visible, feedItemId, onClose }: CommentsBo
     [sheetHeight, dismiss, SNAP_SMALL, SNAP_LARGE],
   );
 
-  // @sync scrollOffset drives the pan gesture's "is scrolled" check — when > 1, downward drag is swallowed by the inner ScrollView instead of moving the sheet.
-  const scrollOffset = useSharedValue(0);
-  const scrollHandler = useAnimatedScrollHandler({
-    onScroll: /* istanbul ignore next */ (e) => {
-      scrollOffset.value = e.contentOffset.y;
-    },
-  });
-
-  // @invariant If velocity exceeds FLING_VELOCITY downward while scroll is at top, sheet dismisses immediately instead of snapping.
-  const FLING_VELOCITY = 1500;
+  // @invariant Pan gesture is confined to the header panel only — not the scroll area.
+  // @edge Swipe down from SNAP_LARGE → SNAP_SMALL. Swipe down from SNAP_SMALL → dismiss.
+  // @edge Any upward swipe expands to SNAP_LARGE.
   const panGesture = Gesture.Pan()
     .onStart(
       /* istanbul ignore next */ () => {
@@ -141,27 +147,35 @@ export function CommentsBottomSheet({ visible, feedItemId, onClose }: CommentsBo
     )
     .onUpdate(
       /* istanbul ignore next */ (e) => {
-        const isDraggingDown = e.translationY > 0;
-        if (isDraggingDown && scrollOffset.value > 1) return;
         const newH = startHeight.value - e.translationY;
         sheetHeight.value = Math.max(0, Math.min(newH, SNAP_LARGE));
       },
     )
     .onEnd(
       /* istanbul ignore next */ (e) => {
-        if (e.velocityY > FLING_VELOCITY && scrollOffset.value <= 1) {
-          sheetHeight.value = withSpring(0, SPRING_CONFIG, () => runOnJS(dismiss)());
-        } else if (e.velocityY < -FLING_VELOCITY) {
+        const SWIPE_THRESHOLD = 30;
+        const FLING_VELOCITY = 3000;
+        if (e.translationY < -SWIPE_THRESHOLD) {
+          // Any upward swipe expands to full screen
           sheetHeight.value = withSpring(SNAP_LARGE, SPRING_CONFIG);
+        } else if (e.velocityY > FLING_VELOCITY) {
+          // Force fling down always dismisses regardless of state
+          sheetHeight.value = withSpring(0, SPRING_CONFIG, () => runOnJS(dismiss)());
+        } else if (e.translationY > SWIPE_THRESHOLD) {
+          // Gentle swipe down: step down one level (large → small, small → dismiss)
+          const wasAtLarge = startHeight.value > (SNAP_SMALL + SNAP_LARGE) / 2;
+          if (wasAtLarge) {
+            sheetHeight.value = withSpring(SNAP_SMALL, SPRING_CONFIG);
+          } else {
+            sheetHeight.value = withSpring(0, SPRING_CONFIG, () => runOnJS(dismiss)());
+          }
         } else {
+          // Micro-drag — snap back to where it started
           runOnJS(snapToNearest)(sheetHeight.value);
         }
       },
     )
     .activeOffsetY([-10, 10]);
-
-  const nativeScrollGesture = Gesture.Native();
-  const composedGesture = Gesture.Simultaneous(panGesture, nativeScrollGesture);
 
   const animatedSheetStyle = useAnimatedStyle(
     /* istanbul ignore next */ () => {
@@ -203,70 +217,69 @@ export function CommentsBottomSheet({ visible, feedItemId, onClose }: CommentsBo
       onRequestClose={animateClose}
       testID="comments-bottom-sheet"
     >
-      <Pressable style={styles.overlay} onPress={animateClose} accessibilityLabel="Close comments">
-        <Animated.View style={[styles.sheet, animatedSheetStyle]}>
-          <Pressable
-            onPress={/* istanbul ignore next */ (e) => e.stopPropagation()}
-            style={{ flex: 1 }}
-            testID="sheet-content-area"
-          >
-            <GestureDetector gesture={composedGesture}>
-              <View style={{ flex: 1 }}>
-                <View style={styles.dragZone}>
-                  <View style={styles.dragHandle} />
-                </View>
+      <View style={styles.overlay}>
+        {/* @contract Backdrop sits behind the sheet; tapping it dismisses */}
+        <Pressable
+          style={StyleSheet.absoluteFill}
+          onPress={animateClose}
+          accessibilityLabel="Close comments"
+        />
 
-                <Animated.ScrollView
-                  onScroll={scrollHandler}
-                  scrollEventThrottle={16}
-                  contentContainerStyle={styles.scrollContent}
-                  showsVerticalScrollIndicator={false}
-                  keyboardShouldPersistTaps="handled"
-                >
-                  <GestureDetector gesture={nativeScrollGesture}>
-                    <Animated.View>
-                      <CommentsList
-                        comments={comments}
-                        userId={user?.id ?? null}
-                        likedCommentIds={likedCommentIds}
-                        isLoading={isLoading}
-                        hasNextPage={hasNextPage}
-                        onLoadMore={() => fetchNextPage()}
-                        onDelete={(id, parentId) =>
-                          deleteMutation.mutate(
-                            { commentId: id, parentCommentId: parentId },
-                            {
-                              onError: () =>
-                                Alert.alert(t('common.error'), t('common.failedToDeleteComment')),
-                            },
-                          )
-                        }
-                        onReply={handleReply}
-                        onLike={(id) => likeMutation.mutate({ commentId: id })}
-                        onUnlike={(id) => unlikeMutation.mutate({ commentId: id })}
-                      />
-                    </Animated.View>
-                  </GestureDetector>
-                </Animated.ScrollView>
+        <Animated.View style={[styles.sheet, animatedSheetStyle]} testID="sheet-content-area">
+          <View style={{ flex: 1 }}>
+            {/* @contract Header panel: drag handle + "Comments" title. Swiping here resizes the sheet. */}
+            <GestureDetector gesture={panGesture}>
+              <View style={styles.headerPanel}>
+                <View style={styles.dragHandle} />
+                <Text style={styles.headerTitle}>{t('postDetail.comments')}</Text>
               </View>
             </GestureDetector>
 
-            <CommentInput
-              isAuthenticated={!!user}
-              onSubmit={(body, parentCommentId) =>
-                addMutation.mutate(
-                  { body, parentCommentId },
-                  { onError: () => Alert.alert(t('common.error'), t('common.failedToAddComment')) },
-                )
-              }
-              bottomInset={inputBottomInset}
-              replyTarget={replyTarget}
-              onCancelReply={() => setReplyTarget(null)}
-              avatarUrl={profile?.avatar_url}
-            />
-          </Pressable>
+            <ScrollView
+              contentContainerStyle={styles.scrollContent}
+              showsVerticalScrollIndicator
+              keyboardShouldPersistTaps="handled"
+              keyboardDismissMode="on-drag"
+              onTouchStart={() => Keyboard.dismiss()}
+            >
+              <CommentsList
+                comments={comments}
+                userId={user?.id ?? null}
+                likedCommentIds={likedCommentIds}
+                isLoading={isLoading}
+                hasNextPage={hasNextPage}
+                onLoadMore={() => fetchNextPage()}
+                onDelete={(id, parentId) =>
+                  deleteMutation.mutate(
+                    { commentId: id, parentCommentId: parentId },
+                    {
+                      onError: () =>
+                        Alert.alert(t('common.error'), t('common.failedToDeleteComment')),
+                    },
+                  )
+                }
+                onReply={handleReply}
+                onLike={(id) => likeMutation.mutate({ commentId: id })}
+                onUnlike={(id) => unlikeMutation.mutate({ commentId: id })}
+              />
+            </ScrollView>
+          </View>
+
+          <CommentInput
+            isAuthenticated={!!user}
+            onSubmit={(body, parentCommentId) =>
+              addMutation.mutate(
+                { body, parentCommentId },
+                { onError: () => Alert.alert(t('common.error'), t('common.failedToAddComment')) },
+              )
+            }
+            bottomInset={inputBottomInset}
+            replyTarget={replyTarget}
+            onCancelReply={() => setReplyTarget(null)}
+            avatarUrl={profile?.avatar_url}
+          />
         </Animated.View>
-      </Pressable>
+      </View>
     </Modal>
   );
 }

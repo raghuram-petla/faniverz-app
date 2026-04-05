@@ -4,7 +4,7 @@ import type { FeedComment } from '@shared/types';
 const COMMENT_SELECT =
   'id, feed_item_id, user_id, body, created_at, parent_comment_id, like_count, reply_count, profile:profiles(display_name, avatar_url)';
 
-// @contract: fetches only top-level comments (parent_comment_id IS NULL).
+// @contract: fetches only top-level comments (parent_comment_id IS NULL), newest first.
 // Replies are fetched separately via fetchReplies().
 // @coupling: select joins profile:profiles using FK feed_comments.user_id -> profiles.id.
 // @contract: `offset` is absolute row offset, `limit` is number of rows.
@@ -20,7 +20,7 @@ export async function fetchComments(
     .select(COMMENT_SELECT)
     .eq('feed_item_id', feedItemId)
     .is('parent_comment_id', null)
-    .order('created_at', { ascending: true })
+    .order('created_at', { ascending: false })
     .range(offset, to);
 
   if (error) throw error;

@@ -60,14 +60,14 @@ export function useAddComment(feedItemId: string) {
           };
         });
       } else {
-        // Top-level: append to last page
+        // Top-level: prepend to first page so new comments appear at the top (newest-first order)
         queryClient.setQueryData<CommentsCache>([COMMENTS_KEY, feedItemId], (old) => {
           if (!old) return { pages: [[newComment]], pageParams: [0] };
           const pages = [...old.pages];
           if (pages.length === 0) {
             pages.push([newComment]);
           } else {
-            pages[pages.length - 1] = [...pages[pages.length - 1], newComment];
+            pages[0] = [newComment, ...pages[0]];
           }
           return { ...old, pages };
         });
