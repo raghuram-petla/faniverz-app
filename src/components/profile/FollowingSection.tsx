@@ -142,26 +142,30 @@ const createStyles = (t: SemanticTheme) =>
       fontWeight: '600',
       color: t.textSecondary,
     },
+    /** @sync grid gap + item width must sum to ~100% per row (3 cols) */
     grid: {
       flexDirection: 'row',
       flexWrap: 'wrap',
-      gap: 12,
+      gap: 8,
     },
     item: {
-      width: '30%',
+      width: '31%',
       alignItems: 'center',
       gap: 6,
     },
+    /** @contract poster-format image: full-width with 2:3 aspect ratio */
     image: {
-      width: 56,
-      height: 56,
+      width: '100%',
+      aspectRatio: 2 / 3,
       backgroundColor: t.input,
     },
+    /** @edge actors use 1:1 aspect with full-round corners */
     imageRound: {
-      borderRadius: 28,
+      aspectRatio: 1,
+      borderRadius: 999,
     },
     imageSquare: {
-      borderRadius: 12,
+      borderRadius: 8,
     },
     name: {
       fontSize: 11,

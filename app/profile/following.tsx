@@ -84,8 +84,7 @@ export default function FollowingScreen() {
     [user?.id, unfollowMutation],
   );
 
-  const renderSeparator = useCallback(() => <View style={styles.separator} />, [styles.separator]);
-
+  /** @contract renders a poster card with 2:3 aspect ratio image + name + unfollow badge */
   const renderItem = useCallback(
     ({ item }: { item: EnrichedFollow }) => {
       const placeholder = item.entity_type === 'actor' ? PLACEHOLDER_PHOTO : PLACEHOLDER_POSTER;
@@ -93,36 +92,34 @@ export default function FollowingScreen() {
         getImageUrl(item.image_url, 'sm', entityTypeToBucket(item.entity_type)) ?? placeholder;
       return (
         <TouchableOpacity
-          style={styles.row}
+          style={styles.gridItem}
           onPress={() => handleEntityPress(item.entity_type, item.entity_id)}
           accessibilityLabel={item.name}
         >
-          <Image
-            source={{ uri: imageUrl }}
-            style={[styles.rowImage, item.entity_type === 'actor' ? styles.round : styles.square]}
-            contentFit="cover"
-          />
-          <View style={styles.rowInfo}>
-            <Text style={styles.rowName} numberOfLines={1}>
-              {item.name}
-            </Text>
-            <Text style={styles.rowType}>
-              {t(
-                `common.entityType${item.entity_type === 'movie' ? 'Movie' : item.entity_type === 'actor' ? 'Actor' : 'ProductionHouse'}`,
-              )}
-            </Text>
+          <View style={styles.posterWrapper}>
+            <Image
+              source={{ uri: imageUrl }}
+              style={[
+                styles.posterImage,
+                item.entity_type === 'actor' ? styles.posterRound : styles.posterSquare,
+              ]}
+              contentFit="cover"
+            />
+            <TouchableOpacity
+              style={styles.unfollowBadge}
+              onPress={() => handleUnfollow(item.entity_type, item.entity_id)}
+              accessibilityLabel={t('common.unfollowName', { name: item.name })}
+            >
+              <Ionicons name="close-circle" size={20} color={palette.red500} />
+            </TouchableOpacity>
           </View>
-          <TouchableOpacity
-            style={styles.unfollowButton}
-            onPress={() => handleUnfollow(item.entity_type, item.entity_id)}
-            accessibilityLabel={t('common.unfollowName', { name: item.name })}
-          >
-            <Ionicons name="close-circle-outline" size={20} color={palette.red500} />
-          </TouchableOpacity>
+          <Text style={styles.posterName} numberOfLines={1}>
+            {item.name}
+          </Text>
         </TouchableOpacity>
       );
     },
-    [styles, handleEntityPress, handleUnfollow],
+    [styles, handleEntityPress, handleUnfollow, t],
   );
 
   return (
@@ -151,6 +148,8 @@ export default function FollowingScreen() {
           data={filtered}
           keyExtractor={(item) => `${item.entity_type}:${item.entity_id}`}
           renderItem={renderItem}
+          numColumns={3}
+          columnWrapperStyle={styles.columnWrapper}
           ListEmptyComponent={
             <EmptyState
               icon="heart-outline"
@@ -165,7 +164,6 @@ export default function FollowingScreen() {
           contentContainerStyle={filtered.length === 0 ? styles.emptyContent : styles.listContent}
           overScrollMode="never"
           showsVerticalScrollIndicator={false}
-          ItemSeparatorComponent={renderSeparator}
           onScroll={handlePullScroll}
           onScrollBeginDrag={handleScrollBeginDrag}
           onScrollEndDrag={handleScrollEndDrag}
@@ -199,21 +197,37 @@ const createStyles = (t: SemanticTheme) =>
     filterChipActive: { backgroundColor: palette.red600 },
     filterText: { fontSize: 13, fontWeight: '600', color: t.textSecondary },
     filterTextActive: { color: palette.white },
-    listContent: { paddingBottom: 40 },
+    listContent: { paddingHorizontal: 12, paddingBottom: 40 },
     emptyContent: { flex: 1 },
-    row: {
-      flexDirection: 'row',
+    /** @sync columnWrapper gap must match gridItem paddingHorizontal for even spacing */
+    columnWrapper: { paddingHorizontal: 4 },
+    gridItem: {
+      flex: 1,
+      maxWidth: '33.33%',
       alignItems: 'center',
-      gap: 12,
-      paddingHorizontal: 16,
-      paddingVertical: 12,
+      paddingHorizontal: 4,
+      marginBottom: 12,
     },
-    rowImage: { width: 48, height: 48, backgroundColor: t.input },
-    round: { borderRadius: 24 },
-    square: { borderRadius: 10 },
-    rowInfo: { flex: 1 },
-    rowName: { fontSize: 15, fontWeight: '600', color: t.textPrimary },
-    rowType: { fontSize: 12, color: t.textTertiary, textTransform: 'capitalize', marginTop: 2 },
-    unfollowButton: { padding: 8 },
-    separator: { height: 1, backgroundColor: t.border, marginHorizontal: 16 },
+    posterWrapper: { width: '100%', position: 'relative' as const },
+    /** @contract poster image uses 2:3 aspect ratio for movie posters */
+    posterImage: { width: '100%', aspectRatio: 2 / 3, backgroundColor: t.input },
+    /** @edge actors use 1:1 aspect with full-round corners */
+    posterRound: { aspectRatio: 1, borderRadius: 999 },
+    posterSquare: { borderRadius: 8 },
+    unfollowBadge: {
+      position: 'absolute' as const,
+      top: 4,
+      right: 4,
+      backgroundColor: 'rgba(0,0,0,0.6)',
+      borderRadius: 10,
+      padding: 2,
+    },
+    posterName: {
+      fontSize: 11,
+      fontWeight: '500',
+      color: t.textPrimary,
+      textAlign: 'center' as const,
+      marginTop: 4,
+      width: '100%',
+    },
   });
