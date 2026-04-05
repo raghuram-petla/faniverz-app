@@ -151,7 +151,8 @@ describe('useCollapsibleHeader', () => {
     expect(result.current.getCurrentHeaderTranslateY()).toBe(-20);
   });
 
-  it('onPageChange reveals header when new page scroll is near top', () => {
+  it('onPageChange always reveals header on tab switch', () => {
+    jest.useFakeTimers();
     const timingSpy = jest.spyOn(Animated, 'timing');
     const { result } = renderHook(() => useCollapsibleHeader(44));
 
@@ -170,29 +171,42 @@ describe('useCollapsibleHeader', () => {
     // Switch to a page that's at scroll position 0
     act(() => {
       result.current.onPageChange(0);
+      jest.runAllTimers();
     });
 
     // Verify Animated.timing was called with toValue: 0 (reveal)
     expect(timingSpy).toHaveBeenCalledWith(
-      result.current.headerTranslateY,
-      expect.objectContaining({ toValue: 0, duration: 250 }),
+      expect.anything(),
+      expect.objectContaining({ toValue: 0, duration: 200 }),
     );
     timingSpy.mockRestore();
+    jest.useRealTimers();
   });
 
-  it('onPageChange hides header when new page is scrolled down', () => {
+  it('onPageChange always reveals header even when new page is scrolled down', () => {
+    jest.useFakeTimers();
+    const timingSpy = jest.spyOn(Animated, 'timing');
     const { result } = renderHook(() => useCollapsibleHeader(44));
-    const collapseRange = 52; // HOME_FEED_HEADER_CONTENT_HEIGHT + 0 extraHeight
 
-    // Switch to a page that's scrolled far down
+    // First collapse header by scrolling down
     act(() => {
-      result.current.onPageChange(500);
+      result.current.handleScroll({
+        nativeEvent: { contentOffset: { y: 200 } },
+      } as never);
     });
 
-    const val = (
-      result.current.headerTranslateY as unknown as { __getValue: () => number }
-    ).__getValue();
-    expect(val).toBe(-collapseRange);
+    // Switch to a page that's scrolled far down — should still reveal
+    act(() => {
+      result.current.onPageChange(500);
+      jest.runAllTimers();
+    });
+
+    expect(timingSpy).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ toValue: 0, duration: 200 }),
+    );
+    timingSpy.mockRestore();
+    jest.useRealTimers();
   });
 
   it('onPageChange returns from hook', () => {

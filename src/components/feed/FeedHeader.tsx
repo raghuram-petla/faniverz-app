@@ -48,29 +48,24 @@ export function useCollapsibleHeader(insetTop: number, extraHeight = 0): Collaps
   );
 
   /**
-   * @contract Called on pager tab switch — syncs header state to the new page's scroll offset.
-   * @sync Animates header to revealed when new page is near top; snaps hidden when scrolled down.
+   * @contract Called on pager tab switch — always reveals header so the user sees which tab they're on.
+   * @sync Always animates header to 0 regardless of the new page's scroll position.
    */
   const onPageChange = useCallback(
     (newPageScrollY: number) => {
       lastScrollY.current = newPageScrollY;
-      if (newPageScrollY < collapseRange) {
-        // @sync Delay animation by one frame so pill highlight updates before header slides in
-        headerOffset.current = 0;
-        requestAnimationFrame(() => {
-          Animated.timing(headerTranslateY, {
-            toValue: 0,
-            duration: 200,
-            useNativeDriver: true,
-          }).start();
-        });
-      } else {
-        // Page is scrolled down — snap header to hidden
-        headerOffset.current = collapseRange;
-        headerTranslateY.setValue(-collapseRange);
-      }
+      // @sync Always reveal header on tab switch so the user sees which tab they're on.
+      // Delay by one frame so pill highlight updates before header slides in.
+      headerOffset.current = 0;
+      requestAnimationFrame(() => {
+        Animated.timing(headerTranslateY, {
+          toValue: 0,
+          duration: 200,
+          useNativeDriver: true,
+        }).start();
+      });
     },
-    [headerTranslateY, collapseRange],
+    [headerTranslateY],
   );
 
   // @contract Feed cards read this snapshot at tap time so the image viewer can mask under the same header offset.
