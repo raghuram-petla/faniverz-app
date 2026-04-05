@@ -23,12 +23,20 @@ export default function FeedScreen() {
   const styles = useMemo(() => createFeedStyles(theme), [theme]);
   const insets = useSafeAreaInsets();
   const { filter, setFilter } = useFeedStore();
-  const { headerTranslateY, totalHeaderHeight, handleScroll, getCurrentHeaderTranslateY } =
-    useCollapsibleHeader(insets.top, FEED_PILL_BAR_HEIGHT);
+  const {
+    headerTranslateY,
+    totalHeaderHeight,
+    handleScroll,
+    getCurrentHeaderTranslateY,
+    onPageChange,
+  } = useCollapsibleHeader(insets.top, FEED_PILL_BAR_HEIGHT);
   const [commentSheetItemId, setCommentSheetItemId] = useState<string | null>(null);
 
   // @contract Active page's scroll-to-top handle — updated by FeedPager on page switch
-  const activeScrollToTopRef = useRef<ScrollToTopHandle>({ scrollToTop: () => {} });
+  const activeScrollToTopRef = useRef<ScrollToTopHandle>({
+    scrollToTop: () => {},
+    getScrollOffset: () => 0,
+  });
   const homeTabActionRef = useRef<{ scrollToTop: () => void }>({
     scrollToTop: () => activeScrollToTopRef.current.scrollToTop(),
   });
@@ -61,6 +69,7 @@ export default function FeedScreen() {
         getImageViewerTopChrome={getImageViewerTopChrome}
         setCommentSheetItemId={setCommentSheetItemId}
         activeScrollToTopRef={activeScrollToTopRef}
+        onPageChange={onPageChange}
       />
       <CommentsBottomSheet
         visible={!!commentSheetItemId}

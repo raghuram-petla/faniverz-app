@@ -10,6 +10,8 @@ interface CollapsibleHeaderState {
   totalHeaderHeight: number;
   handleScroll: (e: NativeSyntheticEvent<NativeScrollEvent>) => void;
   getCurrentHeaderTranslateY: () => number;
+  /** @contract Called on tab switch — reveals header when new page is near top, hides when scrolled */
+  onPageChange: (newPageScrollY: number) => void;
 }
 
 /**
@@ -45,11 +47,43 @@ export function useCollapsibleHeader(insetTop: number, extraHeight = 0): Collaps
     [headerTranslateY],
   );
 
+  /**
+   * @contract Called on pager tab switch — syncs header state to the new page's scroll offset.
+   * @sync Animates header to revealed when new page is near top; snaps hidden when scrolled down.
+   */
+  const onPageChange = useCallback(
+    (newPageScrollY: number) => {
+      lastScrollY.current = newPageScrollY;
+      if (newPageScrollY < collapseRange) {
+        // @sync Delay animation by one frame so pill highlight updates before header slides in
+        headerOffset.current = 0;
+        requestAnimationFrame(() => {
+          Animated.timing(headerTranslateY, {
+            toValue: 0,
+            duration: 200,
+            useNativeDriver: true,
+          }).start();
+        });
+      } else {
+        // Page is scrolled down — snap header to hidden
+        headerOffset.current = collapseRange;
+        headerTranslateY.setValue(-collapseRange);
+      }
+    },
+    [headerTranslateY, collapseRange],
+  );
+
   // @contract Feed cards read this snapshot at tap time so the image viewer can mask under the same header offset.
   // @coupling ImageViewerOverlay uses the returned value as topChrome.translateY to align its close animation with the header position.
   const getCurrentHeaderTranslateY = useCallback(() => -headerOffset.current, []);
 
-  return { headerTranslateY, totalHeaderHeight, handleScroll, getCurrentHeaderTranslateY };
+  return {
+    headerTranslateY,
+    totalHeaderHeight,
+    handleScroll,
+    getCurrentHeaderTranslateY,
+    onPageChange,
+  };
 }
 
 export interface FeedHeaderProps {

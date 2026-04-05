@@ -16,6 +16,8 @@ export interface FeedPagerProps {
   setCommentSheetItemId: (id: string | null) => void;
   /** @contract Parent passes ref so tab-tap can trigger scroll-to-top on active page */
   activeScrollToTopRef: React.MutableRefObject<ScrollToTopHandle>;
+  /** @contract Called on page switch to sync collapsible header with new page's scroll offset */
+  onPageChange: (newPageScrollY: number) => void;
 }
 
 /**
@@ -29,13 +31,14 @@ export function FeedPager({
   getImageViewerTopChrome,
   setCommentSheetItemId,
   activeScrollToTopRef,
+  onPageChange,
 }: FeedPagerProps) {
   const { pageIndex, setPageIndex } = useFeedStore();
   const pagerRef = useRef<PagerView>(null);
   // @sync Track which pages have been visited for lazy mounting
   const [visitedPages, setVisitedPages] = useState<Set<number>>(() => new Set([0]));
   const pageScrollToTopRefs = useRef<React.MutableRefObject<ScrollToTopHandle>[]>(
-    FEED_PILLS.map(() => ({ current: { scrollToTop: () => {} } })),
+    FEED_PILLS.map(() => ({ current: { scrollToTop: () => {}, getScrollOffset: () => 0 } })),
   );
 
   // @sync Delegate parent's scroll-to-top to the active page's ref.
@@ -43,6 +46,7 @@ export function FeedPager({
   // so it always picks up the latest handler even after FeedPage re-renders.
   activeScrollToTopRef.current = {
     scrollToTop: () => pageScrollToTopRefs.current[pageIndex]?.current?.scrollToTop(),
+    getScrollOffset: () => pageScrollToTopRefs.current[pageIndex]?.current?.getScrollOffset() ?? 0,
   };
 
   const handlePageSelected = useCallback(
@@ -57,8 +61,11 @@ export function FeedPager({
       });
       // @sync Point parent's scroll-to-top ref at the newly active page
       activeScrollToTopRef.current = pageScrollToTopRefs.current[newIndex].current;
+      // @sync Reveal/hide header based on new page's scroll position
+      const scrollY = pageScrollToTopRefs.current[newIndex]?.current?.getScrollOffset() ?? 0;
+      onPageChange(scrollY);
     },
-    [setPageIndex, activeScrollToTopRef],
+    [setPageIndex, activeScrollToTopRef, onPageChange],
   );
 
   // @sync Pill tap navigates pager programmatically

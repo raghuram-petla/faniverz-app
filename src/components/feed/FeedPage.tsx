@@ -117,12 +117,13 @@ export function FeedPage({
     hideRefreshIndicator,
   });
 
-  // @contract Expose scroll-to-top for parent tab-tap handler
+  // @contract Expose scroll-to-top and scroll offset for parent tab-tap / page-change handler
   scrollToTopRef.current = {
     scrollToTop: () => {
       if (scrollOffsetRef.current <= 2) runProgrammaticRefresh();
       else listRef.current?.scrollToOffset({ offset: 0, animated: true });
     },
+    getScrollOffset: () => scrollOffsetRef.current,
   };
 
   const {

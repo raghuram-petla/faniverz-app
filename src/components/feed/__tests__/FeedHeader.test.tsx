@@ -150,4 +150,53 @@ describe('useCollapsibleHeader', () => {
 
     expect(result.current.getCurrentHeaderTranslateY()).toBe(-20);
   });
+
+  it('onPageChange reveals header when new page scroll is near top', () => {
+    const timingSpy = jest.spyOn(Animated, 'timing');
+    const { result } = renderHook(() => useCollapsibleHeader(44));
+
+    // First collapse header by scrolling down
+    act(() => {
+      result.current.handleScroll({
+        nativeEvent: { contentOffset: { y: 200 } },
+      } as never);
+    });
+
+    const valBefore = (
+      result.current.headerTranslateY as unknown as { __getValue: () => number }
+    ).__getValue();
+    expect(valBefore).toBeLessThan(0);
+
+    // Switch to a page that's at scroll position 0
+    act(() => {
+      result.current.onPageChange(0);
+    });
+
+    // Verify Animated.timing was called with toValue: 0 (reveal)
+    expect(timingSpy).toHaveBeenCalledWith(
+      result.current.headerTranslateY,
+      expect.objectContaining({ toValue: 0, duration: 250 }),
+    );
+    timingSpy.mockRestore();
+  });
+
+  it('onPageChange hides header when new page is scrolled down', () => {
+    const { result } = renderHook(() => useCollapsibleHeader(44));
+    const collapseRange = 52; // HOME_FEED_HEADER_CONTENT_HEIGHT + 0 extraHeight
+
+    // Switch to a page that's scrolled far down
+    act(() => {
+      result.current.onPageChange(500);
+    });
+
+    const val = (
+      result.current.headerTranslateY as unknown as { __getValue: () => number }
+    ).__getValue();
+    expect(val).toBe(-collapseRange);
+  });
+
+  it('onPageChange returns from hook', () => {
+    const { result } = renderHook(() => useCollapsibleHeader(44));
+    expect(typeof result.current.onPageChange).toBe('function');
+  });
 });

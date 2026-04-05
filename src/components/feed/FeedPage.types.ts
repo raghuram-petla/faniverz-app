@@ -5,6 +5,8 @@ import type { ImageViewerTopChrome } from '@/providers/ImageViewerProvider';
 
 export interface ScrollToTopHandle {
   scrollToTop: () => void;
+  /** @contract Returns the current vertical scroll offset for this page */
+  getScrollOffset: () => number;
 }
 
 export interface FeedPageProps {
