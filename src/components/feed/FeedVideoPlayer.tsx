@@ -30,7 +30,9 @@ export function FeedVideoPlayer({
     setManualPlay(false);
   }, [youtubeId]);
 
-  const shouldMountPlayer = shouldMount || isActive || manualPlay;
+  // @edge Don't eagerly mount WebView shells — iOS WebViews don't paint on initial mount,
+  // causing black screens. Native thumbnail renders instantly; WebView mounts only on tap.
+  const shouldMountPlayer = manualPlay;
   // @contract feed no longer auto-plays on scroll; visible cards mount an interactive shell so the first tap is the real YouTube tap.
   const shouldAutoPlay = manualPlay;
 
