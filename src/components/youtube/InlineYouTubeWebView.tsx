@@ -31,18 +31,18 @@ const buildInlineHtml = (videoId: string, thumbnailUrl: string, baseUrl: string)
       html, body, #app { margin: 0; padding: 0; width: 100%; height: 100%; background: #000; overflow: hidden; position: relative; }
       #playButton { position: relative; width: 100%; height: 100%; border: 0; padding: 0; background: #000; }
       #poster { width: 100%; height: 100%; object-fit: cover; display: block; }
-      #scrim { position: absolute; inset: 0; background: rgba(0, 0, 0, 0.28); }
+      #scrim { display: none; }
       #loadingShell { position: absolute; inset: 0; z-index: 1; display: flex; width: 100%; height: 100%; align-items: center; justify-content: center; background: #000; }
       #loadingSpinner {
         position: absolute; top: 50%; left: 50%; width: 32px; height: 32px; margin: -16px 0 0 -16px; border-radius: 16px; box-sizing: border-box;
         border: 3px solid rgba(255, 255, 255, 0.26); border-top-color: #fff; animation: spin 0.7s linear infinite;
       }
       #playCircle {
-        position: absolute; top: 50%; left: 50%; width: 56px; height: 56px; margin: -28px 0 0 -28px;
-        border-radius: 28px; background: rgba(0, 0, 0, 0.62);
+        position: absolute; top: 12px; left: 12px; width: 56px; height: 56px;
+        border-radius: 28px; background: rgba(0, 0, 0, 0.85);
       }
       #playTriangle {
-        position: absolute; top: 50%; left: 50%; margin: -12px 0 0 -7px; width: 0; height: 0;
+        position: absolute; top: 50%; left: 50%; margin: -12px 0 0 -7px;
         border-top: 12px solid transparent; border-bottom: 12px solid transparent; border-left: 18px solid #fff;
       }
       #player { position: absolute; inset: 0; width: 100%; height: 100%; background: #000; }
