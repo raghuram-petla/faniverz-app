@@ -10,7 +10,6 @@ jest.mock('@/features/movies/api', () => ({
   fetchUpcomingMovies: jest.fn().mockResolvedValue([]),
 }));
 jest.mock('@/features/feed/api', () => ({
-  fetchPersonalizedFeed: jest.fn().mockResolvedValue([]),
   fetchNewsFeed: jest.fn().mockResolvedValue([]),
 }));
 
@@ -26,9 +25,9 @@ function createWrapper(qc: QueryClient) {
 }
 
 /** Simulate home screen's 'all' feed succeeding (emits cache success event) */
-async function simulateAllFeedSuccess(qc: QueryClient, userId: string | null) {
+async function simulateAllFeedSuccess(qc: QueryClient, _userId: string | null) {
   await qc.fetchInfiniteQuery({
-    queryKey: ['personalized-feed', 'all', userId],
+    queryKey: ['news-feed', 'all'],
     queryFn: () => Promise.resolve([{ id: '1' }]),
     initialPageParam: 0,
     getNextPageParam: () => undefined,
@@ -129,7 +128,7 @@ describe('useAppPrefetch', () => {
     expect(prefetchInfiniteSpy).toHaveBeenCalledTimes(8);
   });
 
-  it('Phase 2: uses correct userId in personalized feed keys', async () => {
+  it('Phase 2: uses correct filter in news-feed keys', async () => {
     renderHook(() => useAppPrefetch(), {
       wrapper: createWrapper(queryClient),
     });
@@ -138,13 +137,14 @@ describe('useAppPrefetch', () => {
       await simulateAllFeedSuccess(queryClient, 'user-123');
     });
 
-    // All personalized-feed calls should include userId
-    const personalizedCalls = prefetchInfiniteSpy.mock.calls.filter(
-      ([opts]: [{ queryKey: unknown[] }]) => opts.queryKey[0] === 'personalized-feed',
+    // All news-feed filter variant calls should have ['news-feed', filter] shape
+    const feedCalls = prefetchInfiniteSpy.mock.calls.filter(
+      ([opts]: [{ queryKey: unknown[] }]) =>
+        opts.queryKey[0] === 'news-feed' && opts.queryKey[1] !== undefined,
     );
-    expect(personalizedCalls).toHaveLength(6);
-    for (const [opts] of personalizedCalls) {
-      expect(opts.queryKey[2]).toBe('user-123');
+    expect(feedCalls).toHaveLength(6);
+    for (const [opts] of feedCalls) {
+      expect(typeof opts.queryKey[1]).toBe('string');
     }
   });
 
@@ -164,12 +164,12 @@ describe('useAppPrefetch', () => {
 
     expect(prefetchInfiniteSpy).toHaveBeenCalledTimes(8);
 
-    const personalizedCalls = prefetchInfiniteSpy.mock.calls.filter(
-      ([opts]: [{ queryKey: unknown[] }]) => opts.queryKey[0] === 'personalized-feed',
+    // News feed filter variant calls should have ['news-feed', filter] shape (no userId)
+    const feedCalls = prefetchInfiniteSpy.mock.calls.filter(
+      ([opts]: [{ queryKey: unknown[] }]) =>
+        opts.queryKey[0] === 'news-feed' && opts.queryKey[1] !== undefined,
     );
-    for (const [opts] of personalizedCalls) {
-      expect(opts.queryKey[2]).toBeNull();
-    }
+    expect(feedCalls).toHaveLength(6);
   });
 
   it('Phase 2: does NOT fire while auth is loading', async () => {
@@ -192,7 +192,7 @@ describe('useAppPrefetch', () => {
 
   it('Phase 2: fires immediately when all feed is already cached', () => {
     // Pre-populate cache before hook mounts
-    queryClient.setQueryData(['personalized-feed', 'all', 'user-123'], {
+    queryClient.setQueryData(['news-feed', 'all'], {
       pages: [[{ id: '1' }]],
       pageParams: [0],
     });
@@ -275,7 +275,7 @@ describe('useAppPrefetch', () => {
     });
 
     // Pre-populate cache so Phase 2 fires immediately
-    realQC.setQueryData(['personalized-feed', 'all', 'user-gnpp'], {
+    realQC.setQueryData(['news-feed', 'all'], {
       pages: [[{ id: '1' }]],
       pageParams: [0],
     });
@@ -291,12 +291,10 @@ describe('useAppPrefetch', () => {
       });
     }
 
-    const { fetchPersonalizedFeed } = require('@/features/feed/api');
     const { fetchNewsFeed } = require('@/features/feed/api');
     const { fetchUpcomingMovies } = require('@/features/movies/api');
 
     // The queryFn callbacks (getOffset, getLimit) should have been called
-    expect(fetchPersonalizedFeed).toHaveBeenCalled();
     expect(fetchNewsFeed).toHaveBeenCalled();
     expect(fetchUpcomingMovies).toHaveBeenCalled();
 
@@ -364,7 +362,7 @@ describe('useAppPrefetch', () => {
     if (typeof subscriberCallback === 'function') {
       subscriberCallback({
         type: 'added',
-        query: { queryKey: ['personalized-feed', 'all', 'user-123'] },
+        query: { queryKey: ['news-feed', 'all'] },
       } as any);
     }
 
@@ -386,7 +384,7 @@ describe('useAppPrefetch', () => {
       subscriberCallback({
         type: 'updated',
         action: { type: 'error' },
-        query: { queryKey: ['personalized-feed', 'all', 'user-123'] },
+        query: { queryKey: ['news-feed', 'all'] },
       } as any);
     }
 
@@ -408,19 +406,13 @@ describe('useAppPrefetch', () => {
       subscriberCallback({
         type: 'updated',
         action: { type: 'success' },
-        query: { queryKey: ['other-query', 'all', 'user-123'] },
+        query: { queryKey: ['other-query', 'all'] },
       } as any);
       // Different filter (not 'all')
       subscriberCallback({
         type: 'updated',
         action: { type: 'success' },
-        query: { queryKey: ['personalized-feed', 'trailers', 'user-123'] },
-      } as any);
-      // Different userId
-      subscriberCallback({
-        type: 'updated',
-        action: { type: 'success' },
-        query: { queryKey: ['personalized-feed', 'all', 'other-user'] },
+        query: { queryKey: ['news-feed', 'trailers'] },
       } as any);
       // Non-array queryKey
       subscriberCallback({

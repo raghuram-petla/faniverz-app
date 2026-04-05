@@ -6,7 +6,7 @@ import { useTranslation } from 'react-i18next';
 import { useQueryClient, useIsRestoring } from '@tanstack/react-query';
 import { useTheme } from '@/theme';
 import {
-  usePersonalizedFeed,
+  useNewsFeed,
   useUserVotes,
   useBookmarkFeedItem,
   useUnbookmarkFeedItem,
@@ -62,7 +62,9 @@ export function FeedPage({
     fetchNextPage,
     isFetchingNextPage,
     refetch,
-  } = usePersonalizedFeed(filter);
+    // @contract Feed is purely chronological (published_at DESC) — no personalized scoring.
+    // Personalization disabled to prevent post reordering on like/comment/bookmark interactions.
+  } = useNewsFeed(filter);
   const bookmarkMutation = useBookmarkFeedItem();
   const unbookmarkMutation = useUnbookmarkFeedItem();
   const { activeVideoId, mountedVideoIds, registerVideoLayout, handleScrollForVideo } =

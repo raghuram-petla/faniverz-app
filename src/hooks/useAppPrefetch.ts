@@ -8,7 +8,7 @@
  *     triggered once the 'all' personalized feed first page settles
  *
  * @coupling Query keys and getNextPageParam logic MUST mirror the source hooks
- * (usePersonalizedFeed, useNewsFeed, useUpcomingMovies, useMovies, usePlatforms).
+ * (useNewsFeed, useUpcomingMovies, useMovies, usePlatforms).
  * Any drift causes cache misses and the prefetch becomes a no-op.
  *
  * @sync getOffset/getPageSize formulas duplicated from useSmartInfiniteQuery's
@@ -20,7 +20,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { fetchPlatforms, fetchMoviePlatformMap } from '@/features/ott/api';
 import { fetchMovies, fetchUpcomingMovies } from '@/features/movies/api';
-import { fetchPersonalizedFeed, fetchNewsFeed } from '@/features/feed/api';
+import { fetchNewsFeed } from '@/features/feed/api';
 import {
   FEED_PAGINATION,
   NEWS_FEED_PAGINATION,
@@ -102,16 +102,15 @@ function prefetchImmediate(qc: QueryClient) {
 }
 
 /** Phase 2: feed filter variants + news feed + calendar */
-function prefetchDeferred(qc: QueryClient, userId: string | null) {
+function prefetchDeferred(qc: QueryClient, _userId: string | null) {
   const feedGnpp = makeGetNextPageParam(FEED_PAGINATION);
 
-  // @coupling queryKey must match usePersonalizedFeed(filter): ['personalized-feed', filter, userId]
+  // @coupling queryKey must match useNewsFeed(filter): ['news-feed', filter]
   for (const filter of FEED_FILTER_VARIANTS) {
     qc.prefetchInfiniteQuery({
-      queryKey: ['personalized-feed', filter, userId] as const,
+      queryKey: ['news-feed', filter] as const,
       queryFn: ({ pageParam }: { pageParam: number }) =>
-        fetchPersonalizedFeed(
-          userId,
+        fetchNewsFeed(
           filter,
           getOffset(pageParam, FEED_PAGINATION),
           getLimit(pageParam, FEED_PAGINATION),
@@ -183,12 +182,12 @@ export function useAppPrefetch(): void {
     prefetchImmediate(queryClient);
   }, [queryClient]);
 
-  // Phase 2: subscribe to cache, fire once when 'all' personalized feed succeeds
+  // Phase 2: subscribe to cache, fire once when 'all' news feed succeeds
   useEffect(() => {
     if (authLoading || phase2FiredRef.current) return;
 
     // @edge Check if 'all' feed is already cached (e.g., hot reload, fast auth)
-    const existing = queryClient.getQueryState(['personalized-feed', 'all', userId]);
+    const existing = queryClient.getQueryState(['news-feed', 'all']);
     if (existing?.status === 'success') {
       phase2FiredRef.current = true;
       prefetchDeferred(queryClient, userId);
@@ -204,9 +203,8 @@ export function useAppPrefetch(): void {
       if (
         event.action.type === 'success' &&
         Array.isArray(event.query.queryKey) &&
-        event.query.queryKey[0] === 'personalized-feed' &&
-        event.query.queryKey[1] === 'all' &&
-        event.query.queryKey[2] === userId
+        event.query.queryKey[0] === 'news-feed' &&
+        event.query.queryKey[1] === 'all'
       ) {
         phase2FiredRef.current = true;
         unsubscribe();

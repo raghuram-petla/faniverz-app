@@ -43,7 +43,7 @@ jest.mock('react-native-safe-area-context', () => ({
 }));
 
 jest.mock('@/features/feed', () => ({
-  usePersonalizedFeed: jest.fn(),
+  useNewsFeed: jest.fn(),
   useVoteFeedItem: jest.fn(),
   useRemoveFeedVote: jest.fn(),
   useUserVotes: jest.fn(),
@@ -274,7 +274,7 @@ function render(ui: React.ReactElement, options?: any) {
   return rawRender(ui, { wrapper: Wrapper, ...options });
 }
 import {
-  usePersonalizedFeed,
+  useNewsFeed,
   useVoteFeedItem,
   useRemoveFeedVote,
   useUserVotes,
@@ -308,9 +308,7 @@ const mockUseEntityFollows = useEntityFollows as jest.MockedFunction<typeof useE
 const mockUseFollowEntity = useFollowEntity as jest.MockedFunction<typeof useFollowEntity>;
 const mockUseUnfollowEntity = useUnfollowEntity as jest.MockedFunction<typeof useUnfollowEntity>;
 
-const mockUsePersonalizedFeed = usePersonalizedFeed as jest.MockedFunction<
-  typeof usePersonalizedFeed
->;
+const mockUseNewsFeed = useNewsFeed as jest.MockedFunction<typeof useNewsFeed>;
 const mockUseVoteFeedItem = useVoteFeedItem as jest.MockedFunction<typeof useVoteFeedItem>;
 const mockUseRemoveFeedVote = useRemoveFeedVote as jest.MockedFunction<typeof useRemoveFeedVote>;
 const mockUseUserVotes = useUserVotes as jest.MockedFunction<typeof useUserVotes>;
@@ -370,7 +368,7 @@ function setupMocks(
     seen.add(item.id);
     return true;
   });
-  mockUsePersonalizedFeed.mockReturnValue({
+  mockUseNewsFeed.mockReturnValue({
     data: feedData,
     allItems: dedupedItems,
     isLoading: false,
@@ -508,7 +506,7 @@ describe('FeedScreen', () => {
     render(<FeedScreen />);
     // FlashList handles onEndReached internally — verify fetchNextPage is wired up
     // by checking the loadMore callback fires when conditions are met
-    expect(mockUsePersonalizedFeed).toHaveBeenCalled();
+    expect(mockUseNewsFeed).toHaveBeenCalled();
   });
 
   it('does not call fetchNextPage when already fetching next page', () => {
@@ -576,11 +574,11 @@ describe('FeedScreen', () => {
     expect(indicators.length).toBeGreaterThan(0);
   });
 
-  it('passes filter to usePersonalizedFeed', () => {
+  it('passes filter to useNewsFeed', () => {
     setupMocks({ store: { filter: 'all' } });
     render(<FeedScreen />);
     // @edge PagerView mock renders page 0 which uses 'all' filter
-    expect(mockUsePersonalizedFeed).toHaveBeenCalledWith('all');
+    expect(mockUseNewsFeed).toHaveBeenCalledWith('all');
   });
 
   it('handles empty pages array gracefully', () => {
