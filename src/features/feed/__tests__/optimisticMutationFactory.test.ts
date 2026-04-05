@@ -100,6 +100,32 @@ describe('createOptimisticMutation', () => {
       expect(ctx.secondarySnapshots![0].data).toEqual({ existing: true });
     });
 
+    it('applies secondaryUpdater even when cache data is undefined (loading state)', async () => {
+      const client = makeClient();
+
+      type Vars = { id: string };
+      type Primary = { pages: string[][] };
+      type Secondary = Record<string, true>;
+
+      // Simulate a query that exists but has no data yet (still loading).
+      // We seed it via getQueryCache to create the entry without data.
+      client.getQueryCache().build(client, { queryKey: ['sec-loading', 'user1', ['a']] });
+
+      const handlers = createOptimisticMutation<Vars, Primary, Secondary>(client, {
+        queryKeys: ['primary'] as const,
+        secondaryQueryKey: 'sec-loading',
+        primaryUpdater: (old) => old,
+        secondaryUpdater: (old, { id }) => ({ ...(old ?? ({} as Secondary)), [id]: true as const }),
+      });
+
+      await handlers.onMutate!({ id: 'new-item' });
+
+      // The updater should have created data even though old was undefined
+      expect(client.getQueryData(['sec-loading', 'user1', ['a']])).toEqual({
+        'new-item': true,
+      });
+    });
+
     it('does not touch secondary cache when secondaryQueryKey is absent', async () => {
       const client = makeClient();
       client.setQueryData(['sec-key', 'x'], { data: 1 });

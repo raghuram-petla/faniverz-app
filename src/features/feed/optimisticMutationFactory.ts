@@ -108,13 +108,16 @@ export function createOptimisticMutation<TVariables, TPrimary, TSecondary = neve
               (secondarySnapshots as CacheSnapshot<TSecondary>[]).push({ queryKey, data });
             }
           });
-        queryClient.setQueriesData<TSecondary>({ queryKey: [secondaryQueryKey] }, (old) => {
-          if (old === undefined) return old;
-          return (secondaryUpdater as (old: TSecondary, v: TVariables) => TSecondary)(
-            old,
+        // @edge: pass undefined `old` through to the updater instead of skipping — allows
+        // optimistic state to be set even when the query hasn't completed its initial fetch yet
+        // (e.g., useUserBookmarks query key changed due to pagination). Updaters must handle
+        // undefined via `old ?? {}` or `if (!old)` guards.
+        queryClient.setQueriesData<TSecondary>({ queryKey: [secondaryQueryKey] }, (old) =>
+          (secondaryUpdater as (old: TSecondary, v: TVariables) => TSecondary)(
+            old as TSecondary,
             variables,
-          );
-        });
+          ),
+        );
       }
 
       return { primarySnapshots, secondarySnapshots };

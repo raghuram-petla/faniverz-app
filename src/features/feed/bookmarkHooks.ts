@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
   bookmarkFeedItem,
   unbookmarkFeedItem,
@@ -135,10 +135,14 @@ export function useUserBookmarks(feedItemIds: string[]) {
   const idsKey = [...feedItemIds].sort().join(',');
   const sortedIds = useMemo(() => (idsKey ? idsKey.split(',') : []), [idsKey]);
 
+  // @edge: keepPreviousData prevents bookmark icons from flashing to "unbookmarked" when
+  // feedItemIds changes (e.g., infinite scroll loads more items → new query key → new fetch).
+  // Without this, userBookmarks falls back to {} during the fetch window, making all icons grey.
   return useQuery({
     queryKey: ['feed-bookmarks-set', userId, sortedIds],
     queryFn: () => fetchUserBookmarks(userId ?? /* istanbul ignore next */ '', sortedIds),
     enabled: !!userId && sortedIds.length > 0,
     staleTime: STALE_2M,
+    placeholderData: keepPreviousData,
   });
 }

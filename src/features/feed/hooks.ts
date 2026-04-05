@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import {
   fetchNewsFeed,
   fetchPersonalizedFeed,
@@ -201,11 +201,14 @@ export function useUserVotes(feedItemIds: string[]) {
   const idsKey = [...feedItemIds].sort().join(',');
   const sortedIds = useMemo(() => (idsKey ? idsKey.split(',') : []), [idsKey]);
 
+  // @edge: keepPreviousData prevents vote icons from flashing to "no vote" when feedItemIds
+  // changes (e.g., infinite scroll loads more items → new query key → new fetch window).
   return useQuery({
     queryKey: ['feed-votes', userId, sortedIds],
     // @sync: must use sortedIds (not feedItemIds) to match the sorted queryKey and avoid stale-closure mismatches
     queryFn: () => fetchUserVotes(userId ?? /* istanbul ignore next */ '', sortedIds),
     enabled: !!userId && sortedIds.length > 0,
     staleTime: STALE_2M,
+    placeholderData: keepPreviousData,
   });
 }
