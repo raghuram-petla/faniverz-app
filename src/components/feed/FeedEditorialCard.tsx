@@ -89,28 +89,30 @@ export function FeedEditorialCardInner({
                 <FeedContentBadge contentType={item.content_type} />
                 <Text style={styles.timestamp}>{relativeTime}</Text>
               </View>
-              {/* Overall rating below badge */}
-              {item.editorial_rating != null && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                  <Ionicons name="star" size={18} color={colors.yellow400} />
-                  <Text style={{ fontSize: 18, fontWeight: '800', color: theme.textPrimary }}>
-                    {item.editorial_rating.toFixed(1)}
-                  </Text>
-                  <Text style={{ fontSize: 13, color: theme.textTertiary }}>/ 5</Text>
-                </View>
-              )}
-              {/* Editor profile */}
-              {review?.author_display_name && (
-                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
-                  <Image
-                    source={review.author_avatar_url || PLACEHOLDER_AVATAR}
-                    style={{ width: 18, height: 18, borderRadius: 9 }}
-                  />
-                  <Text style={{ fontSize: 12, color: theme.textTertiary }}>
-                    {review.author_display_name}
-                  </Text>
-                </View>
-              )}
+              {/* Overall rating + editor profile on same row */}
+              <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                {item.editorial_rating != null && (
+                  <>
+                    <Ionicons name="star" size={18} color={colors.yellow400} />
+                    <Text style={{ fontSize: 18, fontWeight: '800', color: theme.textPrimary }}>
+                      {item.editorial_rating.toFixed(1)}
+                    </Text>
+                    <Text style={{ fontSize: 13, color: theme.textTertiary }}>/ 5</Text>
+                  </>
+                )}
+                {review?.author_display_name && (
+                  <>
+                    <Text style={{ fontSize: 13, color: theme.textDisabled }}>·</Text>
+                    <Image
+                      source={review.author_avatar_url || PLACEHOLDER_AVATAR}
+                      style={{ width: 22, height: 22, borderRadius: 11 }}
+                    />
+                    <Text style={{ fontSize: 14, color: theme.textSecondary, fontWeight: '500' }}>
+                      {review.author_display_name}
+                    </Text>
+                  </>
+                )}
+              </View>
               {entityId && onFollow && (
                 <View style={styles.followWrap}>
                   <FollowButton
