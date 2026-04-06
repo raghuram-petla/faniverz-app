@@ -2,9 +2,11 @@ import { View, Text, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { colors } from '@/theme/colors';
+import { useTranslation } from 'react-i18next';
 
-// @contract renders a single craft rating row: craft label, editor stars (read-only),
-// and user stars (interactive/tappable). Shows aggregate user average if available.
+// @contract renders a single craft rating as two rows:
+// Row 1: craft label + editor stars (read-only)
+// Row 2: "Your rating" label + user stars (tappable) + avg user rating
 export interface CraftRatingRowProps {
   label: string;
   editorRating: number;
@@ -13,7 +15,6 @@ export interface CraftRatingRowProps {
   onRate: (rating: number) => void;
 }
 
-// @coupling used by EditorialReviewSection for each of the 5 crafts
 export function CraftRatingRow({
   label,
   editorRating,
@@ -22,50 +23,56 @@ export function CraftRatingRow({
   onRate,
 }: CraftRatingRowProps) {
   const { theme } = useTheme();
+  const { t } = useTranslation();
 
   return (
-    <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 8 }}>
-      {/* Craft label */}
-      <Text
-        style={{ width: 100, fontSize: 13, fontWeight: '500', color: theme.textSecondary }}
-        numberOfLines={1}
-      >
-        {label}
-      </Text>
-
-      {/* Editor rating (read-only stars) */}
-      <View style={{ flexDirection: 'row', gap: 2, flex: 1 }}>
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Ionicons
-            key={`editor-${star}`}
-            name={star <= editorRating ? 'star' : 'star-outline'}
-            size={16}
-            color={star <= editorRating ? colors.yellow400 : theme.textDisabled}
-          />
-        ))}
+    <View style={{ paddingVertical: 6 }}>
+      {/* Row 1: craft label + editor stars */}
+      <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+        <Text
+          style={{ width: 110, fontSize: 14, fontWeight: '600', color: theme.textPrimary }}
+          numberOfLines={1}
+        >
+          {label}
+        </Text>
+        <View style={{ flexDirection: 'row', gap: 4 }}>
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Ionicons
+              key={`editor-${star}`}
+              name={star <= editorRating ? 'star' : 'star-outline'}
+              size={20}
+              color={star <= editorRating ? colors.yellow400 : theme.textDisabled}
+            />
+          ))}
+        </View>
+        <Text style={{ fontSize: 13, color: theme.textTertiary, marginLeft: 6 }}>
+          ({editorRating})
+        </Text>
       </View>
 
-      {/* User rating (tappable stars) */}
-      <View style={{ flexDirection: 'row', gap: 2 }}>
-        {[1, 2, 3, 4, 5].map((star) => (
-          <Pressable
-            key={`user-${star}`}
-            onPress={() => onRate(star)}
-            hitSlop={4}
-            accessibilityLabel={`Rate ${label} ${star} stars`}
-          >
-            <Ionicons
-              name={userRating && star <= userRating ? 'star' : 'star-outline'}
-              size={14}
-              color={userRating && star <= userRating ? colors.red600 : theme.textDisabled}
-            />
-          </Pressable>
-        ))}
-        {avgUserRating !== null && (
-          <Text style={{ fontSize: 11, color: theme.textTertiary, marginLeft: 4 }}>
-            {avgUserRating.toFixed(1)}
-          </Text>
-        )}
+      {/* Row 2: user tappable stars */}
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4, paddingLeft: 110 }}>
+        <View style={{ flexDirection: 'row', gap: 4 }}>
+          {[1, 2, 3, 4, 5].map((star) => (
+            <Pressable
+              key={`user-${star}`}
+              onPress={() => onRate(star)}
+              hitSlop={6}
+              accessibilityLabel={`Rate ${label} ${star} stars`}
+            >
+              <Ionicons
+                name={userRating && star <= userRating ? 'star' : 'star-outline'}
+                size={18}
+                color={userRating && star <= userRating ? colors.red600 : theme.textDisabled}
+              />
+            </Pressable>
+          ))}
+        </View>
+        <Text style={{ fontSize: 11, color: theme.textTertiary, marginLeft: 6 }}>
+          {userRating
+            ? t('editorial.yourRating', 'Your rating')
+            : t('editorial.tapToRate', 'Tap to rate')}
+        </Text>
       </View>
     </View>
   );

@@ -167,25 +167,10 @@ export function FeedEditorialCardInner({
               </View>
             )}
 
-            {/* Verdict */}
-            {review?.verdict && (
-              <Text
-                style={{
-                  fontSize: 14,
-                  fontWeight: '600',
-                  fontStyle: 'italic',
-                  color: theme.textPrimary,
-                  marginBottom: 6,
-                }}
-              >
-                "{review.verdict}"
-              </Text>
-            )}
-
             {/* Body text — 100 words then "Show more" */}
             {bodyResult && (
               <View>
-                <Text style={{ fontSize: 13, lineHeight: 19, color: theme.textSecondary }}>
+                <Text style={{ fontSize: 15, lineHeight: 22, color: theme.textSecondary }}>
                   {expanded ? item.description : bodyResult.truncated}
                 </Text>
                 {bodyResult.wasTruncated && !expanded && (

@@ -68,13 +68,6 @@ export function EditorialReviewSection({
 
       {/* Craft Ratings */}
       <View style={styles.craftSection}>
-        <View style={styles.craftHeader}>
-          <Text style={styles.craftHeaderLabel}>{t('editorial.craft', 'Craft')}</Text>
-          <View style={{ flexDirection: 'row', gap: 40 }}>
-            <Text style={styles.craftHeaderLabel}>{t('editorial.editor', 'Editor')}</Text>
-            <Text style={styles.craftHeaderLabel}>{t('editorial.you', 'You')}</Text>
-          </View>
-        </View>
         {CRAFT_NAMES.map((craft) => (
           <CraftRatingRow
             key={craft}
@@ -96,8 +89,8 @@ export function EditorialReviewSection({
 
       <View style={styles.divider} />
 
-      {/* Verdict */}
-      {review.verdict && <Text style={styles.verdict}>"{review.verdict}"</Text>}
+      {/* Review Title (below stars, above body) */}
+      {review.title && <Text style={styles.verdict}>{review.title}</Text>}
 
       {/* Body */}
       <Text style={styles.body} numberOfLines={expanded ? undefined : COLLAPSED_LINES}>

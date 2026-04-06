@@ -421,6 +421,8 @@
     "editor": "ఎడిటర్",
     "you": "మీరు",
     "usersRated": "{{count}} మంది రేట్ చేశారు",
-    "voteCount": "{{count}} ఓట్లు"
+    "voteCount": "{{count}} ఓట్లు",
+    "yourRating": "మీ రేటింగ్",
+    "tapToRate": "రేట్ చేయండి"
   }
 }

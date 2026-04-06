@@ -92,8 +92,8 @@ export const createStyles = (t: SemanticTheme) =>
       marginBottom: 8,
     },
     body: {
-      fontSize: 14,
-      lineHeight: 20,
+      fontSize: 15,
+      lineHeight: 22,
       color: t.textSecondary,
     },
     readMore: {
@@ -109,8 +109,8 @@ export const createStyles = (t: SemanticTheme) =>
       marginTop: 4,
     },
     userRatingCount: {
-      fontSize: 11,
+      fontSize: 13,
       color: t.textTertiary,
-      marginTop: 2,
+      marginTop: 4,
     },
   });

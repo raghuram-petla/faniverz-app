@@ -445,6 +445,8 @@
     "editor": "Editor",
     "you": "You",
     "usersRated": "{{count}} users rated",
-    "voteCount": "{{count}} votes"
+    "voteCount": "{{count}} votes",
+    "yourRating": "Your rating",
+    "tapToRate": "Tap to rate"
   }
 }

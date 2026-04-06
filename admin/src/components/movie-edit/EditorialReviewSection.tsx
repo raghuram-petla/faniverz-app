@@ -67,14 +67,6 @@ export function EditorialReviewSection({ movieId }: EditorialReviewSectionProps)
           placeholder="Write the editorial review..."
         />
 
-        {/* Verdict */}
-        <FormInput
-          label="Verdict (one-liner)"
-          value={form.verdict}
-          onValueChange={(v) => updateField('verdict', v)}
-          placeholder="e.g. A must-watch cinematic experience"
-        />
-
         {/* Craft Ratings */}
         <div>
           <label className="block text-sm text-on-surface-muted mb-3">Craft Ratings *</label>
