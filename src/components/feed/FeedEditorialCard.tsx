@@ -114,6 +114,20 @@ export function FeedEditorialCardInner({
 
           {/* Editorial content — full review inline */}
           <View style={{ marginHorizontal: 12, marginTop: 10 }}>
+            {/* Review title */}
+            {review?.title && (
+              <Text
+                style={{
+                  fontSize: 16,
+                  fontWeight: '700',
+                  color: theme.textPrimary,
+                  marginBottom: 8,
+                }}
+              >
+                {review.title}
+              </Text>
+            )}
+
             {/* Craft ratings */}
             {review && (
               <View
@@ -129,22 +143,22 @@ export function FeedEditorialCardInner({
                   return (
                     <View
                       key={craft}
-                      style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3 }}
+                      style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 4 }}
                     >
-                      <Text style={{ width: 100, fontSize: 12, color: theme.textSecondary }}>
+                      <Text style={{ width: 110, fontSize: 14, color: theme.textSecondary }}>
                         {CRAFT_LABELS[craft]}
                       </Text>
-                      <View style={{ flexDirection: 'row', gap: 2 }}>
+                      <View style={{ flexDirection: 'row', gap: 3 }}>
                         {[1, 2, 3, 4, 5].map((s) => (
                           <Ionicons
                             key={s}
                             name={s <= rating ? 'star' : 'star-outline'}
-                            size={12}
+                            size={16}
                             color={s <= rating ? colors.yellow400 : theme.textDisabled}
                           />
                         ))}
                       </View>
-                      <Text style={{ fontSize: 11, color: theme.textTertiary, marginLeft: 6 }}>
+                      <Text style={{ fontSize: 13, color: theme.textTertiary, marginLeft: 6 }}>
                         ({rating})
                       </Text>
                     </View>
