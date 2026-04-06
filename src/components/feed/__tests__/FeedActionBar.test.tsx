@@ -25,6 +25,7 @@ const defaultProps = {
   viewCount: 1500,
   userVote: null as 'up' | 'down' | null,
   isBookmarked: false,
+  bookmarkCount: 7,
 };
 
 describe('FeedActionBar', () => {
@@ -134,6 +135,7 @@ describe('FeedActionBar', () => {
         upvoteCount={undefined as unknown as number}
         downvoteCount={undefined as unknown as number}
         viewCount={undefined as unknown as number}
+        bookmarkCount={undefined as unknown as number}
         userVote={null}
         isBookmarked={false}
       />,
@@ -178,7 +180,7 @@ describe('FeedActionBar', () => {
 
   it('renders bookmark button with outline icon when not bookmarked', () => {
     render(<FeedActionBar {...defaultProps} isBookmarked={false} />);
-    expect(screen.getByLabelText('Bookmark')).toBeTruthy();
+    expect(screen.getByLabelText('Bookmark, 7 bookmarks')).toBeTruthy();
     const json = JSON.stringify(
       render(<FeedActionBar {...defaultProps} isBookmarked={false} />).toJSON(),
     );
@@ -187,29 +189,44 @@ describe('FeedActionBar', () => {
 
   it('renders bookmark button with filled icon when bookmarked', () => {
     const { toJSON } = render(<FeedActionBar {...defaultProps} isBookmarked={true} />);
-    expect(screen.getByLabelText('Remove bookmark')).toBeTruthy();
+    expect(screen.getByLabelText('Remove bookmark, 7 bookmarks')).toBeTruthy();
     const json = JSON.stringify(toJSON());
     expect(json).toContain('"bookmark"');
     expect(json.toLowerCase()).toContain('#ef4444');
   });
 
+  it('renders bookmark count', () => {
+    render(<FeedActionBar {...defaultProps} bookmarkCount={42} />);
+    expect(screen.getByText('42')).toBeTruthy();
+  });
+
+  it('renders bookmark count with K formatting', () => {
+    render(<FeedActionBar {...defaultProps} bookmarkCount={5000} />);
+    expect(screen.getByText('5K')).toBeTruthy();
+  });
+
+  it('defaults bookmark count to 0 when undefined', () => {
+    render(<FeedActionBar {...defaultProps} bookmarkCount={undefined as unknown as number} />);
+    expect(screen.getByLabelText('Bookmark, 0 bookmarks')).toBeTruthy();
+  });
+
   it('calls onBookmark when bookmark button pressed', () => {
     const onBookmark = jest.fn();
     render(<FeedActionBar {...defaultProps} onBookmark={onBookmark} />);
-    fireEvent.press(screen.getByLabelText('Bookmark'));
+    fireEvent.press(screen.getByLabelText('Bookmark, 7 bookmarks'));
     expect(onBookmark).toHaveBeenCalled();
   });
 
   it('disables bookmark button when no callback', () => {
     render(<FeedActionBar {...defaultProps} />);
-    const btn = screen.getByLabelText('Bookmark');
+    const btn = screen.getByLabelText('Bookmark, 7 bookmarks');
     expect(btn.props.accessibilityState?.disabled).toBe(true);
   });
 
   it('does not disable bookmark button when callback is provided', () => {
     const onBookmark = jest.fn();
     render(<FeedActionBar {...defaultProps} onBookmark={onBookmark} />);
-    const btn = screen.getByLabelText('Bookmark');
+    const btn = screen.getByLabelText('Bookmark, 7 bookmarks');
     expect(btn.props.accessibilityState?.disabled).toBeFalsy();
   });
 });

@@ -11,6 +11,7 @@ export interface FeedActionBarProps {
   viewCount: number;
   userVote: 'up' | 'down' | null;
   isBookmarked: boolean;
+  bookmarkCount: number;
   onComment?: () => void;
   onUpvote?: () => void;
   onDownvote?: () => void;
@@ -25,6 +26,7 @@ export function FeedActionBar({
   viewCount,
   userVote,
   isBookmarked,
+  bookmarkCount,
   onComment,
   onUpvote,
   onDownvote,
@@ -38,6 +40,7 @@ export function FeedActionBar({
   const safeUpvotes = upvoteCount ?? 0;
   const safeDownvotes = downvoteCount ?? 0;
   const safeViews = viewCount ?? 0;
+  const safeBookmarks = bookmarkCount ?? 0;
 
   // @contract active vote highlights in red (up) or red (down); null = tertiary
   const upColor = userVote === 'up' ? colors.red500 : defaultColor;
@@ -109,13 +112,20 @@ export function FeedActionBar({
         disabled={!onBookmark}
         activeOpacity={0.7}
         accessibilityRole="button"
-        accessibilityLabel={isBookmarked ? 'Remove bookmark' : 'Bookmark'}
+        accessibilityLabel={
+          isBookmarked
+            ? `Remove bookmark, ${safeBookmarks} bookmarks`
+            : `Bookmark, ${safeBookmarks} bookmarks`
+        }
       >
         <Ionicons
           name={isBookmarked ? 'bookmark' : 'bookmark-outline'}
           size={22}
           color={bookmarkColor}
         />
+        <Text style={[styles.count, { color: bookmarkColor }]}>
+          {formatCompactNumber(safeBookmarks)}
+        </Text>
       </TouchableOpacity>
 
       {/* Share */}

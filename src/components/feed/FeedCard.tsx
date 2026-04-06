@@ -269,6 +269,7 @@ function FeedCardInner({
               viewCount={item.view_count}
               userVote={userVote ?? null}
               isBookmarked={isBookmarked ?? false}
+              bookmarkCount={item.bookmark_count}
               onComment={onComment ? () => onComment(item.id) : undefined}
               onUpvote={onUpvote ? () => onUpvote(item.id) : undefined}
               onDownvote={onDownvote ? () => onDownvote(item.id) : undefined}

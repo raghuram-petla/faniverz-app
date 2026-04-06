@@ -68,6 +68,7 @@ jest.mock('../FeedActionBar', () => ({
     viewCount: number;
     userVote: 'up' | 'down' | null;
     isBookmarked: boolean;
+    bookmarkCount: number;
     onComment?: () => void;
     onUpvote?: () => void;
     onDownvote?: () => void;
@@ -85,6 +86,7 @@ jest.mock('../FeedActionBar', () => ({
         <Text testID="action-is-bookmarked">
           {props.isBookmarked ? 'bookmarked' : 'not-bookmarked'}
         </Text>
+        <Text testID="action-bookmark-count">{props.bookmarkCount}</Text>
         {props.onComment ? (
           <TouchableOpacity testID="action-comment-btn" onPress={props.onComment} />
         ) : null}
@@ -339,6 +341,12 @@ describe('FeedCard', () => {
     render(<FeedCard item={makeItem()} onPress={jest.fn()} />);
     expect(screen.queryByTestId('action-comment-btn')).toBeNull();
     expect(screen.queryByTestId('action-share-btn')).toBeNull();
+  });
+
+  it('passes bookmark_count to FeedActionBar', () => {
+    const item = makeItem({ bookmark_count: 15 });
+    render(<FeedCard item={item} onPress={jest.fn()} />);
+    expect(screen.getByTestId('action-bookmark-count').props.children).toBe(15);
   });
 
   it('passes isBookmarked false to FeedActionBar when not provided', () => {
@@ -828,7 +836,9 @@ describe('FeedCard', () => {
 
   it('does not render full timestamp row when showFullTimestamp is false', () => {
     const item = makeItem({ published_at: '2026-01-15T10:30:00Z' });
-    const { toJSON } = render(<FeedCard item={item} onPress={jest.fn()} showFullTimestamp={false} />);
+    const { toJSON } = render(
+      <FeedCard item={item} onPress={jest.fn()} showFullTimestamp={false} />,
+    );
     expect(JSON.stringify(toJSON())).not.toContain('time-outline');
   });
 });

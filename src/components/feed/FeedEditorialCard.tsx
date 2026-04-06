@@ -230,6 +230,7 @@ export function FeedEditorialCardInner({
               viewCount={item.view_count}
               userVote={userVote ?? null}
               isBookmarked={isBookmarked ?? false}
+              bookmarkCount={item.bookmark_count}
               onUpvote={() => onUpvote?.(item.id)}
               onDownvote={() => onDownvote?.(item.id)}
               onBookmark={() => onBookmark?.(item.id)}
