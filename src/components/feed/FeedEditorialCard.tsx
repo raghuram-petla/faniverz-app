@@ -19,13 +19,18 @@ import { useEditorialReview } from '@/features/editorial/hooks';
 import type { FeedCardProps } from './FeedCard';
 import type { CraftName } from '@shared/types';
 
-const WORD_LIMIT = 100;
+const WORD_LIMIT = 30;
 
-// @contract truncates text to ~100 words with "..." suffix
+// @contract truncates text to ~N words preserving paragraph breaks
 function truncateWords(text: string, limit: number): { truncated: string; wasTruncated: boolean } {
-  const words = text.split(/\s+/);
-  if (words.length <= limit) return { truncated: text, wasTruncated: false };
-  return { truncated: words.slice(0, limit).join(' ') + '...', wasTruncated: true };
+  const words = text.match(/\S+/g);
+  if (!words || words.length <= limit) return { truncated: text, wasTruncated: false };
+  // Find the position in the original string after the Nth word
+  let pos = 0;
+  for (let i = 0; i < limit; i++) {
+    pos = text.indexOf(words[i], pos) + words[i].length;
+  }
+  return { truncated: text.slice(0, pos).trimEnd() + '...', wasTruncated: true };
 }
 
 // @contract specialized card for editorial review feed items — shows full review content
@@ -58,7 +63,8 @@ export function FeedEditorialCardInner({
   // @boundary fetch full editorial review for craft ratings display
   const { data: review } = useEditorialReview(item.movie_id ?? '');
 
-  const bodyResult = item.description ? truncateWords(item.description, WORD_LIMIT) : null;
+  const bodyText = review?.body || item.description || '';
+  const bodyResult = bodyText ? truncateWords(bodyText, WORD_LIMIT) : null;
 
   return (
     <View>
@@ -164,7 +170,7 @@ export function FeedEditorialCardInner({
                     >
                       <Text
                         style={{
-                          width: 110,
+                          width: 200,
                           fontSize: 15,
                           fontWeight: '500',
                           color: theme.textSecondary,
@@ -195,19 +201,19 @@ export function FeedEditorialCardInner({
             {bodyResult && (
               <View>
                 <Text style={{ fontSize: 15, lineHeight: 22, color: theme.textSecondary }}>
-                  {expanded ? item.description : bodyResult.truncated}
+                  {expanded ? bodyText : bodyResult.truncated}
                 </Text>
-                {bodyResult.wasTruncated && !expanded && (
-                  <Pressable onPress={() => setExpanded(true)}>
+                {bodyResult.wasTruncated && (
+                  <Pressable onPress={() => setExpanded(!expanded)}>
                     <Text
                       style={{
-                        fontSize: 13,
+                        fontSize: 15,
                         fontWeight: '600',
                         color: colors.red600,
-                        marginTop: 4,
+                        marginTop: 6,
                       }}
                     >
-                      Show more
+                      {expanded ? 'Show less' : 'Show more'}
                     </Text>
                   </Pressable>
                 )}

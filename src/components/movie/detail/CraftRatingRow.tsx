@@ -14,10 +14,7 @@ export function CraftRatingRow({ label, editorRating }: CraftRatingRowProps) {
 
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 5 }}>
-      <Text
-        style={{ width: 110, fontSize: 14, fontWeight: '600', color: theme.textPrimary }}
-        numberOfLines={1}
-      >
+      <Text style={{ width: 200, fontSize: 14, fontWeight: '600', color: theme.textPrimary }}>
         {label}
       </Text>
       <View style={{ flexDirection: 'row', gap: 4 }}>
