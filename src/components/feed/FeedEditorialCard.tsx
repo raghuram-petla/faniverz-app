@@ -1,8 +1,6 @@
-import React, { useMemo } from 'react';
-import { View, Text, TouchableOpacity } from 'react-native';
-import { Image } from 'expo-image';
+import React, { useState, useMemo } from 'react';
+import { View, Text, TouchableOpacity, Pressable } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useRouter } from 'expo-router';
 import { useTheme } from '@/theme';
 import { FeedAvatar } from './FeedAvatar';
 import { FeedActionBar } from './FeedActionBar';
@@ -12,13 +10,24 @@ import { FilmStripFrame } from './FilmStripFrame';
 import { FilmStripFrameDivider } from './FilmStripFrameDivider';
 import { useRelativeTime } from '@/hooks/useRelativeTime';
 import { getEntityAvatarUrl, getEntityName, getEntityId } from '@/constants/feedHelpers';
-import { getImageUrl, posterBucket } from '@shared/imageUrl';
-import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
+import { posterBucket } from '@shared/imageUrl';
+import { CRAFT_NAMES, CRAFT_LABELS } from '@shared/constants';
 import { createFeedCardStyles } from '@/styles/tabs/feed.styles';
+import { useEditorialReview } from '@/features/editorial/hooks';
 import type { FeedCardProps } from './FeedCard';
+import type { CraftName } from '@shared/types';
 
-// @contract specialized card for editorial review feed items
-// @coupling navigates to movie detail page (not post detail) via "Read Full Review"
+const WORD_LIMIT = 100;
+
+// @contract truncates text to ~100 words with "..." suffix
+function truncateWords(text: string, limit: number): { truncated: string; wasTruncated: boolean } {
+  const words = text.split(/\s+/);
+  if (words.length <= limit) return { truncated: text, wasTruncated: false };
+  return { truncated: words.slice(0, limit).join(' ') + '...', wasTruncated: true };
+}
+
+// @contract specialized card for editorial review feed items — shows full review content
+// @coupling fetches editorial review data via useEditorialReview hook for craft ratings
 export function FeedEditorialCardInner({
   item,
   onEntityPress,
@@ -35,17 +44,18 @@ export function FeedEditorialCardInner({
 }: FeedCardProps) {
   const { theme, colors } = useTheme();
   const styles = useMemo(() => createFeedCardStyles(theme), [theme]);
-  const router = useRouter();
   const relativeTime = useRelativeTime(item.published_at);
+  const [expanded, setExpanded] = useState(false);
 
   const avatarUrl = getEntityAvatarUrl(item);
   const entityName = getEntityName(item);
   const entityId = getEntityId(item);
   const entityType = 'movie' as const;
-  const imgBucket = posterBucket(item.movie?.poster_image_type);
-  const imgUrl = item.thumbnail_url
-    ? getImageUrl(item.thumbnail_url, 'md', imgBucket)
-    : PLACEHOLDER_POSTER;
+
+  // @boundary fetch full editorial review for craft ratings display
+  const { data: review } = useEditorialReview(item.movie_id ?? '');
+
+  const bodyResult = item.description ? truncateWords(item.description, WORD_LIMIT) : null;
 
   return (
     <View>
@@ -76,6 +86,16 @@ export function FeedEditorialCardInner({
                 <FeedContentBadge contentType={item.content_type} />
                 <Text style={styles.timestamp}>{relativeTime}</Text>
               </View>
+              {/* Overall rating below badge */}
+              {item.editorial_rating != null && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
+                  <Ionicons name="star" size={14} color={colors.yellow400} />
+                  <Text style={{ fontSize: 15, fontWeight: '800', color: theme.textPrimary }}>
+                    {item.editorial_rating.toFixed(1)}
+                  </Text>
+                  <Text style={{ fontSize: 12, color: theme.textTertiary }}>/ 5</Text>
+                </View>
+              )}
               {entityId && onFollow && (
                 <View style={styles.followWrap}>
                   <FollowButton
@@ -92,45 +112,85 @@ export function FeedEditorialCardInner({
             </View>
           </View>
 
-          {/* Editorial content: poster + rating + verdict */}
-          <TouchableOpacity
-            activeOpacity={0.8}
-            onPress={() => item.movie_id && router.push(`/movie/${item.movie_id}`)}
-            style={{
-              flexDirection: 'row',
-              backgroundColor: theme.surfaceElevated,
-              borderRadius: 12,
-              overflow: 'hidden',
-              marginHorizontal: 12,
-              marginTop: 10,
-            }}
-          >
-            <Image source={imgUrl} style={{ width: 80, height: 120 }} contentFit="cover" />
-            <View style={{ flex: 1, padding: 12, justifyContent: 'center' }}>
-              {item.editorial_rating != null && (
-                <View
-                  style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 }}
-                >
-                  <Ionicons name="star" size={20} color={colors.yellow400} />
-                  <Text style={{ fontSize: 22, fontWeight: '800', color: theme.textPrimary }}>
-                    {item.editorial_rating.toFixed(1)}
-                  </Text>
-                  <Text style={{ fontSize: 13, color: theme.textTertiary }}>/ 5</Text>
-                </View>
-              )}
-              {item.description && (
-                <Text
-                  style={{ fontSize: 13, color: theme.textSecondary, lineHeight: 18 }}
-                  numberOfLines={3}
-                >
-                  {item.description}
-                </Text>
-              )}
-              <Text style={{ fontSize: 12, fontWeight: '600', color: colors.red600, marginTop: 6 }}>
-                Read Full Review →
+          {/* Editorial content — full review inline */}
+          <View style={{ marginHorizontal: 12, marginTop: 10 }}>
+            {/* Craft ratings */}
+            {review && (
+              <View
+                style={{
+                  backgroundColor: theme.surfaceElevated,
+                  borderRadius: 10,
+                  padding: 10,
+                  marginBottom: 10,
+                }}
+              >
+                {CRAFT_NAMES.map((craft: CraftName) => {
+                  const rating = review[`rating_${craft}` as keyof typeof review] as number;
+                  return (
+                    <View
+                      key={craft}
+                      style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 3 }}
+                    >
+                      <Text style={{ width: 100, fontSize: 12, color: theme.textSecondary }}>
+                        {CRAFT_LABELS[craft]}
+                      </Text>
+                      <View style={{ flexDirection: 'row', gap: 2 }}>
+                        {[1, 2, 3, 4, 5].map((s) => (
+                          <Ionicons
+                            key={s}
+                            name={s <= rating ? 'star' : 'star-outline'}
+                            size={12}
+                            color={s <= rating ? colors.yellow400 : theme.textDisabled}
+                          />
+                        ))}
+                      </View>
+                      <Text style={{ fontSize: 11, color: theme.textTertiary, marginLeft: 6 }}>
+                        ({rating})
+                      </Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+
+            {/* Verdict */}
+            {review?.verdict && (
+              <Text
+                style={{
+                  fontSize: 14,
+                  fontWeight: '600',
+                  fontStyle: 'italic',
+                  color: theme.textPrimary,
+                  marginBottom: 6,
+                }}
+              >
+                "{review.verdict}"
               </Text>
-            </View>
-          </TouchableOpacity>
+            )}
+
+            {/* Body text — 100 words then "Show more" */}
+            {bodyResult && (
+              <View>
+                <Text style={{ fontSize: 13, lineHeight: 19, color: theme.textSecondary }}>
+                  {expanded ? item.description : bodyResult.truncated}
+                </Text>
+                {bodyResult.wasTruncated && !expanded && (
+                  <Pressable onPress={() => setExpanded(true)}>
+                    <Text
+                      style={{
+                        fontSize: 13,
+                        fontWeight: '600',
+                        color: colors.red600,
+                        marginTop: 4,
+                      }}
+                    >
+                      Show more
+                    </Text>
+                  </Pressable>
+                )}
+              </View>
+            )}
+          </View>
 
           {/* Action bar */}
           <View style={styles.actionBar}>
@@ -155,7 +215,7 @@ export function FeedEditorialCardInner({
   );
 }
 
-// @sync memo comparator matches FeedCard's comparator + editorial_rating
+// @sync memo comparator — editorial cards also compare editorial_rating
 export const FeedEditorialCard = React.memo(FeedEditorialCardInner, (prev, next) => {
   const p = prev.item,
     n = next.item;

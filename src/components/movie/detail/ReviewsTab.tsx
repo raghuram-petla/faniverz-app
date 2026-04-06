@@ -3,11 +3,13 @@ import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 import { StarRating } from '@/components/ui/StarRating';
 import { formatDate } from '@/utils/formatDate';
+import { EditorialReviewSection } from './EditorialReviewSection';
 import type { Review } from '@/types/review';
+import type { EditorialReviewWithUserData, CraftName } from '@shared/types';
 import { createStyles } from '@/styles/movieDetail.styles';
 import { useTranslation } from 'react-i18next';
 
-/** @contract Displays rating summary, write-review CTA, and paginated review cards */
+/** @contract Displays editorial review (if exists), rating summary, write-review CTA, and review cards */
 interface ReviewsTabProps {
   rating: number;
   reviewCount: number;
@@ -17,6 +19,10 @@ interface ReviewsTabProps {
   onWriteReview: () => void;
   /** @sideeffect Fires helpful-vote mutation on the backend */
   onHelpful: (reviewId: string) => void;
+  /** @nullable null when no published editorial review exists for this movie */
+  editorialReview?: EditorialReviewWithUserData | null;
+  onPollVote?: (vote: 'agree' | 'disagree') => void;
+  onCraftRate?: (craft: CraftName, rating: number) => void;
 }
 
 export function ReviewsTab({
@@ -26,12 +32,24 @@ export function ReviewsTab({
   userId,
   onWriteReview,
   onHelpful,
+  editorialReview,
+  onPollVote,
+  onCraftRate,
 }: ReviewsTabProps) {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
   const styles = createStyles(theme);
   return (
     <View style={styles.reviewsTab}>
+      {/* Editorial Review — shown above user reviews */}
+      {editorialReview && onPollVote && onCraftRate && (
+        <EditorialReviewSection
+          review={editorialReview}
+          onPollVote={onPollVote}
+          onCraftRate={onCraftRate}
+        />
+      )}
+
       <View style={styles.ratingSummary}>
         <Ionicons name="star" size={32} color={colors.yellow400} />
         <Text style={styles.ratingSummaryValue}>{rating}</Text>

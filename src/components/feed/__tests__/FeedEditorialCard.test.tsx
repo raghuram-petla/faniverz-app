@@ -55,6 +55,30 @@ jest.mock('@/styles/tabs/feed.styles', () => ({
   createFeedCardStyles: () => new Proxy({}, { get: () => ({}) }),
 }));
 
+jest.mock('@/features/editorial/hooks', () => ({
+  useEditorialReview: () => ({
+    data: {
+      rating_story: 4,
+      rating_direction: 5,
+      rating_technical: 3,
+      rating_music: 4,
+      rating_performances: 5,
+      verdict: 'A must-watch film',
+    },
+  }),
+}));
+
+jest.mock('@shared/constants', () => ({
+  CRAFT_NAMES: ['story', 'direction', 'technical', 'music', 'performances'],
+  CRAFT_LABELS: {
+    story: 'Story',
+    direction: 'Direction',
+    technical: 'Technical',
+    music: 'Music',
+    performances: 'Performances',
+  },
+}));
+
 jest.mock('../FeedAvatar', () => ({ FeedAvatar: 'FeedAvatar' }));
 jest.mock('../FeedActionBar', () => ({ FeedActionBar: 'FeedActionBar' }));
 jest.mock('../FeedContentBadge', () => ({ FeedContentBadge: 'FeedContentBadge' }));
@@ -118,7 +142,6 @@ describe('FeedEditorialCardInner', () => {
   it('renders the editorial rating', () => {
     render(<FeedEditorialCardInner {...defaultProps} />);
     expect(screen.getByText('4.5')).toBeTruthy();
-    expect(screen.getByText('/ 5')).toBeTruthy();
   });
 
   it('renders description text', () => {
@@ -128,9 +151,10 @@ describe('FeedEditorialCardInner', () => {
     ).toBeTruthy();
   });
 
-  it('renders "Read Full Review" CTA', () => {
+  it('renders craft rating labels', () => {
     render(<FeedEditorialCardInner {...defaultProps} />);
-    expect(screen.getByText(/Read Full Review/)).toBeTruthy();
+    expect(screen.getByText('Story')).toBeTruthy();
+    expect(screen.getByText('Direction')).toBeTruthy();
   });
 
   it('renders entity name', () => {
@@ -148,7 +172,6 @@ describe('FeedEditorialCardInner', () => {
       <FeedEditorialCardInner {...defaultProps} item={makeItem({ editorial_rating: null })} />,
     );
     expect(screen.queryByText('4.5')).toBeNull();
-    expect(screen.getByText(/Read Full Review/)).toBeTruthy();
   });
 
   it('does not render description when null', () => {

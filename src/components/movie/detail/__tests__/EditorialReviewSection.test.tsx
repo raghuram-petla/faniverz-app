@@ -122,21 +122,10 @@ describe('EditorialReviewSection', () => {
     expect(screen.getByText('EDITORIAL REVIEW')).toBeTruthy();
   });
 
-  it('renders the author display name', () => {
+  it('does not render author name (reserved for future)', () => {
     render(
       <EditorialReviewSection
         review={makeReview()}
-        onPollVote={onPollVote}
-        onCraftRate={onCraftRate}
-      />,
-    );
-    expect(screen.getByText('Jane Doe')).toBeTruthy();
-  });
-
-  it('does not render author name when not provided', () => {
-    render(
-      <EditorialReviewSection
-        review={makeReview({ author_display_name: null })}
         onPollVote={onPollVote}
         onCraftRate={onCraftRate}
       />,

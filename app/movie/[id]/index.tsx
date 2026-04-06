@@ -5,6 +5,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useTranslation } from 'react-i18next';
 import { useMovieDetail } from '@/features/movies/hooks/useMovieDetail';
+import type { CraftName } from '@shared/types';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import { useMovieReviews, useReviewMutations } from '@/features/reviews/hooks';
 import { useMovieAction } from '@/hooks/useMovieAction';
@@ -26,7 +27,6 @@ import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { MovieDetailSkeleton } from '@/components/movie/detail/MovieDetailSkeleton';
-import { EditorialReviewSection } from '@/components/movie/detail/EditorialReviewSection';
 import {
   useEditorialReview,
   usePollVoteMutation,
@@ -164,21 +164,6 @@ export default function MovieDetailScreen() {
           releaseDate={movie.release_date}
         />
 
-        {/* Editorial Review */}
-        {editorialReview && (
-          <EditorialReviewSection
-            review={editorialReview}
-            onPollVote={gate((vote: 'agree' | 'disagree') =>
-              pollVoteMutation.mutate({
-                editorialReviewId: editorialReview.id,
-                vote,
-                previousVote: editorialReview.user_poll_vote,
-              }),
-            )}
-            onCraftRate={gate((craft, rating) => craftRatingMutation.mutate({ craft, rating }))}
-          />
-        )}
-
         {/* Tabs */}
         <View style={{ marginTop: 24 }}>
           <AnimatedTabBar
@@ -209,6 +194,17 @@ export default function MovieDetailScreen() {
               userId={userId}
               onWriteReview={gate(() => setShowReviewModal(true))}
               onHelpful={gate((reviewId: string) => helpfulMutation.mutate({ userId, reviewId }))}
+              editorialReview={editorialReview}
+              onPollVote={gate((vote: 'agree' | 'disagree') =>
+                pollVoteMutation.mutate({
+                  editorialReviewId: editorialReview!.id,
+                  vote,
+                  previousVote: editorialReview!.user_poll_vote,
+                }),
+              )}
+              onCraftRate={gate((craft: CraftName, rating: number) =>
+                craftRatingMutation.mutate({ craft, rating }),
+              )}
             />
           )}
         </View>

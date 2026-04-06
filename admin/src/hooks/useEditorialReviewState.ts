@@ -3,7 +3,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/lib/supabase-browser';
-import { useUnsavedChangesWarning } from '@/hooks/useUnsavedChangesWarning';
 import type { EditorialReview } from '@shared/types';
 
 // @contract editorial review form state — mirrors DB columns except overall_rating (GENERATED)
@@ -91,9 +90,19 @@ export function useEditorialReviewState(movieId: string) {
 
   // @contract isDirty compares current form to initial hydrated state
   const isDirty = JSON.stringify(form) !== JSON.stringify(initialRef.current);
+  const isDirtyRef = useRef(isDirty);
+  isDirtyRef.current = isDirty;
 
-  // @assumes useUnsavedChangesWarning uses beforeunload to warn on navigation
-  useUnsavedChangesWarning(isDirty);
+  // @contract uses beforeunload only (not useUnsavedChangesWarning) because that hook
+  // calls history.back() when isDirty transitions false, which navigates away from the page.
+  // This section has its own save button, so simple beforeunload is sufficient.
+  useEffect(() => {
+    const handler = (e: BeforeUnloadEvent) => {
+      if (isDirtyRef.current) e.preventDefault();
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, []);
 
   const computedOverall =
     form.rating_story &&
@@ -138,10 +147,12 @@ export function useEditorialReviewState(movieId: string) {
     setSaveStatus('saving');
 
     try {
+      // @contract use getSession (cached) instead of getUser (network call) to avoid
+      // triggering auth redirect when JWT is near expiry with autoRefreshToken: false
       const {
-        data: { user },
-      } = await supabase.auth.getUser();
-      if (!user) throw new Error('Not authenticated');
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.user) throw new Error('Not authenticated');
 
       // @contract omit author_id on update to preserve original author
       const basePayload = {
@@ -170,7 +181,7 @@ export function useEditorialReviewState(movieId: string) {
       } else {
         const { error: insertError } = await supabase
           .from('editorial_reviews')
-          .insert({ ...basePayload, author_id: user.id });
+          .insert({ ...basePayload, author_id: session.user.id });
         if (insertError) throw insertError;
       }
 
