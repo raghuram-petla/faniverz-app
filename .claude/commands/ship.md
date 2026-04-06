@@ -115,7 +115,9 @@ EOF
 
    The commit message should summarize the entire worktree's work (not repeat "Merge branch"). Use the same conventional commit format as step 6.
 
-   After merging, inform the user the worktree branch has been squash-merged into master and pushed. **Do NOT delete the worktree** — leave it intact so the user can verify nothing was missed. The user will clean it up manually or via a separate command.
+   After merging, inform the user the worktree branch has been squash-merged into master and pushed. **Do NOT delete the worktree or its branch** — leave both intact so the user can verify nothing was missed. The user will clean it up manually or via `/cleanup-worktree`.
+
+   **WARNING:** Do NOT use the Agent tool with `isolation: "worktree"` for shipping — it auto-cleans worktrees on completion, which destroys the worktree before the user can verify. Always run ship commands directly.
 
    **If NOT in a worktree** (working directly on master or a branch):
 
@@ -192,3 +194,5 @@ When work was done in a worktree (at `~/faniverz-worktrees/`), the changes live 
 - If pre-commit hooks fail, fix the issue and create a NEW commit
 - If unsure whether a file belongs to this session, ask the user
 - NEVER include Claude as a co-author or contributor in commits — always use the GitHub user's name and noreply email from `gh api user`
+- NEVER delete worktrees or worktree branches — leave them for user verification
+- NEVER use the Agent tool with `isolation: "worktree"` during ship — it auto-cleans worktrees
