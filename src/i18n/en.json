@@ -432,5 +432,19 @@
     "faqA2": "Following a movie keeps you in the loop. You'll get notified when a new trailer drops, when the release date changes, or when the movie becomes available on a streaming platform.",
     "faqQ3": "What is the watchlist?",
     "faqA3": "The watchlist is your personal collection of movies you want to watch. When a movie is streaming on OTT, you can save it to your watchlist and mark it as watched once you've seen it."
+  },
+  "editorial": {
+    "title": "EDITORIAL REVIEW",
+    "agree": "Agree",
+    "disagree": "Disagree",
+    "doYouAgree": "Do you agree with this review?",
+    "readMore": "Read more",
+    "rateMovie": "Rate this movie",
+    "overallRating": "Overall Rating",
+    "craft": "Craft",
+    "editor": "Editor",
+    "you": "You",
+    "usersRated": "{{count}} users rated",
+    "voteCount": "{{count}} votes"
   }
 }

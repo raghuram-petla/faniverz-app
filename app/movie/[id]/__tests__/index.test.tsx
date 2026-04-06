@@ -53,6 +53,16 @@ jest.mock('@/features/reviews/hooks', () => ({
   })),
 }));
 
+jest.mock('@/features/editorial/hooks', () => ({
+  useEditorialReview: jest.fn(() => ({ data: null })),
+  usePollVoteMutation: jest.fn(() => ({ mutate: jest.fn() })),
+  useCraftRatingMutation: jest.fn(() => ({ mutate: jest.fn() })),
+}));
+
+jest.mock('@/components/movie/detail/EditorialReviewSection', () => ({
+  EditorialReviewSection: 'EditorialReviewSection',
+}));
+
 jest.mock('@/hooks/useAuthGate', () => ({
   useAuthGate: () => ({ gate: <T extends Function>(fn: T) => fn, isAuthenticated: true }),
 }));

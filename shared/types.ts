@@ -215,7 +215,7 @@ export interface ProductionHouse {
 // ── News Feed ───────────────────────────────────────────────────────────────────
 
 export type FeedEntityType = 'movie' | 'actor' | 'production_house' | 'user';
-export type FeedType = 'video' | 'poster' | 'backdrop' | 'surprise' | 'update';
+export type FeedType = 'video' | 'poster' | 'backdrop' | 'surprise' | 'update' | 'editorial';
 
 export interface NewsFeedItem {
   id: string;
@@ -236,6 +236,7 @@ export interface NewsFeedItem {
   view_count: number;
   comment_count: number;
   bookmark_count: number;
+  editorial_rating?: number | null;
   published_at: string;
   created_at: string;
   score?: number;
@@ -289,4 +290,51 @@ export interface FeedComment {
   like_count: number;
   reply_count: number;
   profile?: { display_name: string | null; avatar_url: string | null };
+}
+
+// ── Editorial Reviews ─────────────────────────────────────────────────────────
+
+export type CraftName = 'story' | 'direction' | 'technical' | 'music' | 'performances';
+
+export interface EditorialReview {
+  id: string;
+  movie_id: string;
+  author_id: string | null;
+  title: string;
+  body: string;
+  verdict: string | null;
+  rating_story: number;
+  rating_direction: number;
+  rating_technical: number;
+  rating_music: number;
+  rating_performances: number;
+  overall_rating: number;
+  agree_count: number;
+  disagree_count: number;
+  is_published: boolean;
+  published_at: string | null;
+  created_at: string;
+  updated_at: string;
+  author_display_name?: string | null;
+  author_avatar_url?: string | null;
+}
+
+// @contract matches the RETURNS TABLE of get_editorial_review RPC — does NOT include
+// is_published, author_id, created_at, updated_at (those are admin-only fields)
+export interface EditorialReviewWithUserData extends Omit<
+  EditorialReview,
+  'is_published' | 'author_id' | 'created_at' | 'updated_at'
+> {
+  user_poll_vote: 'agree' | 'disagree' | null;
+  user_craft_rating_story: number | null;
+  user_craft_rating_direction: number | null;
+  user_craft_rating_technical: number | null;
+  user_craft_rating_music: number | null;
+  user_craft_rating_performances: number | null;
+  avg_user_story: number | null;
+  avg_user_direction: number | null;
+  avg_user_technical: number | null;
+  avg_user_music: number | null;
+  avg_user_performances: number | null;
+  user_rating_count: number;
 }

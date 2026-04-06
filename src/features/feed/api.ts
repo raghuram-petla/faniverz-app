@@ -41,6 +41,9 @@ export async function fetchNewsFeed(
       case 'updates':
         query = query.eq('feed_type', 'update');
         break;
+      case 'editorial':
+        query = query.eq('feed_type', 'editorial');
+        break;
     }
   }
 
@@ -91,6 +94,7 @@ export async function fetchPersonalizedFeed(
     view_count: row.view_count as number,
     comment_count: row.comment_count as number,
     bookmark_count: (row.bookmark_count as number) ?? 0,
+    editorial_rating: (row.editorial_rating as number | null) ?? null,
     published_at: row.published_at as string,
     created_at: row.created_at as string,
     score: row.score as number,

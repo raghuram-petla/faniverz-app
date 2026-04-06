@@ -13,3 +13,4 @@ export type { MovieSectionId } from './SectionNav';
 export { SyncSection } from './SyncSection';
 export type { SyncSectionProps } from './SyncSection';
 export { MovieEditHeader } from './MovieEditHeader';
+export { EditorialReviewSection } from './EditorialReviewSection';

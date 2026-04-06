@@ -34,6 +34,7 @@ import {
   PreviewPanel,
   SyncSection,
   MovieEditHeader,
+  EditorialReviewSection,
 } from '@/components/movie-edit';
 import type { MovieSectionId, SyncSectionProps } from '@/components/movie-edit';
 
@@ -104,15 +105,12 @@ export default function EditMoviePage() {
 
   return (
     <div className="max-w-6xl">
-      {/* ─── Sticky Header ─── */}
       <MovieEditHeader
         title={editState.form.title}
         onBack={() => router.back()}
         canDelete={canDeleteTopLevel()}
         onDelete={editState.handleDelete}
       />
-
-      {/* ─── Section Nav (6 tabs — TMDB Sync hidden when no tmdb_id) ─── */}
       <SectionNav
         activeSection={activeSection}
         onSectionChange={setActiveSection}
@@ -272,6 +270,8 @@ export default function EditMoviePage() {
               </SectionCard>
             </>
           )}
+
+          {activeSection === 'editorial-review' && <EditorialReviewSection movieId={id} />}
 
           {activeSection === 'tmdb-sync' && editState.movie?.tmdb_id && (
             <SectionCard title="TMDB Sync" icon={RefreshCw}>

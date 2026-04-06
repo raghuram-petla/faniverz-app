@@ -1,13 +1,14 @@
 'use client';
-import { FileText, Play, Film, Users, Calendar, RefreshCw } from 'lucide-react';
+import { FileText, Play, Film, Users, Calendar, RefreshCw, Newspaper } from 'lucide-react';
 
-// @contract 6 tabs — Platforms & Production absorbed into Basic Info; poster/backdrop uploads moved to Posters
+// @contract 7 tabs — Platforms & Production absorbed into Basic Info; poster/backdrop uploads moved to Posters
 export const MOVIE_SECTIONS = [
   { id: 'basic-info', label: 'Basic Info', icon: FileText },
   { id: 'posters', label: 'Posters', icon: Film },
   { id: 'videos', label: 'Videos', icon: Play },
   { id: 'cast-crew', label: 'Cast & Crew', icon: Users },
   { id: 'releases', label: 'Releases', icon: Calendar },
+  { id: 'editorial-review', label: 'Editorial Review', icon: Newspaper },
   { id: 'tmdb-sync', label: 'TMDB Sync', icon: RefreshCw },
 ] as const;
 

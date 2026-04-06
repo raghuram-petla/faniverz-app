@@ -1,7 +1,24 @@
 // Shared constants — single source of truth for mobile + admin
 // Layout dimensions, movie status config, device configs for previews.
 
-import type { MovieStatus, VideoType } from './types';
+import type { MovieStatus, VideoType, CraftName } from './types';
+
+// ── Editorial craft constants ─────────────────────────────────────────────────
+export const CRAFT_NAMES: CraftName[] = [
+  'story',
+  'direction',
+  'technical',
+  'music',
+  'performances',
+];
+
+export const CRAFT_LABELS: Record<CraftName, string> = {
+  story: 'Story',
+  direction: 'Direction',
+  technical: 'Technical',
+  music: 'Music',
+  performances: 'Performances',
+};
 
 // Broadcast notification sentinel — used when a notification targets all users
 export const BROADCAST_USER_ID = '00000000-0000-0000-0000-000000000000';
@@ -105,6 +122,7 @@ export const FEED_CONTENT_TYPE_COLORS: Record<string, string> = {
   theatrical_release: '#DC2626',
   ott_release: '#9333EA',
   rating_milestone: '#FACC15',
+  editorial_review: '#DC2626',
 };
 
 // Feed content type labels
@@ -128,11 +146,20 @@ export const FEED_CONTENT_TYPE_LABELS: Record<string, string> = {
   theatrical_release: 'In Theaters',
   ott_release: 'Now Streaming',
   rating_milestone: 'Milestone',
+  editorial_review: 'Editorial Review',
 };
 
 // @contract Feed tab labels for the mobile preview pill row — 'All' is a sentinel for no filter
 // @assumes tab order matches the mobile app HomeFeed filter pill order
-export const FEED_TAB_LABELS: string[] = ['All', 'Trailers', 'Songs', 'Posters', 'BTS', 'Updates'];
+export const FEED_TAB_LABELS: string[] = [
+  'All',
+  'Trailers',
+  'Songs',
+  'Posters',
+  'BTS',
+  'Updates',
+  'Editorial',
+];
 
 // Gradient stops used in mobile screens (shared so admin preview can replicate exactly)
 export const SPOTLIGHT_GRADIENT = ['rgba(0,0,0,0)', 'rgba(0,0,0,0.4)', 'rgba(0,0,0,1)'];

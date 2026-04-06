@@ -14,6 +14,7 @@ export const FEED_PILLS: FeedPillConfig[] = [
   { label: 'BTS', value: 'bts', activeColor: colors.red600 },
   { label: 'Surprise', value: 'surprise', activeColor: colors.red600 },
   { label: 'Updates', value: 'updates', activeColor: colors.red600 },
+  { label: 'Editorial', value: 'editorial', activeColor: colors.red600 },
 ];
 
 // @contract delegates to FEED_CONTENT_TYPE_COLORS in shared/constants — single source of truth
@@ -61,6 +62,8 @@ export function getFeedTypeIconName(
       return 'tv';
     case 'rating_milestone':
       return 'trophy';
+    case 'editorial_review':
+      return 'newspaper';
     default:
       return 'newspaper';
   }

@@ -25,6 +25,7 @@ import {
 } from '@/constants/feedHelpers';
 import { createFeedCardStyles } from '@/styles/tabs/feed.styles';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
+import { FeedEditorialCard } from './FeedEditorialCard';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 import type { ImageViewerTopChrome } from '@/providers/ImageViewerProvider';
 
@@ -50,7 +51,7 @@ export interface FeedCardProps {
   showFullTimestamp?: boolean;
 }
 
-// @coupling FeedAvatar, FeedActionBar, FeedContentBadge, FeedVideoPlayer, FollowButton
+// @coupling FeedAvatar, FeedActionBar, FeedContentBadge, FeedVideoPlayer, FollowButton, FeedEditorialCard
 function FeedCardInner({
   item,
   onPress,
@@ -85,9 +86,6 @@ function FeedCardInner({
   const isPosterImage = hasThumbnail && !hasVideo;
   const label = getFeedTypeLabel(item.content_type);
   const relativeTime = useRelativeTime(item.published_at);
-
-  // @coupling deriveEntityType, getEntityAvatarUrl, getEntityName, getEntityId all read from item.movie / item.actor / item.production_house / item.user
-  // @nullable these nested objects may be null if the referenced entity was deleted from DB
   const entityType = deriveEntityType(item);
   const entityAvatarUrl = getEntityAvatarUrl(item);
   const avatarBucket =
@@ -292,9 +290,7 @@ function FeedCardInner({
 }
 
 // @sync custom memo — callback props excluded; parent must stabilize them
-// @edge isFirst, showFullTimestamp, onEntityPress are NOT compared — changes to these props will not trigger re-render.
-// If showFullTimestamp toggles at runtime (e.g., navigating to post detail), the card must be unmounted/remounted.
-export const FeedCard = React.memo(FeedCardInner, (prev, next) => {
+const FeedCardMemo = React.memo(FeedCardInner, (prev, next) => {
   const p = prev.item,
     n = next.item;
   return (
@@ -312,3 +308,7 @@ export const FeedCard = React.memo(FeedCardInner, (prev, next) => {
     p.movie?.poster_image_type === n.movie?.poster_image_type
   );
 });
+export function FeedCard(props: FeedCardProps) {
+  if (props.item.feed_type === 'editorial') return <FeedEditorialCard {...props} />;
+  return <FeedCardMemo {...props} />;
+}

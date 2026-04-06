@@ -30,9 +30,9 @@ describe('SectionNav', () => {
     expect(onSectionChange).toHaveBeenCalledWith('releases');
   });
 
-  it('renders 6 section pills', () => {
+  it('renders 7 section pills', () => {
     render(<SectionNav {...defaultProps} />);
-    expect(MOVIE_SECTIONS).toHaveLength(6);
+    expect(MOVIE_SECTIONS).toHaveLength(7);
   });
 
   it('hides sections listed in hiddenSections', () => {

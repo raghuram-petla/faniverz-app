@@ -40,8 +40,8 @@ const makeFeedItem = (overrides: Partial<NewsFeedItem> = {}): NewsFeedItem => ({
 });
 
 describe('FEED_PILLS', () => {
-  it('has 7 filter options', () => {
-    expect(FEED_PILLS).toHaveLength(7);
+  it('has 8 filter options', () => {
+    expect(FEED_PILLS).toHaveLength(8);
   });
 
   it('starts with All filter', () => {

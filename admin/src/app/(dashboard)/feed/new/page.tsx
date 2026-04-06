@@ -38,6 +38,7 @@ const CONTENT_TYPES: Record<FeedType, { label: string; value: string }[]> = {
     { label: FEED_CONTENT_TYPE_LABELS['interview'] ?? 'Interview', value: 'interview' },
     { label: FEED_CONTENT_TYPE_LABELS['trailer'] ?? 'Trailer', value: 'trailer' },
   ],
+  editorial: [{ label: 'Editorial Review', value: 'editorial_review' }],
 };
 
 export default function NewFeedItemPage() {

@@ -26,6 +26,12 @@ import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useAuthGate } from '@/hooks/useAuthGate';
 import { MovieDetailSkeleton } from '@/components/movie/detail/MovieDetailSkeleton';
+import { EditorialReviewSection } from '@/components/movie/detail/EditorialReviewSection';
+import {
+  useEditorialReview,
+  usePollVoteMutation,
+  useCraftRatingMutation,
+} from '@/features/editorial/hooks';
 
 type TabName = 'overview' | 'cast' | 'reviews';
 type DisplayTab = TabName | 'media';
@@ -49,6 +55,9 @@ export default function MovieDetailScreen() {
   const { create: createReview, helpful: helpfulMutation } = useReviewMutations();
   // @contract: gate() wraps callbacks — redirects to login if user is unauthenticated
   const { gate } = useAuthGate();
+  const { data: editorialReview } = useEditorialReview(id ?? '');
+  const pollVoteMutation = usePollVoteMutation(id ?? '');
+  const craftRatingMutation = useCraftRatingMutation(id ?? '');
   const { refreshing, onRefresh } = useRefresh(refetchMovie, refetchReviews);
   const {
     pullDistance,
@@ -154,6 +163,21 @@ export default function MovieDetailScreen() {
           movieStatus={movieStatus}
           releaseDate={movie.release_date}
         />
+
+        {/* Editorial Review */}
+        {editorialReview && (
+          <EditorialReviewSection
+            review={editorialReview}
+            onPollVote={gate((vote: 'agree' | 'disagree') =>
+              pollVoteMutation.mutate({
+                editorialReviewId: editorialReview.id,
+                vote,
+                previousVote: editorialReview.user_poll_vote,
+              }),
+            )}
+            onCraftRate={gate((craft, rating) => craftRatingMutation.mutate({ craft, rating }))}
+          />
+        )}
 
         {/* Tabs */}
         <View style={{ marginTop: 24 }}>

@@ -5,7 +5,8 @@ export type FeedFilterOption =
   | 'posters'
   | 'bts'
   | 'surprise'
-  | 'updates';
+  | 'updates'
+  | 'editorial';
 
 export interface FeedPillConfig {
   label: string;
