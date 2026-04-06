@@ -69,7 +69,7 @@ jest.mock('@/features/editorial/hooks', () => ({
 }));
 
 jest.mock('@shared/constants', () => ({
-  CRAFT_NAMES: ['story', 'direction', 'performances', 'technical', 'music'],
+  CRAFT_NAMES: ['story', 'direction', 'performances', 'music', 'technical'],
   CRAFT_LABELS: {
     story: 'Story & Screenplay',
     direction: 'Direction',

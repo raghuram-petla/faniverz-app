@@ -8,8 +8,8 @@ export const CRAFT_NAMES: CraftName[] = [
   'story',
   'direction',
   'performances',
-  'technical',
   'music',
+  'technical',
 ];
 
 export const CRAFT_LABELS: Record<CraftName, string> = {

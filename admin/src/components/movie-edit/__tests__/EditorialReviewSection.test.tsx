@@ -32,7 +32,7 @@ vi.mock('@/hooks/useEditorialReviewState', () => ({
 }));
 
 vi.mock('@shared/constants', () => ({
-  CRAFT_NAMES: ['story', 'direction', 'performances', 'technical', 'music'] as const,
+  CRAFT_NAMES: ['story', 'direction', 'performances', 'music', 'technical'] as const,
   CRAFT_LABELS: {
     story: 'Story & Screenplay',
     direction: 'Direction',
