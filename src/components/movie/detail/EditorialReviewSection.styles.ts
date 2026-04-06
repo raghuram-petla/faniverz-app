@@ -5,11 +5,11 @@ import { colors } from '@/theme/colors';
 export const createStyles = (t: SemanticTheme) =>
   StyleSheet.create({
     container: {
-      marginHorizontal: 16,
-      marginTop: 20,
+      marginHorizontal: 4,
+      marginTop: 16,
       backgroundColor: t.surfaceElevated,
-      borderRadius: 16,
-      padding: 16,
+      borderRadius: 12,
+      padding: 12,
       borderWidth: 1,
       borderColor: t.borderSubtle,
     },
