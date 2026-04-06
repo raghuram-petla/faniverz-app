@@ -32,9 +32,9 @@ vi.mock('@/hooks/useEditorialReviewState', () => ({
 }));
 
 vi.mock('@shared/constants', () => ({
-  CRAFT_NAMES: ['story', 'direction', 'technical', 'music', 'performances'] as const,
+  CRAFT_NAMES: ['story', 'direction', 'performances', 'technical', 'music'] as const,
   CRAFT_LABELS: {
-    story: 'Story',
+    story: 'Story & Screenplay',
     direction: 'Direction',
     technical: 'Technical',
     music: 'Music',
@@ -84,7 +84,7 @@ describe('EditorialReviewSection', () => {
   it('renders all 5 craft rating inputs', () => {
     render(<EditorialReviewSection movieId="movie-1" />);
     expect(screen.getByText('Craft Ratings *')).toBeInTheDocument();
-    expect(screen.getByText('Story')).toBeInTheDocument();
+    expect(screen.getByText('Story & Screenplay')).toBeInTheDocument();
     expect(screen.getByText('Direction')).toBeInTheDocument();
     expect(screen.getByText('Technical')).toBeInTheDocument();
     expect(screen.getByText('Music')).toBeInTheDocument();

@@ -129,7 +129,7 @@ describe('EditorialReviewSection', () => {
 
   it('renders all 5 craft rating rows', () => {
     render(<EditorialReviewSection review={makeReview()} onPollVote={onPollVote} />);
-    expect(screen.getByText('Story')).toBeTruthy();
+    expect(screen.getByText('Story & Screenplay')).toBeTruthy();
     expect(screen.getByText('Direction')).toBeTruthy();
     expect(screen.getByText('Technical')).toBeTruthy();
     expect(screen.getByText('Music')).toBeTruthy();

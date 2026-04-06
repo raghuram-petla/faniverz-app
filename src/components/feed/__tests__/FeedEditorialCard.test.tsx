@@ -69,9 +69,9 @@ jest.mock('@/features/editorial/hooks', () => ({
 }));
 
 jest.mock('@shared/constants', () => ({
-  CRAFT_NAMES: ['story', 'direction', 'technical', 'music', 'performances'],
+  CRAFT_NAMES: ['story', 'direction', 'performances', 'technical', 'music'],
   CRAFT_LABELS: {
-    story: 'Story',
+    story: 'Story & Screenplay',
     direction: 'Direction',
     technical: 'Technical',
     music: 'Music',
@@ -153,7 +153,7 @@ describe('FeedEditorialCardInner', () => {
 
   it('renders craft rating labels', () => {
     render(<FeedEditorialCardInner {...defaultProps} />);
-    expect(screen.getByText('Story')).toBeTruthy();
+    expect(screen.getByText('Story & Screenplay')).toBeTruthy();
     expect(screen.getByText('Direction')).toBeTruthy();
   });
 

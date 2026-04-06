@@ -22,7 +22,7 @@ jest.mock('@/theme/colors', () => ({
   colors: { yellow400: '#FACC15' },
 }));
 
-const defaultProps = { label: 'Story', editorRating: 3 };
+const defaultProps = { label: 'Story & Screenplay', editorRating: 3 };
 
 // Helper to find all elements by type in rendered tree
 function findAllByType(node: any, type: string): any[] {
@@ -40,7 +40,7 @@ function findAllByType(node: any, type: string): any[] {
 describe('CraftRatingRow', () => {
   it('renders the craft label', () => {
     render(<CraftRatingRow {...defaultProps} />);
-    expect(screen.getByText('Story')).toBeTruthy();
+    expect(screen.getByText('Story & Screenplay')).toBeTruthy();
   });
 
   it('renders editor stars with correct filled/outline state', () => {

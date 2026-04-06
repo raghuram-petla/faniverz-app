@@ -6,7 +6,7 @@ import { CraftRatingInput } from '@/components/common/CraftRatingInput';
 
 describe('CraftRatingInput', () => {
   const defaultProps = {
-    label: 'Story',
+    label: 'Story & Screenplay',
     value: 0,
     onChange: vi.fn(),
   };
@@ -17,7 +17,7 @@ describe('CraftRatingInput', () => {
 
   it('renders the label text', () => {
     render(<CraftRatingInput {...defaultProps} />);
-    expect(screen.getByText('Story')).toBeInTheDocument();
+    expect(screen.getByText('Story & Screenplay')).toBeInTheDocument();
   });
 
   it('renders 5 star buttons', () => {

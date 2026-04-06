@@ -7,13 +7,13 @@ import type { MovieStatus, VideoType, CraftName } from './types';
 export const CRAFT_NAMES: CraftName[] = [
   'story',
   'direction',
+  'performances',
   'technical',
   'music',
-  'performances',
 ];
 
 export const CRAFT_LABELS: Record<CraftName, string> = {
-  story: 'Story',
+  story: 'Story & Screenplay',
   direction: 'Direction',
   technical: 'Technical',
   music: 'Music',
