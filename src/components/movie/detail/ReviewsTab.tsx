@@ -5,7 +5,7 @@ import { StarRating } from '@/components/ui/StarRating';
 import { formatDate } from '@/utils/formatDate';
 import { EditorialReviewSection } from './EditorialReviewSection';
 import type { Review } from '@/types/review';
-import type { EditorialReviewWithUserData, CraftName } from '@shared/types';
+import type { EditorialReviewWithUserData } from '@shared/types';
 import { createStyles } from '@/styles/movieDetail.styles';
 import { useTranslation } from 'react-i18next';
 
@@ -22,7 +22,6 @@ interface ReviewsTabProps {
   /** @nullable null when no published editorial review exists for this movie */
   editorialReview?: EditorialReviewWithUserData | null;
   onPollVote?: (vote: 'agree' | 'disagree') => void;
-  onCraftRate?: (craft: CraftName, rating: number) => void;
 }
 
 export function ReviewsTab({
@@ -34,7 +33,6 @@ export function ReviewsTab({
   onHelpful,
   editorialReview,
   onPollVote,
-  onCraftRate,
 }: ReviewsTabProps) {
   const { theme, colors } = useTheme();
   const { t } = useTranslation();
@@ -42,12 +40,8 @@ export function ReviewsTab({
   return (
     <View style={styles.reviewsTab}>
       {/* Editorial Review — shown above user reviews */}
-      {editorialReview && onPollVote && onCraftRate && (
-        <EditorialReviewSection
-          review={editorialReview}
-          onPollVote={onPollVote}
-          onCraftRate={onCraftRate}
-        />
+      {editorialReview && onPollVote && (
+        <EditorialReviewSection review={editorialReview} onPollVote={onPollVote} />
       )}
 
       <View style={styles.ratingSummary}>

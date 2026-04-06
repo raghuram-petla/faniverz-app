@@ -5,13 +5,8 @@ import { colors } from '@/theme/colors';
 export const createStyles = (t: SemanticTheme) =>
   StyleSheet.create({
     container: {
-      marginHorizontal: 4,
-      marginTop: 16,
-      backgroundColor: t.surfaceElevated,
-      borderRadius: 12,
-      padding: 12,
-      borderWidth: 1,
-      borderColor: t.borderSubtle,
+      marginTop: 8,
+      paddingHorizontal: 0,
     },
     header: {
       flexDirection: 'row',

@@ -1,5 +1,5 @@
 import React from 'react';
-import { render, fireEvent, screen } from '@testing-library/react-native';
+import { render, screen } from '@testing-library/react-native';
 import { CraftRatingRow } from '../CraftRatingRow';
 
 jest.mock('@expo/vector-icons', () => ({
@@ -19,68 +19,12 @@ jest.mock('@/theme', () => ({
 }));
 
 jest.mock('@/theme/colors', () => ({
-  colors: { yellow400: '#FACC15', red600: '#DC2626' },
+  colors: { yellow400: '#FACC15' },
 }));
 
-jest.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (_k: string, d: string) => d }),
-}));
+const defaultProps = { label: 'Story', editorRating: 3 };
 
-const defaultProps = {
-  label: 'Story',
-  editorRating: 3,
-  userRating: null as number | null,
-  avgUserRating: null as number | null,
-  onRate: jest.fn(),
-};
-
-describe('CraftRatingRow', () => {
-  beforeEach(() => jest.clearAllMocks());
-
-  it('renders the craft label', () => {
-    render(<CraftRatingRow {...defaultProps} />);
-    expect(screen.getByText('Story')).toBeTruthy();
-  });
-
-  it('renders editor stars with correct filled/outline state', () => {
-    const { toJSON } = render(<CraftRatingRow {...defaultProps} editorRating={3} />);
-    const allIonicons = findAllByType(toJSON(), 'Ionicons');
-    const editorStars = allIonicons.slice(0, 5);
-    expect(editorStars[0].props.name).toBe('star');
-    expect(editorStars[2].props.name).toBe('star');
-    expect(editorStars[3].props.name).toBe('star-outline');
-  });
-
-  it('shows editor rating number in parentheses', () => {
-    render(<CraftRatingRow {...defaultProps} editorRating={4} />);
-    expect(screen.getByText('(4)')).toBeTruthy();
-  });
-
-  it('shows "Tap to rate" when user has not rated', () => {
-    render(<CraftRatingRow {...defaultProps} userRating={null} />);
-    expect(screen.getByText('Tap to rate')).toBeTruthy();
-  });
-
-  it('shows "Your rating" when user has rated', () => {
-    render(<CraftRatingRow {...defaultProps} userRating={4} />);
-    expect(screen.getByText('Your rating')).toBeTruthy();
-  });
-
-  it('calls onRate with correct star value', () => {
-    const onRate = jest.fn();
-    render(<CraftRatingRow {...defaultProps} onRate={onRate} />);
-    fireEvent.press(screen.getByLabelText('Rate Story 3 stars'));
-    expect(onRate).toHaveBeenCalledWith(3);
-  });
-
-  it('renders all 5 user star pressables with accessibility labels', () => {
-    render(<CraftRatingRow {...defaultProps} label="Direction" />);
-    for (let i = 1; i <= 5; i++) {
-      expect(screen.getByLabelText(`Rate Direction ${i} stars`)).toBeTruthy();
-    }
-  });
-});
-
+// Helper to find all elements by type in rendered tree
 function findAllByType(node: any, type: string): any[] {
   const results: any[] = [];
   if (!node) return results;
@@ -92,3 +36,30 @@ function findAllByType(node: any, type: string): any[] {
   }
   return results;
 }
+
+describe('CraftRatingRow', () => {
+  it('renders the craft label', () => {
+    render(<CraftRatingRow {...defaultProps} />);
+    expect(screen.getByText('Story')).toBeTruthy();
+  });
+
+  it('renders editor stars with correct filled/outline state', () => {
+    const { toJSON } = render(<CraftRatingRow {...defaultProps} editorRating={3} />);
+    const stars = findAllByType(toJSON(), 'Ionicons');
+    expect(stars[0].props.name).toBe('star');
+    expect(stars[2].props.name).toBe('star');
+    expect(stars[3].props.name).toBe('star-outline');
+    expect(stars[4].props.name).toBe('star-outline');
+  });
+
+  it('shows rating number in parentheses', () => {
+    render(<CraftRatingRow {...defaultProps} editorRating={4} />);
+    expect(screen.getByText('(4)')).toBeTruthy();
+  });
+
+  it('renders 5 star icons', () => {
+    const { toJSON } = render(<CraftRatingRow {...defaultProps} />);
+    const stars = findAllByType(toJSON(), 'Ionicons');
+    expect(stars).toHaveLength(5);
+  });
+});

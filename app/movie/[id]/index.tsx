@@ -85,6 +85,7 @@ export default function MovieDetailScreen() {
   const [reviewTitle, setReviewTitle] = useState('');
   const [reviewBody, setReviewBody] = useState('');
   const [containsSpoiler, setContainsSpoiler] = useState(false);
+  const [craftRatings, setCraftRatings] = useState<Partial<Record<CraftName, number>>>({});
 
   // @invariant: tab order must match the UI layout — overview, media, cast, reviews
   // @coupling: AnimatedTabBar renders these in order; the 'media' tab is handled specially (navigates to separate route)
@@ -113,11 +114,16 @@ export default function MovieDetailScreen() {
       body: reviewBody,
       contains_spoiler: containsSpoiler,
     });
+    // @sideeffect submit craft ratings if any were set
+    for (const [craft, rating] of Object.entries(craftRatings)) {
+      if (rating) craftRatingMutation.mutate({ craft: craft as CraftName, rating });
+    }
     setShowReviewModal(false);
     setReviewRating(0);
     setReviewTitle('');
     setReviewBody('');
     setContainsSpoiler(false);
+    setCraftRatings({});
   });
 
   // @coupling: deriveMovieStatus is a shared function that determines theatrical/ott/upcoming status
@@ -202,9 +208,6 @@ export default function MovieDetailScreen() {
                   previousVote: editorialReview!.user_poll_vote,
                 }),
               )}
-              onCraftRate={gate((craft: CraftName, rating: number) =>
-                craftRatingMutation.mutate({ craft, rating }),
-              )}
             />
           )}
         </View>
@@ -231,10 +234,14 @@ export default function MovieDetailScreen() {
         reviewTitle={reviewTitle}
         reviewBody={reviewBody}
         containsSpoiler={containsSpoiler}
+        craftRatings={craftRatings}
         onRatingChange={setReviewRating}
         onTitleChange={setReviewTitle}
         onBodyChange={setReviewBody}
         onSpoilerToggle={() => setContainsSpoiler(!containsSpoiler)}
+        onCraftRatingChange={(craft, rating) =>
+          setCraftRatings((prev) => ({ ...prev, [craft]: rating }))
+        }
         onSubmit={handleSubmitReview}
         onClose={() => setShowReviewModal(false)}
       />

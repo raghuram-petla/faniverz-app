@@ -447,6 +447,7 @@
     "usersRated": "{{count}} users rated",
     "voteCount": "{{count}} votes",
     "yourRating": "Your rating",
-    "tapToRate": "Tap to rate"
+    "tapToRate": "Tap to rate",
+    "rateCrafts": "Rate the crafts"
   }
 }

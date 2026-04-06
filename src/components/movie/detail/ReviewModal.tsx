@@ -19,6 +19,8 @@ import { createStyles } from '@/styles/movieDetail.styles';
 import { getImageUrl, posterBucket } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { useTranslation } from 'react-i18next';
+import { CRAFT_NAMES, CRAFT_LABELS } from '@shared/constants';
+import type { CraftName } from '@shared/types';
 
 /**
  * @contract Fully controlled modal for writing/editing a movie review.
@@ -40,10 +42,13 @@ interface ReviewModalProps {
   reviewBody: string;
   containsSpoiler: boolean;
   isEditing?: boolean;
+  /** @contract craft ratings keyed by craft name — null values mean not yet rated */
+  craftRatings?: Partial<Record<CraftName, number>>;
   onRatingChange: (rating: number) => void;
   onTitleChange: (title: string) => void;
   onBodyChange: (body: string) => void;
   onSpoilerToggle: () => void;
+  onCraftRatingChange?: (craft: CraftName, rating: number) => void;
   /** @assumes Parent validates reviewRating > 0 before calling; button is disabled at rating 0 */
   onSubmit: () => void;
   onClose: () => void;
@@ -61,10 +66,12 @@ export function ReviewModal({
   reviewBody,
   containsSpoiler,
   isEditing = false,
+  craftRatings,
   onRatingChange,
   onTitleChange,
   onBodyChange,
   onSpoilerToggle,
+  onCraftRatingChange,
   onSubmit,
   onClose,
 }: ReviewModalProps) {
@@ -160,6 +167,50 @@ export function ReviewModal({
                 </View>
                 <Text style={styles.spoilerToggleText}>{t('movie.containsSpoiler')}</Text>
               </TouchableOpacity>
+
+              {/* Craft Ratings — user rates each craft */}
+              {onCraftRatingChange && (
+                <View style={{ marginTop: 16 }}>
+                  <Text
+                    style={{
+                      fontSize: 14,
+                      fontWeight: '600',
+                      color: theme.textSecondary,
+                      marginBottom: 8,
+                    }}
+                  >
+                    {t('editorial.rateCrafts', 'Rate the crafts')}
+                  </Text>
+                  {CRAFT_NAMES.map((craft: CraftName) => (
+                    <View
+                      key={craft}
+                      style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 4 }}
+                    >
+                      <Text style={{ width: 110, fontSize: 13, color: theme.textSecondary }}>
+                        {CRAFT_LABELS[craft]}
+                      </Text>
+                      <View style={{ flexDirection: 'row', gap: 4 }}>
+                        {[1, 2, 3, 4, 5].map((star) => {
+                          const current = craftRatings?.[craft] ?? 0;
+                          return (
+                            <TouchableOpacity
+                              key={star}
+                              onPress={() => onCraftRatingChange(craft, star)}
+                              hitSlop={4}
+                            >
+                              <Ionicons
+                                name={star <= current ? 'star' : 'star-outline'}
+                                size={22}
+                                color={star <= current ? colors.yellow400 : theme.textDisabled}
+                              />
+                            </TouchableOpacity>
+                          );
+                        })}
+                      </View>
+                    </View>
+                  ))}
+                </View>
+              )}
 
               <View style={styles.modalButtons}>
                 <TouchableOpacity onPress={onClose}>

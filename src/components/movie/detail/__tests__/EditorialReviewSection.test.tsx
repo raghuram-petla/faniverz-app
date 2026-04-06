@@ -105,55 +105,30 @@ const makeReview = (
 
 describe('EditorialReviewSection', () => {
   const onPollVote = jest.fn();
-  const onCraftRate = jest.fn();
 
   beforeEach(() => {
     jest.clearAllMocks();
   });
 
   it('renders the editorial review badge', () => {
-    render(
-      <EditorialReviewSection
-        review={makeReview()}
-        onPollVote={onPollVote}
-        onCraftRate={onCraftRate}
-      />,
-    );
+    render(<EditorialReviewSection review={makeReview()} onPollVote={onPollVote} />);
     expect(screen.getByText('EDITORIAL REVIEW')).toBeTruthy();
   });
 
   it('does not render author name (reserved for future)', () => {
-    render(
-      <EditorialReviewSection
-        review={makeReview()}
-        onPollVote={onPollVote}
-        onCraftRate={onCraftRate}
-      />,
-    );
+    render(<EditorialReviewSection review={makeReview()} onPollVote={onPollVote} />);
     expect(screen.queryByText('Jane Doe')).toBeNull();
   });
 
   it('renders the overall rating', () => {
-    render(
-      <EditorialReviewSection
-        review={makeReview()}
-        onPollVote={onPollVote}
-        onCraftRate={onCraftRate}
-      />,
-    );
+    render(<EditorialReviewSection review={makeReview()} onPollVote={onPollVote} />);
     expect(screen.getByText('Overall Rating')).toBeTruthy();
     expect(screen.getByText('4.2')).toBeTruthy();
     expect(screen.getByText('/ 5')).toBeTruthy();
   });
 
   it('renders all 5 craft rating rows', () => {
-    render(
-      <EditorialReviewSection
-        review={makeReview()}
-        onPollVote={onPollVote}
-        onCraftRate={onCraftRate}
-      />,
-    );
+    render(<EditorialReviewSection review={makeReview()} onPollVote={onPollVote} />);
     expect(screen.getByText('Story')).toBeTruthy();
     expect(screen.getByText('Direction')).toBeTruthy();
     expect(screen.getByText('Technical')).toBeTruthy();
@@ -161,47 +136,18 @@ describe('EditorialReviewSection', () => {
     expect(screen.getByText('Performances')).toBeTruthy();
   });
 
-  it('renders the verdict in quotes', () => {
-    render(
-      <EditorialReviewSection
-        review={makeReview()}
-        onPollVote={onPollVote}
-        onCraftRate={onCraftRate}
-      />,
-    );
-    expect(screen.getByText('"A must-watch masterpiece"')).toBeTruthy();
-  });
-
-  it('does not render verdict when null', () => {
-    render(
-      <EditorialReviewSection
-        review={makeReview({ verdict: null })}
-        onPollVote={onPollVote}
-        onCraftRate={onCraftRate}
-      />,
-    );
-    expect(screen.queryByText(/must-watch/)).toBeNull();
+  it('renders the review title', () => {
+    render(<EditorialReviewSection review={makeReview()} onPollVote={onPollVote} />);
+    expect(screen.getByText('Great Movie')).toBeTruthy();
   });
 
   it('renders the review body text', () => {
-    render(
-      <EditorialReviewSection
-        review={makeReview()}
-        onPollVote={onPollVote}
-        onCraftRate={onCraftRate}
-      />,
-    );
+    render(<EditorialReviewSection review={makeReview()} onPollVote={onPollVote} />);
     expect(screen.getByText(/This is a detailed review body/)).toBeTruthy();
   });
 
   it('renders read more button for long body text', () => {
-    render(
-      <EditorialReviewSection
-        review={makeReview()}
-        onPollVote={onPollVote}
-        onCraftRate={onCraftRate}
-      />,
-    );
+    render(<EditorialReviewSection review={makeReview()} onPollVote={onPollVote} />);
     expect(screen.getByText('Read more')).toBeTruthy();
   });
 
@@ -210,78 +156,25 @@ describe('EditorialReviewSection', () => {
       <EditorialReviewSection
         review={makeReview({ body: 'Short review.' })}
         onPollVote={onPollVote}
-        onCraftRate={onCraftRate}
       />,
     );
     expect(screen.queryByText('Read more')).toBeNull();
   });
 
   it('hides read more after tapping it', () => {
-    render(
-      <EditorialReviewSection
-        review={makeReview()}
-        onPollVote={onPollVote}
-        onCraftRate={onCraftRate}
-      />,
-    );
+    render(<EditorialReviewSection review={makeReview()} onPollVote={onPollVote} />);
     fireEvent.press(screen.getByText('Read more'));
     expect(screen.queryByText('Read more')).toBeNull();
   });
 
   it('renders the agree/disagree poll section', () => {
-    render(
-      <EditorialReviewSection
-        review={makeReview()}
-        onPollVote={onPollVote}
-        onCraftRate={onCraftRate}
-      />,
-    );
+    render(<EditorialReviewSection review={makeReview()} onPollVote={onPollVote} />);
     expect(screen.getByTestId('agree-disagree-poll')).toBeTruthy();
   });
 
   it('calls onPollVote when poll agree is pressed', () => {
-    render(
-      <EditorialReviewSection
-        review={makeReview()}
-        onPollVote={onPollVote}
-        onCraftRate={onCraftRate}
-      />,
-    );
+    render(<EditorialReviewSection review={makeReview()} onPollVote={onPollVote} />);
     fireEvent.press(screen.getByTestId('vote-agree'));
     expect(onPollVote).toHaveBeenCalledWith('agree');
-  });
-
-  it('calls onCraftRate when a craft row rate is pressed', () => {
-    render(
-      <EditorialReviewSection
-        review={makeReview()}
-        onPollVote={onPollVote}
-        onCraftRate={onCraftRate}
-      />,
-    );
-    fireEvent.press(screen.getByTestId('rate-Story'));
-    expect(onCraftRate).toHaveBeenCalledWith('story', 4);
-  });
-
-  it('shows user rating count when > 0', () => {
-    render(
-      <EditorialReviewSection
-        review={makeReview({ user_rating_count: 42 })}
-        onPollVote={onPollVote}
-        onCraftRate={onCraftRate}
-      />,
-    );
-    expect(screen.getByText('{{count}} users rated')).toBeTruthy();
-  });
-
-  it('does not show user rating count when 0', () => {
-    render(
-      <EditorialReviewSection
-        review={makeReview({ user_rating_count: 0 })}
-        onPollVote={onPollVote}
-        onCraftRate={onCraftRate}
-      />,
-    );
-    expect(screen.queryByText(/users rated/)).toBeNull();
   });
 });

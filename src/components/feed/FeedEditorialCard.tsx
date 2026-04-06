@@ -30,6 +30,7 @@ function truncateWords(text: string, limit: number): { truncated: string; wasTru
 // @coupling fetches editorial review data via useEditorialReview hook for craft ratings
 export function FeedEditorialCardInner({
   item,
+  onPress,
   onEntityPress,
   userVote,
   isBookmarked,
@@ -61,8 +62,8 @@ export function FeedEditorialCardInner({
     <View>
       <FilmStripFrame>
         <View style={styles.post}>
-          {/* Header row: avatar + meta + follow */}
-          <View style={styles.headerRow}>
+          {/* Header row: tappable to open post detail */}
+          <Pressable onPress={() => onPress(item)} style={styles.headerRow}>
             <View>
               <FeedAvatar
                 imageUrl={avatarUrl}
@@ -89,11 +90,11 @@ export function FeedEditorialCardInner({
               {/* Overall rating below badge */}
               {item.editorial_rating != null && (
                 <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 }}>
-                  <Ionicons name="star" size={14} color={colors.yellow400} />
-                  <Text style={{ fontSize: 15, fontWeight: '800', color: theme.textPrimary }}>
+                  <Ionicons name="star" size={18} color={colors.yellow400} />
+                  <Text style={{ fontSize: 18, fontWeight: '800', color: theme.textPrimary }}>
                     {item.editorial_rating.toFixed(1)}
                   </Text>
-                  <Text style={{ fontSize: 12, color: theme.textTertiary }}>/ 5</Text>
+                  <Text style={{ fontSize: 13, color: theme.textTertiary }}>/ 5</Text>
                 </View>
               )}
               {entityId && onFollow && (
@@ -110,10 +111,10 @@ export function FeedEditorialCardInner({
                 </View>
               )}
             </View>
-          </View>
+          </Pressable>
 
-          {/* Editorial content — full review inline */}
-          <View style={{ marginHorizontal: 12, marginTop: 10 }}>
+          {/* Editorial content — tappable to open post detail */}
+          <Pressable onPress={() => onPress(item)} style={{ marginHorizontal: 12, marginTop: 10 }}>
             {/* Review title */}
             {review?.title && (
               <Text
@@ -145,7 +146,14 @@ export function FeedEditorialCardInner({
                       key={craft}
                       style={{ flexDirection: 'row', alignItems: 'center', paddingVertical: 4 }}
                     >
-                      <Text style={{ width: 110, fontSize: 14, color: theme.textSecondary }}>
+                      <Text
+                        style={{
+                          width: 110,
+                          fontSize: 15,
+                          fontWeight: '500',
+                          color: theme.textSecondary,
+                        }}
+                      >
                         {CRAFT_LABELS[craft]}
                       </Text>
                       <View style={{ flexDirection: 'row', gap: 3 }}>
@@ -153,12 +161,12 @@ export function FeedEditorialCardInner({
                           <Ionicons
                             key={s}
                             name={s <= rating ? 'star' : 'star-outline'}
-                            size={16}
+                            size={18}
                             color={s <= rating ? colors.yellow400 : theme.textDisabled}
                           />
                         ))}
                       </View>
-                      <Text style={{ fontSize: 13, color: theme.textTertiary, marginLeft: 6 }}>
+                      <Text style={{ fontSize: 14, color: theme.textTertiary, marginLeft: 6 }}>
                         ({rating})
                       </Text>
                     </View>
@@ -189,7 +197,7 @@ export function FeedEditorialCardInner({
                 )}
               </View>
             )}
-          </View>
+          </Pressable>
 
           {/* Action bar */}
           <View style={styles.actionBar}>

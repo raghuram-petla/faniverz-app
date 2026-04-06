@@ -423,6 +423,7 @@
     "usersRated": "{{count}} మంది రేట్ చేశారు",
     "voteCount": "{{count}} ఓట్లు",
     "yourRating": "మీ రేటింగ్",
-    "tapToRate": "రేట్ చేయండి"
+    "tapToRate": "రేట్ చేయండి",
+    "rateCrafts": "క్రాఫ్ట్‌లను రేట్ చేయండి"
   }
 }
