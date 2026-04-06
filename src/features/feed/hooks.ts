@@ -109,23 +109,53 @@ export function useVoteFeedItem() {
     onError: () => Alert.alert(i18n.t('common.error'), i18n.t('common.failedToVote')),
   });
 
+  // @sync: Also optimistically update 'feed-item' cache (single item, not paginated) so the
+  // post detail screen reflects vote changes instantly without waiting for refetch.
+  const updateFeedItemCache = (variables: FeedVars) => {
+    const { feedItemId, voteType, previousVote } = variables;
+    queryClient.setQueryData<NewsFeedItem>(['feed-item', feedItemId], (old) => {
+      if (!old) return old;
+      let { upvote_count, downvote_count } = old;
+      if (previousVote === 'up') upvote_count--;
+      if (previousVote === 'down') downvote_count--;
+      if (voteType === 'up') upvote_count++;
+      if (voteType === 'down') downvote_count++;
+      return {
+        ...old,
+        upvote_count: Math.max(0, upvote_count),
+        downvote_count: Math.max(0, downvote_count),
+      };
+    });
+  };
+
   return useMutation({
     mutationFn: ({ feedItemId, voteType }: FeedVars) => {
       if (!user?.id) throw new Error('Must be logged in to vote');
       return voteFeedItem(feedItemId, user.id, voteType);
     },
     onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ['feed-item', variables.feedItemId] });
+      const prevFeedItem = queryClient.getQueryData<NewsFeedItem>([
+        'feed-item',
+        variables.feedItemId,
+      ]);
+      updateFeedItemCache(variables);
       const feedCtx = await feedHandlers.onMutate!(variables);
       const voteCtx = await voteHandlers.onMutate!(variables);
-      return { feedCtx, voteCtx };
+      return { feedCtx, voteCtx, prevFeedItem };
     },
     onError: (err, vars, context) => {
+      // @sync: Rollback feed-item cache to previous snapshot
+      if (context?.prevFeedItem) {
+        queryClient.setQueryData(['feed-item', vars.feedItemId], context.prevFeedItem);
+      }
       feedHandlers.onError!(err as Error, vars, context?.feedCtx);
       voteHandlers.onError!(err as Error, vars, context?.voteCtx);
     },
-    onSettled: () => {
+    onSettled: (_data, _err, vars) => {
       feedHandlers.onSettled!();
       voteHandlers.onSettled!();
+      queryClient.invalidateQueries({ queryKey: ['feed-item', vars.feedItemId] });
     },
   });
 }
@@ -171,23 +201,49 @@ export function useRemoveFeedVote() {
     onError: () => Alert.alert(i18n.t('common.error'), i18n.t('common.failedToVote')),
   });
 
+  // @sync: Also optimistically update 'feed-item' cache (single item, not paginated) so the
+  // post detail screen reflects vote removal instantly without waiting for refetch.
+  const updateFeedItemCache = (variables: FeedVars) => {
+    const { feedItemId, previousVote } = variables;
+    queryClient.setQueryData<NewsFeedItem>(['feed-item', feedItemId], (old) => {
+      if (!old) return old;
+      return {
+        ...old,
+        upvote_count: previousVote === 'up' ? Math.max(0, old.upvote_count - 1) : old.upvote_count,
+        downvote_count:
+          previousVote === 'down' ? Math.max(0, old.downvote_count - 1) : old.downvote_count,
+      };
+    });
+  };
+
   return useMutation({
     mutationFn: ({ feedItemId }: FeedVars) => {
       if (!user?.id) throw new Error('Must be logged in');
       return removeFeedVote(feedItemId, user.id);
     },
     onMutate: async (variables) => {
+      await queryClient.cancelQueries({ queryKey: ['feed-item', variables.feedItemId] });
+      const prevFeedItem = queryClient.getQueryData<NewsFeedItem>([
+        'feed-item',
+        variables.feedItemId,
+      ]);
+      updateFeedItemCache(variables);
       const feedCtx = await feedHandlers.onMutate!(variables);
       const voteCtx = await voteHandlers.onMutate!(variables);
-      return { feedCtx, voteCtx };
+      return { feedCtx, voteCtx, prevFeedItem };
     },
     onError: (err, vars, context) => {
+      // @sync: Rollback feed-item cache to previous snapshot
+      if (context?.prevFeedItem) {
+        queryClient.setQueryData(['feed-item', vars.feedItemId], context.prevFeedItem);
+      }
       feedHandlers.onError!(err as Error, vars, context?.feedCtx);
       voteHandlers.onError!(err as Error, vars, context?.voteCtx);
     },
-    onSettled: () => {
+    onSettled: (_data, _err, vars) => {
       feedHandlers.onSettled!();
       voteHandlers.onSettled!();
+      queryClient.invalidateQueries({ queryKey: ['feed-item', vars.feedItemId] });
     },
   });
 }

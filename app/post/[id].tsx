@@ -31,6 +31,7 @@ import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
+import { useRecordPostView } from '@/hooks/useRecordPostView';
 import { createPostDetailStyles } from '@/styles/postDetail.styles';
 import { PostContentSkeleton } from '@/components/feed/PostContentSkeleton';
 import type { NewsFeedItem, FeedEntityType, FeedComment } from '@shared/types';
@@ -48,6 +49,7 @@ export default function PostDetailScreen() {
   const userId = user?.id ?? null;
 
   const { data: post, isLoading: feedLoading, refetch } = useFeedItem(id ?? '');
+  useRecordPostView(post);
   const voteMutation = useVoteFeedItem();
   const removeMutation = useRemoveFeedVote();
   const bookmarkMutation = useBookmarkFeedItem();

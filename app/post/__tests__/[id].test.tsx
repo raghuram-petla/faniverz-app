@@ -263,6 +263,10 @@ jest.mock('@/components/feed/CommentInput', () => ({
   },
 }));
 
+jest.mock('@/hooks/useRecordPostView', () => ({
+  useRecordPostView: jest.fn(),
+}));
+
 jest.mock('@/components/common/SafeAreaCover', () => ({
   SafeAreaCover: () => null,
 }));
@@ -271,6 +275,9 @@ import React from 'react';
 import { Alert } from 'react-native';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import PostDetailScreen from '../[id]';
+import { useRecordPostView } from '@/hooks/useRecordPostView';
+
+const mockUseRecordPostView = useRecordPostView as jest.MockedFunction<typeof useRecordPostView>;
 
 jest.spyOn(Alert, 'alert');
 
@@ -278,6 +285,11 @@ describe('PostDetailScreen', () => {
   beforeEach(() => {
     jest.clearAllMocks();
     mockUserBookmarksData = {};
+  });
+
+  it('calls useRecordPostView with the loaded post', () => {
+    render(<PostDetailScreen />);
+    expect(mockUseRecordPostView).toHaveBeenCalledWith(expect.objectContaining({ id: 'post-1' }));
   });
 
   it('renders post via FeedCard', () => {

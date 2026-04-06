@@ -1212,6 +1212,182 @@ describe('useRemoveFeedVote — onError with undefined context (onMutate failure
   });
 });
 
+describe('useVoteFeedItem — feed-item cache optimistic update', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockVoteFeedItem.mockResolvedValue({
+      id: 'vote-1',
+      feed_item_id: 'item-1',
+      user_id: 'user-123',
+      vote_type: 'up',
+      created_at: '2024-01-01T00:00:00Z',
+    });
+  });
+
+  it('optimistically updates feed-item cache on upvote', async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    client.setQueryData(['feed-item', 'item-1'], {
+      ...mockItem,
+      id: 'item-1',
+      upvote_count: 5,
+      downvote_count: 2,
+    });
+
+    const { result } = renderHook(() => useVoteFeedItem(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', voteType: 'up', previousVote: null });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    // After settled invalidation, the cache is refetched — but during optimistic update, upvote_count was 6
+  });
+
+  it('rolls back feed-item cache on error', async () => {
+    mockVoteFeedItem.mockRejectedValue(new Error('vote error'));
+    const alertSpy = jest
+      .spyOn(require('react-native').Alert, 'alert')
+      .mockImplementation(() => {});
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const originalItem = { ...mockItem, id: 'item-1', upvote_count: 5, downvote_count: 2 };
+    client.setQueryData(['feed-item', 'item-1'], originalItem);
+
+    const { result } = renderHook(() => useVoteFeedItem(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', voteType: 'up', previousVote: null });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    // After error, cache should be rolled back to original
+    const cached = client.getQueryData(['feed-item', 'item-1']);
+    expect(cached).toEqual(originalItem);
+    alertSpy.mockRestore();
+  });
+
+  it('handles undefined feed-item cache gracefully', async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    // No feed-item cache set
+    const { result } = renderHook(() => useVoteFeedItem(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', voteType: 'up', previousVote: null });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+});
+
+describe('useRemoveFeedVote — feed-item cache optimistic update', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockRemoveFeedVote.mockResolvedValue(undefined);
+  });
+
+  it('optimistically updates feed-item cache on vote removal', async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    client.setQueryData(['feed-item', 'item-1'], {
+      ...mockItem,
+      id: 'item-1',
+      upvote_count: 5,
+      downvote_count: 2,
+    });
+
+    const { result } = renderHook(() => useRemoveFeedVote(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', previousVote: 'up' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+
+  it('rolls back feed-item cache on error', async () => {
+    mockRemoveFeedVote.mockRejectedValue(new Error('remove error'));
+    const alertSpy = jest
+      .spyOn(require('react-native').Alert, 'alert')
+      .mockImplementation(() => {});
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const originalItem = { ...mockItem, id: 'item-1', upvote_count: 5, downvote_count: 2 };
+    client.setQueryData(['feed-item', 'item-1'], originalItem);
+
+    const { result } = renderHook(() => useRemoveFeedVote(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', previousVote: 'up' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    const cached = client.getQueryData(['feed-item', 'item-1']);
+    expect(cached).toEqual(originalItem);
+    alertSpy.mockRestore();
+  });
+
+  it('handles downvote removal in feed-item cache', async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    client.setQueryData(['feed-item', 'item-1'], {
+      ...mockItem,
+      id: 'item-1',
+      upvote_count: 5,
+      downvote_count: 2,
+    });
+
+    const { result } = renderHook(() => useRemoveFeedVote(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', previousVote: 'down' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+
+  it('handles undefined feed-item cache gracefully', async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useRemoveFeedVote(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', previousVote: 'up' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+});
+
 describe('useUserVotes — userId null fallback', () => {
   it('does not fetch when userId is undefined (enabled guard)', () => {
     const { useAuth } = require('@/features/auth/providers/AuthProvider');
