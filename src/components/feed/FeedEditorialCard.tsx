@@ -1,7 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
+import { PLACEHOLDER_AVATAR } from '@/constants/placeholders';
 import { FeedAvatar } from './FeedAvatar';
 import { FeedActionBar } from './FeedActionBar';
 import { FeedContentBadge } from './FeedContentBadge';
@@ -95,6 +97,18 @@ export function FeedEditorialCardInner({
                     {item.editorial_rating.toFixed(1)}
                   </Text>
                   <Text style={{ fontSize: 13, color: theme.textTertiary }}>/ 5</Text>
+                </View>
+              )}
+              {/* Editor profile */}
+              {review?.author_display_name && (
+                <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 4 }}>
+                  <Image
+                    source={review.author_avatar_url || PLACEHOLDER_AVATAR}
+                    style={{ width: 18, height: 18, borderRadius: 9 }}
+                  />
+                  <Text style={{ fontSize: 12, color: theme.textTertiary }}>
+                    {review.author_display_name}
+                  </Text>
                 </View>
               )}
               {entityId && onFollow && (

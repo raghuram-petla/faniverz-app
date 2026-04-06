@@ -1,10 +1,12 @@
 import { useState, useMemo } from 'react';
 import { View, Text, Pressable } from 'react-native';
+import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTranslation } from 'react-i18next';
 import { useTheme } from '@/theme';
 import { colors } from '@/theme/colors';
 import { CRAFT_NAMES, CRAFT_LABELS } from '@shared/constants';
+import { PLACEHOLDER_AVATAR } from '@/constants/placeholders';
 import { CraftRatingRow } from './CraftRatingRow';
 import { AgreeDisagreePoll } from './AgreeDisagreePoll';
 import { createStyles } from './EditorialReviewSection.styles';
@@ -27,11 +29,20 @@ export function EditorialReviewSection({ review, onPollVote }: EditorialReviewSe
 
   return (
     <View style={styles.container}>
-      {/* Header badge */}
+      {/* Header: badge + author */}
       <View style={styles.header}>
         <View style={styles.badge}>
           <Text style={styles.badgeText}>{t('editorial.title', 'EDITORIAL REVIEW')}</Text>
         </View>
+        {review.author_display_name && (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6, marginLeft: 4 }}>
+            <Image
+              source={review.author_avatar_url || PLACEHOLDER_AVATAR}
+              style={{ width: 22, height: 22, borderRadius: 11 }}
+            />
+            <Text style={styles.authorName}>{review.author_display_name}</Text>
+          </View>
+        )}
       </View>
 
       {/* Overall Rating */}
