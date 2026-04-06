@@ -27,7 +27,7 @@ export const createFilterPillBarStyles = (t: SemanticTheme) =>
     pillText: {
       fontSize: 13,
       fontWeight: '500',
-      color: t.textSecondary,
+      color: t.textPrimary,
     },
     pillTextActive: {
       color: colors.white,

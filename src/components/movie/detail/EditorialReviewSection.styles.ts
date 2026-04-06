@@ -89,7 +89,7 @@ export const createStyles = (t: SemanticTheme) =>
     body: {
       fontSize: 15,
       lineHeight: 22,
-      color: t.textSecondary,
+      color: t.textPrimary,
     },
     readMore: {
       fontSize: 13,

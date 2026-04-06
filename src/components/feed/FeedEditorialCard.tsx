@@ -200,7 +200,7 @@ export function FeedEditorialCardInner({
             {/* Body text — 100 words then "Show more" */}
             {bodyResult && (
               <View>
-                <Text style={{ fontSize: 15, lineHeight: 22, color: theme.textSecondary }}>
+                <Text style={{ fontSize: 15, lineHeight: 22, color: theme.textPrimary }}>
                   {expanded ? bodyText : bodyResult.truncated}
                 </Text>
                 {bodyResult.wasTruncated && (
