@@ -1,6 +1,7 @@
--- Suppress automatic news_feed creation during TMDB sync operations.
+-- Suppress automatic news_feed creation during TMDB sync operations, and fix
+-- published_at ordering for items added today.
 --
--- Problem: When movies are imported/refreshed from TMDB, database triggers on
+-- Problem 1: When movies are imported/refreshed from TMDB, database triggers on
 -- movie_videos, movie_images, movies, and movie_platforms automatically create
 -- news_feed entries. This floods the feed with low-quality auto-generated content
 -- that should only appear when admins manually add content.
@@ -9,6 +10,13 @@
 -- If the row came from TMDB sync (has tmdb_video_key, tmdb_file_path, tmdb_id,
 -- or links to a tmdb-sourced platform), the trigger skips feed creation.
 -- Admin-created content (without these markers) still generates feed entries.
+--
+-- Problem 2: poster_date and video_date are `date` columns (no time component).
+-- When cast to timestamptz, they become midnight (00:00:00). So a poster added
+-- "today" gets published_at = midnight, sorting BELOW editorial reviews or other
+-- items published today with a real timestamp. Fix: when the date is today or in
+-- the future (or null), use now() to get the actual current timestamp. Only use
+-- the raw date for genuinely backdated items (past dates).
 
 -- ============================================================
 -- 1. movie_videos → news_feed: skip when tmdb_video_key is set
@@ -43,7 +51,12 @@ BEGIN
     NEW.description, NEW.movie_id,
     'movie_videos', NEW.id, NEW.youtube_id, NEW.duration,
     'https://img.youtube.com/vi/' || NEW.youtube_id || '/hqdefault.jpg',
-    NEW.created_at
+    -- poster_date/video_date are `date` (no time) — casting to timestamptz gives midnight,
+    -- which sorts below items published today with real timestamps. Use now() when the
+    -- date is today or null; only use the date for genuinely backdated items.
+    CASE WHEN NEW.video_date IS NULL OR NEW.video_date >= current_date THEN now()
+         ELSE NEW.video_date::timestamptz
+    END
   )
   ON CONFLICT (source_table, source_id) WHERE source_table IS NOT NULL
   DO UPDATE SET
@@ -101,7 +114,11 @@ BEGIN
     COALESCE(v_movie_title, '') || ' - ' || COALESCE(NEW.title, 'Image'),
     NEW.description, NEW.movie_id,
     'movie_images', NEW.id, NEW.image_url,
-    COALESCE(NEW.poster_date, NEW.created_at, now())
+    -- poster_date is `date` (no time) — midnight sorts below real timestamps from today.
+    -- Use now() when date is today or null; only use the date for genuinely backdated items.
+    CASE WHEN NEW.poster_date IS NULL OR NEW.poster_date >= current_date THEN now()
+         ELSE NEW.poster_date::timestamptz
+    END
   )
   ON CONFLICT (source_table, source_id) WHERE source_table IS NOT NULL
   DO UPDATE SET
