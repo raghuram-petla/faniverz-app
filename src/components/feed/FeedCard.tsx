@@ -1,11 +1,10 @@
-import React, { useCallback, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useMemo, useState } from 'react';
 import { View, Text, TouchableOpacity, type LayoutChangeEvent } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
-import { useImageViewer } from '@/providers/ImageViewerProvider';
-import { measureView } from '@/utils/measureView';
 import { getImageUrl, posterBucket } from '@shared/imageUrl';
+import { useFeedPosterViewer } from './useFeedPosterViewer';
 import { SkeletonBox } from '@/components/ui/SkeletonBox';
 import { FeedAvatar } from './FeedAvatar';
 import { FeedActionBar } from './FeedActionBar';
@@ -75,10 +74,7 @@ function FeedCardInner({
 }: FeedCardProps) {
   const { theme, colors } = useTheme();
   const styles = useMemo(() => createFeedCardStyles(theme), [theme]);
-  const { openImage } = useImageViewer();
-  const posterRef = useRef<View>(null);
   const [mediaLoaded, setMediaLoaded] = useState(false);
-  const [posterHidden, setPosterHidden] = useState(false);
   const hasVideo = !!item.youtube_id;
   const isBackdrop = item.feed_type === 'backdrop';
   const imageUrl = item.thumbnail_url ?? item.movie?.poster_url ?? null; // @nullable both may be null
@@ -94,10 +90,8 @@ function FeedCardInner({
   const entityId = getEntityId(item);
   const handleLayout = useCallback(
     (e: LayoutChangeEvent) => {
-      if (onVideoLayout) {
-        const { y, height } = e.nativeEvent.layout;
-        onVideoLayout(item.id, y, height);
-      }
+      if (onVideoLayout)
+        onVideoLayout(item.id, e.nativeEvent.layout.y, e.nativeEvent.layout.height);
     },
     [item.id, onVideoLayout],
   );
@@ -106,24 +100,19 @@ function FeedCardInner({
     : item.feed_type === 'poster'
       ? ('POSTERS' as const)
       : posterBucket(item.movie?.poster_image_type);
+  const {
+    posterRef,
+    posterHidden,
+    handleLongPress: handlePosterLongPress,
+  } = useFeedPosterViewer(imageUrl, imageBucket, isBackdrop, getImageViewerTopChrome);
+  // @contract poster tap navigates to movie page (if linked) or post detail; long-press opens image viewer
   const handlePosterPress = useCallback(() => {
-    /* istanbul ignore next */ if (!imageUrl) return;
-    measureView(posterRef, (layout) => {
-      const topChrome = getImageViewerTopChrome?.();
-      openImage({
-        feedUrl: getImageUrl(imageUrl, 'md', imageBucket) ?? /* istanbul ignore next */ imageUrl,
-        fullUrl:
-          getImageUrl(imageUrl, 'original', imageBucket) ?? /* istanbul ignore next */ imageUrl,
-        sourceLayout: layout,
-        sourceRef: posterRef,
-        borderRadius: 0,
-        isLandscape: isBackdrop,
-        topChrome, // @coupling Home feed supplies header snapshot for close animation
-        onSourceHide: () => setPosterHidden(true),
-        onSourceShow: () => setPosterHidden(false),
-      });
-    });
-  }, [getImageViewerTopChrome, imageBucket, imageUrl, isBackdrop, openImage]);
+    if (entityId && onEntityPress) {
+      onEntityPress(entityType, entityId);
+    } else {
+      onPress(item);
+    }
+  }, [entityId, entityType, item, onEntityPress, onPress]);
   return (
     <View onLayout={hasVideo ? handleLayout : undefined}>
       {isFirst ? <FilmStripFrameDivider isEdge /> : null}
@@ -213,8 +202,9 @@ function FeedCardInner({
 
               {isPosterImage ? (
                 <TouchableOpacity
-                  activeOpacity={1}
+                  activeOpacity={0.7}
                   onPress={handlePosterPress}
+                  onLongPress={handlePosterLongPress}
                   accessibilityLabel={`View ${item.title} ${isBackdrop ? 'backdrop' : 'poster'}`}
                 >
                   <View
