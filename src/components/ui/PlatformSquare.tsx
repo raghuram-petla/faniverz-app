@@ -45,6 +45,12 @@ export function PlatformSquare({ platform, size, onPress }: PlatformSquareProps)
           style={{ width: size * 0.88, height: size * 0.88, borderRadius: 8 }}
           contentFit="contain"
         />
+      ) : platform.logo_url ? (
+        <Image
+          source={{ uri: platform.logo_url }}
+          style={{ width: size * 0.88, height: size * 0.88, borderRadius: 8 }}
+          contentFit="contain"
+        />
       ) : (
         <Text style={styles.logoText}>{platform.logo}</Text>
       )}

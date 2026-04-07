@@ -8,7 +8,7 @@ import { colors as palette } from '@/theme/colors';
  * @coupling getPlatformLogo — returns a local asset require() or null for unknown platforms.
  */
 interface PlatformBadgeProps {
-  platform: { id: string; color: string; logo: string };
+  platform: { id: string; color: string; logo: string; logo_url?: string | null };
   size?: number;
 }
 
@@ -32,6 +32,12 @@ export function PlatformBadge({ platform, size = 24 }: PlatformBadgeProps) {
       {logo ? (
         <Image
           source={logo}
+          style={{ width: size * 0.8, height: size * 0.8 }}
+          contentFit="contain"
+        />
+      ) : platform.logo_url ? (
+        <Image
+          source={{ uri: platform.logo_url }}
           style={{ width: size * 0.8, height: size * 0.8 }}
           contentFit="contain"
         />

@@ -63,7 +63,18 @@ describe('PlatformSquare', () => {
     expect(queryByText('N')).toBeNull();
   });
 
-  it('renders text fallback when no logo asset', () => {
+  it('renders remote logo_url when no local asset but logo_url exists', () => {
+    const platformWithUrl: OTTPlatform = {
+      ...unknownPlatform,
+      logo_url: 'https://image.tmdb.org/t/p/w92/logo.png',
+    };
+    const { queryByText } = render(
+      <PlatformSquare platform={platformWithUrl} size={80} onPress={mockOnPress} />,
+    );
+    expect(queryByText('C')).toBeNull();
+  });
+
+  it('renders text fallback when no logo asset and no logo_url', () => {
     const { getByText } = render(
       <PlatformSquare platform={unknownPlatform} size={80} onPress={mockOnPress} />,
     );
