@@ -22,7 +22,15 @@ If you cannot identify which worktree belongs to this session, ask the user — 
    git branch --merged master | grep <branch>
    ```
 
-   - If NOT merged: **do NOT remove it** — warn the user that it has unmerged changes and stop.
+   If NOT found (e.g., older branches that were squash-merged via `merge --squash` instead of fast-forward), check if master already contains the same changes:
+
+   ```bash
+   # If the branch tip's tree is identical to some commit on master, it was squash-merged
+   git diff master..<branch> --stat
+   ```
+
+   - If `git diff` shows no differences: the branch content is on master — safe to remove.
+   - If `git diff` shows differences AND `--merged` didn't match: **do NOT remove it** — warn the user that it has unmerged changes and stop.
 
 4. Remove the worktree and its branch:
 

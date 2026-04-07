@@ -87,20 +87,15 @@ EOF
 
 8. Run `git status` after the commit (or in Scenario B) to verify state.
 
-9. **Squash-merge into master and push:**
+9. **Squash in worktree, fast-forward merge into master, and push:**
 
    **If in a worktree** (path contains `~/faniverz-worktrees/`):
 
-   Worktree branches are squash-merged into master so the history stays linear and clean. All worktree commits collapse into a single commit on master.
+   Worktree commits are squashed into a single commit **inside the worktree branch**, then fast-forward merged into master. This keeps history linear AND allows `git branch --merged` to correctly detect the branch as merged (unlike `merge --squash` which breaks that detection).
 
    ```bash
-   # Get the current branch name
-   BRANCH=$(git branch --show-current)
-
-   # Switch to master in the MAIN repo (not the worktree)
-   cd <main-repo-root>   # the parent of ~/faniverz-worktrees/
-   git checkout master
-   git merge --squash "$BRANCH"
+   # Still in the worktree directory — squash all commits into one
+   git reset --soft master
    git commit -m "$(cat <<'EOF'
    <type>: <short summary from the worktree work>
 
@@ -110,12 +105,20 @@ EOF
    Co-Authored-By: <github_display_name> <github_username>@users.noreply.github.com
    EOF
    )"
+
+   # Get the current branch name
+   BRANCH=$(git branch --show-current)
+
+   # Switch to master in the MAIN repo and fast-forward merge
+   cd <main-repo-root>   # e.g. ~/faniverz-app
+   git checkout master
+   git merge "$BRANCH"   # fast-forward since branch is linear from master
    git push
    ```
 
    The commit message should summarize the entire worktree's work (not repeat "Merge branch"). Use the same conventional commit format as step 6.
 
-   After merging, inform the user the worktree branch has been squash-merged into master and pushed. **Do NOT delete the worktree or its branch** — leave both intact so the user can verify nothing was missed. The user will clean it up manually or via `/cleanup-worktree`.
+   After merging, inform the user the worktree branch has been merged into master and pushed. **Do NOT delete the worktree or its branch** — leave both intact so the user can verify nothing was missed. The user will clean it up manually or via `/cleanup-worktree`.
 
    **WARNING:** Do NOT use the Agent tool with `isolation: "worktree"` for shipping — it auto-cleans worktrees on completion, which destroys the worktree before the user can verify. Always run ship commands directly.
 
@@ -139,9 +142,9 @@ EOF
 
 ## Worktree Ship Flow
 
-When work was done in a worktree (at `~/faniverz-worktrees/`), the changes live on a separate branch with uncommitted files in a worktree directory. You must commit there, then merge into the main branch.
+When work was done in a worktree (at `~/faniverz-worktrees/`), the changes live on a separate branch with uncommitted files in a worktree directory. You must commit there, squash, then merge into the main branch.
 
-1. **Identify the worktree branch and directory** from the conversation history (look for `worktreeBranch:` and `worktreePath:` in agent results).
+1. **Identify the worktree branch and directory** from the conversation history (look for `worktreeBranch:`, `worktreePath:`, or `cd ~/faniverz-worktrees/<name>` commands).
 
 2. **Navigate to the worktree directory** and check status:
 
@@ -158,18 +161,11 @@ When work was done in a worktree (at `~/faniverz-worktrees/`), the changes live 
 
 4. **Check for migration or file conflicts** introduced by the fast-forward (e.g., duplicate migration numbers). Renumber if needed.
 
-5. **Stage ALL changes, commit, and verify** in the worktree. Since the worktree is owned entirely by this session, use `git add -A` to stage everything — do NOT selectively pick files. Then follow steps 5-8 from the normal flow above.
-
-6. **Switch back to the main branch directory** and squash-merge:
+5. **Stage ALL changes and squash into a single commit** in the worktree. Since the worktree is owned entirely by this session, use `git add -A` to stage everything — do NOT selectively pick files.
 
    ```bash
-   cd <original-repo-path>
-   git merge --squash <worktree-branch>
-   ```
-
-7. **Craft a single summary commit** for the squash. Use the same conventional commit format as the normal flow (step 6). The message should describe what the worktree accomplished, not "Merge branch X".
-
-   ```bash
+   git add -A
+   git reset --soft master
    git commit -m "$(cat <<'EOF'
    <type>: <summary of all worktree work>
 
@@ -181,7 +177,19 @@ When work was done in a worktree (at `~/faniverz-worktrees/`), the changes live 
    )"
    ```
 
-8. **Push master** and report the commit hash. Inform the user the worktree is still intact for verification. They can clean it up with `git worktree remove <path> && git branch -D <branch>` when ready.
+   This collapses all worktree commits + uncommitted changes into a single commit on top of master.
+
+6. **Switch back to the main branch directory** and fast-forward merge:
+
+   ```bash
+   cd <original-repo-path>
+   git checkout master
+   git merge <worktree-branch>
+   ```
+
+   This is a fast-forward merge since the branch is linear from master. The branch tip becomes the new master tip, so `git branch --merged master` will correctly detect it as merged.
+
+7. **Push master** and report the commit hash. Inform the user the worktree is still intact for verification. They can clean it up with `/cleanup-worktree` when ready.
 
 ## Rules
 
