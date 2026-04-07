@@ -4,6 +4,8 @@ Create a new git worktree for feature work. Accepts a branch name as the argumen
 
 If no branch name is provided, derive one from the current task context (e.g., `fix-feed-divider`, `feat-search-filters`).
 
+**CRITICAL: Do NOT use the `EnterWorktree` tool.** It creates worktrees inside `.claude/worktrees/` which breaks Metro bundler. Use the bash commands below instead.
+
 ## Steps
 
 1. **Create the worktree** outside the main repo:
@@ -30,6 +32,7 @@ If no branch name is provided, derive one from the current task context (e.g., `
 
 ## Rules
 
+- **Do NOT use `EnterWorktree` tool** — it puts worktrees in the wrong location.
 - Worktrees must live in `~/faniverz-worktrees/`, NEVER inside the main project directory.
 - Always use `-b` to create a new branch from the current HEAD.
 - Always copy `.env.local` — EAS builds and local dev both depend on it.
