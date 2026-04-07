@@ -100,19 +100,12 @@ function FeedCardInner({
     : item.feed_type === 'poster'
       ? ('POSTERS' as const)
       : posterBucket(item.movie?.poster_image_type);
+  // @contract poster tap opens full-screen image viewer
   const {
     posterRef,
     posterHidden,
-    handleLongPress: handlePosterLongPress,
+    handlePress: handlePosterPress,
   } = useFeedPosterViewer(imageUrl, imageBucket, isBackdrop, getImageViewerTopChrome);
-  // @contract poster tap navigates to movie page (if linked) or post detail; long-press opens image viewer
-  const handlePosterPress = useCallback(() => {
-    if (entityId && onEntityPress) {
-      onEntityPress(entityType, entityId);
-    } else {
-      onPress(item);
-    }
-  }, [entityId, entityType, item, onEntityPress, onPress]);
   return (
     <View onLayout={hasVideo ? handleLayout : undefined}>
       {isFirst ? <FilmStripFrameDivider isEdge /> : null}
@@ -204,7 +197,6 @@ function FeedCardInner({
                 <TouchableOpacity
                   activeOpacity={0.7}
                   onPress={handlePosterPress}
-                  onLongPress={handlePosterLongPress}
                   accessibilityLabel={`View ${item.title} ${isBackdrop ? 'backdrop' : 'poster'}`}
                 >
                   <View

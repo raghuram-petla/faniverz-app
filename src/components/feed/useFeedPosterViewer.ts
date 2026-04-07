@@ -5,7 +5,7 @@ import { measureView } from '@/utils/measureView';
 import { getImageUrl, type ImageBucket } from '@shared/imageUrl';
 import type { ImageViewerTopChrome } from '@/providers/ImageViewerProvider';
 
-/** @contract Encapsulates image viewer long-press logic for feed card poster images */
+/** @contract Tap on feed poster opens full-screen image viewer */
 export function useFeedPosterViewer(
   imageUrl: string | null,
   imageBucket: ImageBucket,
@@ -16,7 +16,7 @@ export function useFeedPosterViewer(
   const posterRef = useRef<View>(null);
   const [posterHidden, setPosterHidden] = useState(false);
 
-  const handleLongPress = useCallback(() => {
+  const handlePress = useCallback(() => {
     /* istanbul ignore next */ if (!imageUrl) return;
     measureView(posterRef, (layout) => {
       const topChrome = getImageViewerTopChrome?.();
@@ -35,5 +35,5 @@ export function useFeedPosterViewer(
     });
   }, [getImageViewerTopChrome, imageBucket, imageUrl, isBackdrop, openImage]);
 
-  return { posterRef, posterHidden, handleLongPress };
+  return { posterRef, posterHidden, handlePress };
 }

@@ -425,8 +425,8 @@ describe('FeedCard', () => {
     expect(onVideoLayout).toHaveBeenCalledWith('v1', 100, 300);
   });
 
-  // Poster navigation tests
-  it('tapping poster navigates to movie page when movie is linked', () => {
+  // Poster tap opens image viewer (not navigation)
+  it('tapping poster opens image viewer even when movie is linked', () => {
     const onEntityPress = jest.fn();
     const item = makeItem({
       youtube_id: null,
@@ -436,11 +436,11 @@ describe('FeedCard', () => {
     });
     render(<FeedCard item={item} onPress={jest.fn()} onEntityPress={onEntityPress} />);
     fireEvent.press(screen.getByLabelText('View Test Trailer poster'));
-    expect(onEntityPress).toHaveBeenCalledWith('movie', 'm1');
-    expect(mockOpenImage).not.toHaveBeenCalled();
+    expect(onEntityPress).not.toHaveBeenCalled();
+    expect(mockOpenImage).toHaveBeenCalled();
   });
 
-  it('tapping poster calls onPress when no movie linked', () => {
+  it('tapping poster opens image viewer when no movie linked', () => {
     const onPress = jest.fn();
     const item = makeItem({
       youtube_id: null,
@@ -453,13 +453,14 @@ describe('FeedCard', () => {
     });
     render(<FeedCard item={item} onPress={onPress} />);
     fireEvent.press(screen.getByLabelText('View Test Trailer poster'));
-    expect(onPress).toHaveBeenCalledWith(item);
+    expect(onPress).not.toHaveBeenCalled();
+    expect(mockOpenImage).toHaveBeenCalled();
   });
 
-  it('long-pressing poster opens image viewer', () => {
+  it('tapping poster opens image viewer', () => {
     const item = makeItem({ youtube_id: null, content_type: 'poster', feed_type: 'poster' });
     render(<FeedCard item={item} onPress={jest.fn()} />);
-    fireEvent(screen.getByLabelText('View Test Trailer poster'), 'longPress');
+    fireEvent.press(screen.getByLabelText('View Test Trailer poster'));
     expect(mockOpenImage).toHaveBeenCalledWith(
       expect.objectContaining({
         fullUrl: 'https://example.com/thumb.jpg',
@@ -470,7 +471,7 @@ describe('FeedCard', () => {
     );
   });
 
-  it('passes top chrome metadata on long-press', () => {
+  it('passes top chrome metadata on poster tap', () => {
     const item = makeItem({ youtube_id: null, content_type: 'poster', feed_type: 'poster' });
     const getImageViewerTopChrome = jest.fn(() => ({
       variant: 'home-feed' as const,
@@ -485,7 +486,7 @@ describe('FeedCard', () => {
         getImageViewerTopChrome={getImageViewerTopChrome}
       />,
     );
-    fireEvent(screen.getByLabelText('View Test Trailer poster'), 'longPress');
+    fireEvent.press(screen.getByLabelText('View Test Trailer poster'));
     expect(getImageViewerTopChrome).toHaveBeenCalled();
     expect(mockOpenImage).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -497,7 +498,7 @@ describe('FeedCard', () => {
   it('hides poster when onSourceHide is called and shows on onSourceShow', () => {
     const item = makeItem({ youtube_id: null, content_type: 'poster', feed_type: 'poster' });
     const { rerender } = render(<FeedCard item={item} onPress={jest.fn()} />);
-    fireEvent(screen.getByLabelText('View Test Trailer poster'), 'longPress');
+    fireEvent.press(screen.getByLabelText('View Test Trailer poster'));
     const { onSourceHide, onSourceShow } = mockOpenImage.mock.calls[0][0];
     const { act } = require('@testing-library/react-native');
     act(() => onSourceHide());
@@ -660,7 +661,7 @@ describe('FeedCard', () => {
     expect(screen.getByTestId('action-user-vote').props.children).toBe('none');
   });
 
-  it('does not call openImage when imageUrl is null (handlePosterPress guard)', () => {
+  it('does not call openImage when imageUrl is null (no poster rendered)', () => {
     const item = makeItem({
       youtube_id: null,
       thumbnail_url: null,
@@ -763,10 +764,10 @@ describe('FeedCard', () => {
     expect(screen.getByText('Test Trailer')).toBeTruthy();
   });
 
-  it('long-pressing poster on non-video card opens image viewer', () => {
+  it('tapping poster on non-video card opens image viewer', () => {
     const item = makeItem({ youtube_id: null, content_type: 'poster', feed_type: 'poster' });
     render(<FeedCard item={item} onPress={jest.fn()} />);
-    fireEvent(screen.getByLabelText(`View ${item.title} poster`), 'longPress');
+    fireEvent.press(screen.getByLabelText(`View ${item.title} poster`));
     expect(mockOpenImage).toHaveBeenCalled();
   });
 

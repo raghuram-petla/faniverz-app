@@ -20,16 +20,16 @@ import { useFeedPosterViewer } from '../useFeedPosterViewer';
 beforeEach(() => jest.clearAllMocks());
 
 describe('useFeedPosterViewer', () => {
-  it('returns posterRef, posterHidden=false, and handleLongPress', () => {
+  it('returns posterRef, posterHidden=false, and handlePress', () => {
     const { result } = renderHook(() => useFeedPosterViewer('https://img.jpg', 'POSTERS', false));
     expect(result.current.posterHidden).toBe(false);
     expect(result.current.posterRef).toBeDefined();
-    expect(typeof result.current.handleLongPress).toBe('function');
+    expect(typeof result.current.handlePress).toBe('function');
   });
 
-  it('calls openImage with correct params on long press', () => {
+  it('calls openImage with correct params on press', () => {
     const { result } = renderHook(() => useFeedPosterViewer('https://img.jpg', 'POSTERS', false));
-    act(() => result.current.handleLongPress());
+    act(() => result.current.handlePress());
     expect(mockOpenImage).toHaveBeenCalledWith(
       expect.objectContaining({
         feedUrl: 'https://img.jpg',
@@ -44,13 +44,13 @@ describe('useFeedPosterViewer', () => {
 
   it('passes isLandscape=true for backdrop images', () => {
     const { result } = renderHook(() => useFeedPosterViewer('https://img.jpg', 'BACKDROPS', true));
-    act(() => result.current.handleLongPress());
+    act(() => result.current.handlePress());
     expect(mockOpenImage).toHaveBeenCalledWith(expect.objectContaining({ isLandscape: true }));
   });
 
   it('does not call openImage when imageUrl is null', () => {
     const { result } = renderHook(() => useFeedPosterViewer(null, 'POSTERS', false));
-    act(() => result.current.handleLongPress());
+    act(() => result.current.handlePress());
     expect(mockOpenImage).not.toHaveBeenCalled();
   });
 
@@ -65,14 +65,14 @@ describe('useFeedPosterViewer', () => {
     const { result } = renderHook(() =>
       useFeedPosterViewer('https://img.jpg', 'POSTERS', false, getter),
     );
-    act(() => result.current.handleLongPress());
+    act(() => result.current.handlePress());
     expect(getter).toHaveBeenCalled();
     expect(mockOpenImage).toHaveBeenCalledWith(expect.objectContaining({ topChrome }));
   });
 
   it('toggles posterHidden via onSourceHide/onSourceShow callbacks', () => {
     const { result } = renderHook(() => useFeedPosterViewer('https://img.jpg', 'POSTERS', false));
-    act(() => result.current.handleLongPress());
+    act(() => result.current.handlePress());
     const { onSourceHide, onSourceShow } = mockOpenImage.mock.calls[0][0];
     act(() => onSourceHide());
     expect(result.current.posterHidden).toBe(true);
