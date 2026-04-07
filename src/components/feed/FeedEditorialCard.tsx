@@ -242,6 +242,7 @@ export function FeedEditorialCardInner({
               onShare={() => onShare?.(item.id)}
             />
           </View>
+          <View style={styles.separator} />
         </View>
       </FilmStripFrame>
       <FilmStripFrameDivider />

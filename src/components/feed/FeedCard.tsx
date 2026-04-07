@@ -273,6 +273,7 @@ function FeedCardInner({
               <Text style={styles.fullTimestampText}>{formatFullTimestamp(item.published_at)}</Text>
             </View>
           ) : null}
+          <View style={styles.separator} />
         </View>
       </FilmStripFrame>
       <FilmStripFrameDivider />
