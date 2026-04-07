@@ -80,6 +80,15 @@ describe('getFeedTypeColor', () => {
     );
     expect(getFeedTypeColor('ott_release')).toBe(FEED_CONTENT_TYPE_COLORS['ott_release']);
     expect(getFeedTypeColor('rating_milestone')).toBe(FEED_CONTENT_TYPE_COLORS['rating_milestone']);
+    expect(getFeedTypeColor('release_date_update')).toBe(
+      FEED_CONTENT_TYPE_COLORS['release_date_update'],
+    );
+    expect(getFeedTypeColor('certification_update')).toBe(
+      FEED_CONTENT_TYPE_COLORS['certification_update'],
+    );
+    expect(getFeedTypeColor('premiere_date_update')).toBe(
+      FEED_CONTENT_TYPE_COLORS['premiere_date_update'],
+    );
   });
 
   it('returns red600 as fallback for unknown content types', () => {
@@ -109,6 +118,9 @@ describe('getFeedTypeLabel', () => {
     expect(getFeedTypeLabel('theatrical_release')).toBe('In Theaters');
     expect(getFeedTypeLabel('ott_release')).toBe('Now Streaming');
     expect(getFeedTypeLabel('rating_milestone')).toBe('Milestone');
+    expect(getFeedTypeLabel('release_date_update')).toBe('Release Date');
+    expect(getFeedTypeLabel('certification_update')).toBe('Certification');
+    expect(getFeedTypeLabel('premiere_date_update')).toBe('Premiere');
   });
 
   it('returns raw value for unknown types', () => {
@@ -172,6 +184,18 @@ describe('getFeedTypeIconName', () => {
   it('returns newspaper for editorial_review', () => {
     // @edge: covers line 66 — the 'editorial_review' case
     expect(getFeedTypeIconName('editorial_review')).toBe('newspaper');
+  });
+
+  it('returns calendar for release_date_update', () => {
+    expect(getFeedTypeIconName('release_date_update')).toBe('calendar');
+  });
+
+  it('returns shield-checkmark for certification_update', () => {
+    expect(getFeedTypeIconName('certification_update')).toBe('shield-checkmark');
+  });
+
+  it('returns star-half for premiere_date_update', () => {
+    expect(getFeedTypeIconName('premiere_date_update')).toBe('star-half');
   });
 
   it('returns newspaper as fallback', () => {

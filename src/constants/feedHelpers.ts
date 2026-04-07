@@ -64,6 +64,12 @@ export function getFeedTypeIconName(
       return 'trophy';
     case 'editorial_review':
       return 'newspaper';
+    case 'release_date_update':
+      return 'calendar';
+    case 'certification_update':
+      return 'shield-checkmark';
+    case 'premiere_date_update':
+      return 'star-half';
     default:
       return 'newspaper';
   }

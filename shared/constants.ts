@@ -123,6 +123,9 @@ export const FEED_CONTENT_TYPE_COLORS: Record<string, string> = {
   ott_release: '#9333EA',
   rating_milestone: '#FACC15',
   editorial_review: '#DC2626',
+  release_date_update: '#3B82F6',
+  certification_update: '#F59E0B',
+  premiere_date_update: '#8B5CF6',
 };
 
 // Feed content type labels
@@ -147,6 +150,9 @@ export const FEED_CONTENT_TYPE_LABELS: Record<string, string> = {
   ott_release: 'Now Streaming',
   rating_milestone: 'Milestone',
   editorial_review: 'Editorial Review',
+  release_date_update: 'Release Date',
+  certification_update: 'Certification',
+  premiere_date_update: 'Premiere',
 };
 
 // @contract Feed tab labels for the mobile preview pill row — 'All' is a sentinel for no filter

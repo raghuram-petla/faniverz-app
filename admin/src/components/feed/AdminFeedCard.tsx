@@ -22,6 +22,9 @@ const TYPE_COLORS: Record<string, string> = {
   theatrical_release: 'bg-red-600',
   ott_release: 'bg-purple-600',
   rating_milestone: 'bg-yellow-500',
+  release_date_update: 'bg-blue-500',
+  certification_update: 'bg-amber-500',
+  premiere_date_update: 'bg-violet-500',
 };
 
 export interface AdminFeedCardProps {

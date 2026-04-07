@@ -126,6 +126,36 @@ describe('AdminFeedCard', () => {
     expect(container.querySelector('.bg-purple-600')).toBeInTheDocument();
   });
 
+  it('uses correct badge color for release_date_update (bg-blue-500)', () => {
+    const { container } = render(
+      <AdminFeedCard
+        item={makeItem({ content_type: 'release_date_update' })}
+        {...defaultHandlers}
+      />,
+    );
+    expect(container.querySelector('.bg-blue-500')).toBeInTheDocument();
+  });
+
+  it('uses correct badge color for certification_update (bg-amber-500)', () => {
+    const { container } = render(
+      <AdminFeedCard
+        item={makeItem({ content_type: 'certification_update' })}
+        {...defaultHandlers}
+      />,
+    );
+    expect(container.querySelector('.bg-amber-500')).toBeInTheDocument();
+  });
+
+  it('uses correct badge color for premiere_date_update (bg-violet-500)', () => {
+    const { container } = render(
+      <AdminFeedCard
+        item={makeItem({ content_type: 'premiere_date_update' })}
+        {...defaultHandlers}
+      />,
+    );
+    expect(container.querySelector('.bg-violet-500')).toBeInTheDocument();
+  });
+
   it('uses fallback gray badge for unknown content_type', () => {
     const { container } = render(
       <AdminFeedCard item={makeItem({ content_type: 'unknown-type' })} {...defaultHandlers} />,
