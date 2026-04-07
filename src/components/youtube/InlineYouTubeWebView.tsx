@@ -39,7 +39,7 @@ const buildInlineHtml = (videoId: string, thumbnailUrl: string, baseUrl: string)
       }
       #playCircle {
         position: absolute; top: 12px; left: 12px; width: 56px; height: 56px;
-        border-radius: 28px; background: rgba(0, 0, 0, 0.85);
+        border-radius: 28px; background: rgba(0, 0, 0, 0.5);
       }
       #playTriangle {
         position: absolute; top: 50%; left: 50%; margin: -12px 0 0 -7px;
