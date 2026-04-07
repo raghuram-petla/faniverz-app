@@ -369,7 +369,9 @@
     "studios": "స్టూడియోలు",
     "reviews": "సమీక్షలు",
     "actor": "నటుడు",
-    "productionHouse": "నిర్మాణ సంస్థ"
+    "productionHouse": "నిర్మాణ సంస్థ",
+    "platform": "ప్లాట్‌ఫారమ్",
+    "platforms": "ప్లాట్‌ఫారమ్‌లు"
   },
   "bookmarks": {
     "title": "సేవ్ చేసిన పోస్టులు",

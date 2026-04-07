@@ -17,11 +17,9 @@ import { useMoviePlatformMap } from '@/features/ott/hooks';
 import { Movie } from '@/types';
 import { STORAGE_KEYS } from '@/constants/storage';
 import { createStyles } from '@/styles/search.styles';
-import { SearchResultActor } from '@/components/search/SearchResultActor';
-import { SearchResultProductionHouse } from '@/components/search/SearchResultProductionHouse';
+import { SearchNonMovieResults } from '@/components/search/SearchNonMovieResults';
 import { SearchResultMovie } from '@/components/search/SearchResultMovie';
 import { TrendingMovies } from '@/components/search/TrendingMovies';
-import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 
@@ -29,7 +27,7 @@ const RECENT_SEARCHES_KEY = STORAGE_KEYS.RECENT_SEARCHES;
 // @invariant: recent searches list never exceeds MAX_RECENT entries
 const MAX_RECENT = 10;
 
-type SearchFilter = 'all' | 'movies' | 'actors' | 'studios';
+type SearchFilter = 'all' | 'movies' | 'actors' | 'studios' | 'platforms';
 
 // @boundary: Universal search — movies, actors, production houses with recent searches and trending
 // @coupling: useUniversalSearch, useMovies (for trending), useMoviePlatformMap, AsyncStorage
@@ -49,6 +47,8 @@ export default function SearchScreen() {
   const movies = searchResults?.movies ?? /* istanbul ignore next */ [];
   const actors = searchResults?.actors ?? /* istanbul ignore next */ [];
   const productionHouses = searchResults?.productionHouses ?? /* istanbul ignore next */ [];
+  // @nullable: platforms may be undefined before first successful fetch
+  const platforms = searchResults?.platforms ?? /* istanbul ignore next */ [];
 
   // @coupling: useMovies fetches ALL movies (same as spotlight) — used here only for trending slice
   /* istanbul ignore next */
@@ -123,16 +123,21 @@ export default function SearchScreen() {
   const filteredMovies = filter === 'all' || filter === 'movies' ? movies : [];
   const filteredActors = filter === 'all' || filter === 'actors' ? actors : [];
   const filteredHouses = filter === 'all' || filter === 'studios' ? productionHouses : [];
-  const totalResults = filteredMovies.length + filteredActors.length + filteredHouses.length;
+  // @edge: platforms filter uses 'platforms' key; hidden when filter doesn't match
+  const filteredPlatforms = filter === 'all' || filter === 'platforms' ? platforms : [];
+  const totalResults =
+    filteredMovies.length +
+    filteredActors.length +
+    filteredHouses.length +
+    filteredPlatforms.length;
 
+  const cnt = (n: number) => (n ? ` (${n})` : '');
   const FILTERS: { key: SearchFilter; label: string }[] = [
     { key: 'all', label: t('common.all') },
-    { key: 'movies', label: `${t('search.movies')}${movies.length ? ` (${movies.length})` : ''}` },
-    { key: 'actors', label: `${t('search.actors')}${actors.length ? ` (${actors.length})` : ''}` },
-    {
-      key: 'studios',
-      label: `${t('search.studios')}${productionHouses.length ? ` (${productionHouses.length})` : ''}`,
-    },
+    { key: 'movies', label: `${t('search.movies')}${cnt(movies.length)}` },
+    { key: 'actors', label: `${t('search.actors')}${cnt(actors.length)}` },
+    { key: 'studios', label: `${t('search.studios')}${cnt(productionHouses.length)}` },
+    { key: 'platforms', label: `${t('search.platforms')}${cnt(platforms.length)}` },
   ];
 
   return (
@@ -236,40 +241,42 @@ export default function SearchScreen() {
             onScrollEndDrag={handleScrollEndDrag}
             scrollEventThrottle={16}
             ListHeaderComponent={
-              <View>
-                <PullToRefreshIndicator
-                  pullDistance={pullDistance}
-                  isRefreshing={isRefreshing}
-                  refreshing={refreshing}
-                />
-                {filteredActors.map((actor) => (
-                  <SearchResultActor
-                    key={actor.id}
-                    actor={actor}
-                    onPress={() => {
-                      /* istanbul ignore else */
-                      if (query.length >= 2) saveSearch(query);
-                      router.push(`/actor/${actor.id}`);
-                    }}
-                  />
-                ))}
-                {filteredHouses.map((house) => (
-                  <SearchResultProductionHouse
-                    key={house.id}
-                    house={house}
-                    onPress={() => {
-                      /* istanbul ignore else */
-                      if (query.length >= 2) saveSearch(query);
-                      router.push(`/production-house/${house.id}`);
-                    }}
-                  />
-                ))}
-                {(filteredActors.length > 0 || filteredHouses.length > 0) &&
-                  filteredMovies.length > 0 && <View style={styles.sectionDivider} />}
-              </View>
+              // @coupling: SearchNonMovieResults renders actors, studios, platforms rows
+              <SearchNonMovieResults
+                actors={filteredActors}
+                houses={filteredHouses}
+                platforms={filteredPlatforms}
+                hasDivider={
+                  (filteredActors.length > 0 ||
+                    filteredHouses.length > 0 ||
+                    filteredPlatforms.length > 0) &&
+                  filteredMovies.length > 0
+                }
+                dividerStyle={styles.sectionDivider}
+                pullDistance={pullDistance}
+                isRefreshing={isRefreshing}
+                refreshing={refreshing}
+                onActorPress={(actor) => {
+                  /* istanbul ignore else */
+                  if (query.length >= 2) saveSearch(query);
+                  router.push(`/actor/${actor.id}`);
+                }}
+                onHousePress={(house) => {
+                  /* istanbul ignore else */
+                  if (query.length >= 2) saveSearch(query);
+                  router.push(`/production-house/${house.id}`);
+                }}
+                onPlatformPress={(platform) => {
+                  /* istanbul ignore else */
+                  if (query.length >= 2) saveSearch(query);
+                  router.push(`/platform/${platform.id}`);
+                }}
+              />
             }
             ListEmptyComponent={
-              filteredActors.length === 0 && filteredHouses.length === 0 ? (
+              filteredActors.length === 0 &&
+              filteredHouses.length === 0 &&
+              filteredPlatforms.length === 0 ? (
                 <EmptyState
                   icon="search"
                   title={t('common.noResults')}

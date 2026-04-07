@@ -1,10 +1,12 @@
 import { supabase } from '@/lib/supabase';
-import type { Movie, Actor, ProductionHouse } from '@shared/types';
+import type { Movie, Actor, ProductionHouse, OTTPlatform } from '@shared/types';
 
 export interface UniversalSearchResult {
   movies: Movie[];
   actors: Actor[];
   productionHouses: ProductionHouse[];
+  // @contract: platforms key added in migration 20260407000142_search_platforms
+  platforms: OTTPlatform[];
 }
 
 // @boundary: search_term is passed as a parameterized RPC argument — no ILIKE escaping needed.
@@ -23,12 +25,15 @@ export async function searchAll(query: string): Promise<UniversalSearchResult> {
     movies: Movie[];
     actors: Actor[];
     production_houses: ProductionHouse[];
+    // @nullable: platforms key may be absent in older DB versions — always coalesce to []
+    platforms: OTTPlatform[];
   } | null;
 
   return {
     movies: result?.movies ?? [],
     actors: result?.actors ?? [],
     productionHouses: result?.production_houses ?? [],
+    platforms: result?.platforms ?? [],
   };
 }
 

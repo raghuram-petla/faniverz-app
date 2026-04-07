@@ -393,7 +393,9 @@
     "studios": "Studios",
     "reviews": "reviews",
     "actor": "Actor",
-    "productionHouse": "Production House"
+    "productionHouse": "Production House",
+    "platform": "Platform",
+    "platforms": "Platforms"
   },
   "bookmarks": {
     "title": "Saved Posts",
