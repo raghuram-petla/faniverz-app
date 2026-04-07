@@ -8,8 +8,9 @@ import * as api from '../api';
 
 jest.mock('../api');
 
+const mockUseAuth = jest.fn(() => ({ user: { id: 'u1' } as { id: string } | null }));
 jest.mock('@/features/auth/providers/AuthProvider', () => ({
-  useAuth: () => ({ user: { id: 'u1' } }),
+  useAuth: () => mockUseAuth(),
 }));
 
 jest.mock('@/constants/queryConfig', () => ({
@@ -31,6 +32,7 @@ const mockReview = {
 describe('useEditorialReview', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
   });
 
   it('fetches editorial review for a movie', async () => {
@@ -69,6 +71,7 @@ describe('useEditorialReview', () => {
 describe('usePollVoteMutation', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
   });
 
   function createWrapperWithData(data: typeof mockReview | null = mockReview) {
@@ -229,9 +232,95 @@ describe('usePollVoteMutation', () => {
   });
 });
 
+describe('usePollVoteMutation — extra branches', () => {
+  function createWrapperWithData(data: typeof mockReview | null = mockReview) {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    if (data) {
+      queryClient.setQueryData(['editorial-review', 'm1', 'u1'], data);
+    }
+    return {
+      queryClient,
+      wrapper: ({ children }: { children: React.ReactNode }) =>
+        React.createElement(QueryClientProvider, { client: queryClient }, children),
+    };
+  }
+
+  beforeEach(() => {
+    jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
+  });
+
+  it('optimistically removes disagree-side when switching from disagree to agree', async () => {
+    (api.upsertPollVote as jest.Mock).mockImplementation(
+      () => new Promise((resolve) => setTimeout(resolve, 100)),
+    );
+    const reviewWithDisagreeVote = {
+      ...mockReview,
+      user_poll_vote: 'disagree',
+      agree_count: 5,
+      disagree_count: 3,
+    };
+    const { queryClient, wrapper } = createWrapperWithData(reviewWithDisagreeVote);
+
+    const { result } = renderHook(() => usePollVoteMutation('m1'), { wrapper });
+    await act(async () => {
+      result.current.mutate({ editorialReviewId: 'er1', vote: 'agree', previousVote: 'disagree' });
+    });
+
+    // Optimistically: disagree_count decremented (3→2), agree_count incremented (5→6)
+    const cached = queryClient.getQueryData<typeof mockReview>(['editorial-review', 'm1', 'u1']);
+    expect(cached?.agree_count).toBe(6);
+    expect(cached?.disagree_count).toBe(2);
+  });
+
+  it('onError when context.previous is undefined does not crash and shows alert', async () => {
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    (api.upsertPollVote as jest.Mock).mockRejectedValue(new Error('Network error'));
+
+    // No data seeded — onMutate returns { previous: undefined }, so onError skips cache restore
+    const { wrapper } = createWrapperWithData(null);
+
+    const { result } = renderHook(() => usePollVoteMutation('m1'), { wrapper });
+    await act(async () => {
+      result.current.mutate({ editorialReviewId: 'er1', vote: 'agree' });
+    });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(Alert.alert).toHaveBeenCalledWith('Error', 'Failed to submit vote. Please try again.');
+  });
+
+  it('throws when user is null (mutationFn guard — line 37)', async () => {
+    mockUseAuth.mockReturnValue({ user: null });
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const { wrapper } = createWrapperWithData();
+
+    const { result } = renderHook(() => usePollVoteMutation('m1'), { wrapper });
+    await act(async () => {
+      result.current.mutate({ editorialReviewId: 'er1', vote: 'agree' });
+    });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+
+  it('onMutate returns early and onSettled skips invalidation when user is null', async () => {
+    mockUseAuth.mockReturnValue({ user: null });
+    (api.upsertPollVote as jest.Mock).mockRejectedValue(new Error('Not authenticated'));
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    const { wrapper } = createWrapperWithData();
+    const { result } = renderHook(() => usePollVoteMutation('m1'), { wrapper });
+    await act(async () => {
+      result.current.mutate({ editorialReviewId: 'er1', vote: 'agree' });
+    });
+    await waitFor(() => !result.current.isPending);
+    // No crash — onMutate returned early without modifying cache
+  });
+});
+
 describe('useCraftRatingMutation', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
   });
 
   function createWrapperWithData(data: typeof mockReview | null = mockReview) {
@@ -326,5 +415,45 @@ describe('useCraftRatingMutation', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(api.upsertCraftRating).toHaveBeenCalledWith('m1', 'u1', 'music', 5);
+  });
+
+  it('throws when user is null (mutationFn guard — line 107)', async () => {
+    mockUseAuth.mockReturnValue({ user: null });
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    const { wrapper } = createWrapperWithData();
+
+    const { result } = renderHook(() => useCraftRatingMutation('m1'), { wrapper });
+    await act(async () => {
+      result.current.mutate({ craft: 'direction' as never, rating: 4 });
+    });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+
+  it('onMutate returns early and onSettled skips invalidation when user is null', async () => {
+    mockUseAuth.mockReturnValue({ user: null });
+    (api.upsertCraftRating as jest.Mock).mockRejectedValue(new Error('Not authenticated'));
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    const { wrapper } = createWrapperWithData();
+    const { result } = renderHook(() => useCraftRatingMutation('m1'), { wrapper });
+    await act(async () => {
+      result.current.mutate({ craft: 'direction' as never, rating: 4 });
+    });
+    await waitFor(() => !result.current.isPending);
+    // No crash — onMutate returned early (user is null), onSettled skips invalidation
+  });
+
+  it('onError when context.previous is undefined does not crash and shows alert', async () => {
+    jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+    (api.upsertCraftRating as jest.Mock).mockRejectedValue(new Error('Save failed'));
+
+    // No data seeded — onMutate returns { previous: undefined }, so onError skips cache restore
+    const { wrapper } = createWrapperWithData(null);
+    const { result } = renderHook(() => useCraftRatingMutation('m1'), { wrapper });
+    await act(async () => {
+      result.current.mutate({ craft: 'direction' as never, rating: 4 });
+    });
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(Alert.alert).toHaveBeenCalledWith('Error', 'Failed to save rating. Please try again.');
   });
 });

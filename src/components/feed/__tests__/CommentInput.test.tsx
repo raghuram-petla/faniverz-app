@@ -213,4 +213,17 @@ describe('CommentInput', () => {
     );
     expect(toJSON()).toBeTruthy();
   });
+
+  it('does not append emoji when it would exceed maxBodyLength', () => {
+    // @edge: covers the false branch of line 76: text.length + emoji.length > maxBodyLength
+    render(<CommentInput isAuthenticated={true} onSubmit={jest.fn()} />);
+    const input = screen.getByLabelText('Comment input');
+    // Fill input to exactly 500 chars (maxBodyLength) so ANY emoji addition would exceed the limit
+    const fullText = 'a'.repeat(500);
+    fireEvent.changeText(input, fullText);
+    // Press ❤️ emoji (2 chars) — 500 + 2 > 500, should be rejected
+    fireEvent.press(screen.getByLabelText('Add ❤️'));
+    // Text should remain unchanged — emoji was rejected
+    expect(input.props.value).toBe(fullText);
+  });
 });

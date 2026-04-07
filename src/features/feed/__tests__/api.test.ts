@@ -158,6 +158,12 @@ describe('fetchNewsFeed', () => {
     expect(mocks.mockEq).toHaveBeenCalledWith('feed_type', 'update');
   });
 
+  it('applies editorial filter', async () => {
+    // @edge: covers lines 45-46 — the 'editorial' case in the switch statement
+    await fetchNewsFeed('editorial');
+    expect(mocks.mockEq).toHaveBeenCalledWith('feed_type', 'editorial');
+  });
+
   it('paginates with correct range', async () => {
     await fetchNewsFeed('all', 2, 15);
     expect(mocks.mockRange).toHaveBeenCalledWith(2, 16);

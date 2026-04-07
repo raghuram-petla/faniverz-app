@@ -167,4 +167,18 @@ describe('useRecordPostView', () => {
     expect(cached?.pages[0][0].view_count).toBe(11);
     expect(cached?.pages[0][1].view_count).toBe(50);
   });
+
+  it('handles setQueriesData callback with undefined old value (covers !old branch)', () => {
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    const post = makePost({ id: 'post-1', view_count: 5 });
+
+    // Set a matching news-feed query entry with undefined data to trigger the !old branch
+    client.setQueryData(['news-feed', 'all'], undefined);
+
+    renderHook(() => useRecordPostView(post), { wrapper: createWrapper(client) });
+
+    // The callback receives undefined, returns undefined — cache stays undefined
+    const cached = client.getQueryData(['news-feed', 'all']);
+    expect(cached).toBeUndefined();
+  });
 });

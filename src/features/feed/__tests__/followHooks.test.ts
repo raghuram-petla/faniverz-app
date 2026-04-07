@@ -297,4 +297,75 @@ describe('useFollowEntity — optimistic old=undefined', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
+
+  it('primaryUpdater spreads old ?? [] when old is null (covers ...(old ?? []) branch)', async () => {
+    mockFollowEntity.mockResolvedValue(undefined);
+
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    // Set null data so primaryUpdater is called with null, triggering the ?? [] fallback
+    client.setQueryData(['entity-follows', 'user-123'], null);
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useFollowEntity(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ entityType: 'movie', entityId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    // After optimistic update with null base, cache should have the temp follow
+    const cached = client.getQueryData<unknown[]>(['entity-follows', 'user-123']);
+    expect(Array.isArray(cached)).toBe(true);
+    expect((cached as unknown[]).length).toBe(1);
+  });
+
+  it('user?.id ?? empty-string branch is covered when user is null', async () => {
+    const { useAuth } = require('@/features/auth/providers/AuthProvider');
+    (useAuth as jest.Mock).mockReturnValueOnce({ user: null });
+
+    mockFollowEntity.mockRejectedValue(new Error('Must be logged in to follow'));
+    const { Alert } = require('react-native');
+    const alertSpy = jest.spyOn(Alert, 'alert').mockImplementation(() => {});
+
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    // Set null data so primaryUpdater is called (not skipped by undefined check)
+    client.setQueryData(['entity-follows', undefined], null);
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useFollowEntity(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ entityType: 'movie', entityId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    alertSpy.mockRestore();
+  });
+});
+
+describe('useUnfollowEntity — old=null branch', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('primaryUpdater filters old ?? [] when old is null (covers ?? [] branch line 102)', async () => {
+    mockUnfollowEntity.mockResolvedValue(undefined);
+
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    // Set null data so primaryUpdater is called with null, triggering the ?? [] fallback
+    client.setQueryData(['entity-follows', 'user-123'], null);
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useUnfollowEntity(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ entityType: 'movie', entityId: 'm1' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    // After filter on empty [] (from null ?? []), result should be empty array
+    const cached = client.getQueryData<unknown[]>(['entity-follows', 'user-123']);
+    expect(Array.isArray(cached)).toBe(true);
+  });
 });

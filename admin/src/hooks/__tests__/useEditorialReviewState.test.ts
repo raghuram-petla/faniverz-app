@@ -393,4 +393,401 @@ describe('useEditorialReviewState', () => {
     // Null verdict should be coerced to empty string
     expect(result.current.form.verdict).toBe('');
   });
+
+  it('handleSave updates existing review (update path)', async () => {
+    const existingReview = {
+      id: 'review-existing',
+      movie_id: 'movie-1',
+      author_id: 'user-1',
+      title: 'Original Title',
+      body: 'Original Body',
+      verdict: null,
+      rating_story: 3,
+      rating_direction: 3,
+      rating_technical: 3,
+      rating_music: 3,
+      rating_performances: 3,
+      overall_rating: 3.0,
+      is_published: false,
+      published_at: null,
+      created_at: '2025-01-01T00:00:00Z',
+      updated_at: '2025-01-01T00:00:00Z',
+      agree_count: 0,
+      disagree_count: 0,
+    };
+    mockMaybeSingle.mockResolvedValue({ data: existingReview, error: null });
+    mockUpdateEq.mockResolvedValue({ error: null });
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useEditorialReviewState('movie-1'), {
+      wrapper: Wrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.form.title).toBe('Original Title');
+    });
+
+    act(() => {
+      result.current.updateField('title', 'Updated Title');
+      result.current.updateField('body', 'Updated Body');
+      result.current.updateField('rating_story', 4);
+      result.current.updateField('rating_direction', 5);
+      result.current.updateField('rating_technical', 4);
+      result.current.updateField('rating_music', 4);
+      result.current.updateField('rating_performances', 4);
+    });
+
+    let error: string | null = 'sentinel';
+    await act(async () => {
+      error = await result.current.handleSave();
+    });
+
+    expect(error).toBeNull();
+    expect(result.current.saveStatus).toBe('success');
+    expect(mockUpdate).toHaveBeenCalled();
+  });
+
+  it('handleSave update path — throws on update error', async () => {
+    const existingReview = {
+      id: 'review-existing',
+      movie_id: 'movie-1',
+      author_id: 'user-1',
+      title: 'Original',
+      body: 'Body',
+      verdict: null,
+      rating_story: 3,
+      rating_direction: 3,
+      rating_technical: 3,
+      rating_music: 3,
+      rating_performances: 3,
+      overall_rating: 3.0,
+      is_published: false,
+      published_at: null,
+      created_at: '2025-01-01T00:00:00Z',
+      updated_at: '2025-01-01T00:00:00Z',
+      agree_count: 0,
+      disagree_count: 0,
+    };
+    mockMaybeSingle.mockResolvedValue({ data: existingReview, error: null });
+    mockUpdateEq.mockResolvedValue({ error: new Error('Update failed') });
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useEditorialReviewState('movie-1'), {
+      wrapper: Wrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.form.title).toBe('Original');
+    });
+
+    act(() => {
+      result.current.updateField('title', 'New');
+      result.current.updateField('body', 'New body');
+      result.current.updateField('rating_story', 4);
+      result.current.updateField('rating_direction', 4);
+      result.current.updateField('rating_technical', 4);
+      result.current.updateField('rating_music', 4);
+      result.current.updateField('rating_performances', 4);
+    });
+
+    let error: string | null = null;
+    await act(async () => {
+      error = await result.current.handleSave();
+    });
+
+    expect(error).toBe('Update failed');
+    expect(result.current.saveStatus).toBe('error');
+  });
+
+  it('handleSave insert path — returns "Save failed" for non-Error thrown value', async () => {
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+    // Make insert throw a non-Error object
+    mockInsert.mockRejectedValue('string error');
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useEditorialReviewState('movie-1'), {
+      wrapper: Wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    act(() => {
+      result.current.updateField('title', 'Title');
+      result.current.updateField('body', 'Body');
+      result.current.updateField('rating_story', 4);
+      result.current.updateField('rating_direction', 4);
+      result.current.updateField('rating_technical', 4);
+      result.current.updateField('rating_music', 4);
+      result.current.updateField('rating_performances', 4);
+    });
+
+    let error: string | null = null;
+    await act(async () => {
+      error = await result.current.handleSave();
+    });
+
+    expect(error).toBe('Save failed');
+    expect(result.current.saveStatus).toBe('error');
+  });
+
+  it('handleSave insert — throws error when insert returns an error', async () => {
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+    mockInsert.mockResolvedValue({ error: new Error('Insert failed') });
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useEditorialReviewState('movie-1'), {
+      wrapper: Wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    act(() => {
+      result.current.updateField('title', 'Title');
+      result.current.updateField('body', 'Body');
+      result.current.updateField('rating_story', 4);
+      result.current.updateField('rating_direction', 4);
+      result.current.updateField('rating_technical', 4);
+      result.current.updateField('rating_music', 4);
+      result.current.updateField('rating_performances', 4);
+    });
+
+    let error: string | null = null;
+    await act(async () => {
+      error = await result.current.handleSave();
+    });
+
+    expect(error).toBe('Insert failed');
+    expect(result.current.saveStatus).toBe('error');
+  });
+
+  it('handleSave throws "Not authenticated" when session has no user', async () => {
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+    const { supabase: mockSupabase } = await import('@/lib/supabase-browser');
+    vi.mocked(mockSupabase.auth.getSession).mockResolvedValueOnce({
+      data: { session: null },
+      error: null,
+    } as never);
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useEditorialReviewState('movie-1'), {
+      wrapper: Wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    act(() => {
+      result.current.updateField('title', 'Title');
+      result.current.updateField('body', 'Body');
+      result.current.updateField('rating_story', 4);
+      result.current.updateField('rating_direction', 4);
+      result.current.updateField('rating_technical', 4);
+      result.current.updateField('rating_music', 4);
+      result.current.updateField('rating_performances', 4);
+    });
+
+    let error: string | null = null;
+    await act(async () => {
+      error = await result.current.handleSave();
+    });
+
+    expect(error).toBe('Not authenticated');
+    expect(result.current.saveStatus).toBe('error');
+  });
+
+  it('handleSave uses existing published_at when review is already published', async () => {
+    const existingReview = {
+      id: 'review-pub',
+      movie_id: 'movie-1',
+      author_id: 'user-1',
+      title: 'Published Review',
+      body: 'Body',
+      verdict: null,
+      rating_story: 4,
+      rating_direction: 4,
+      rating_technical: 4,
+      rating_music: 4,
+      rating_performances: 4,
+      overall_rating: 4.0,
+      is_published: true,
+      published_at: '2025-06-01T12:00:00Z',
+      created_at: '2025-01-01T00:00:00Z',
+      updated_at: '2025-01-01T00:00:00Z',
+      agree_count: 0,
+      disagree_count: 0,
+    };
+    mockMaybeSingle.mockResolvedValue({ data: existingReview, error: null });
+    mockUpdateEq.mockResolvedValue({ error: null });
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useEditorialReviewState('movie-1'), {
+      wrapper: Wrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.form.title).toBe('Published Review');
+    });
+
+    // Change title to make it dirty
+    act(() => {
+      result.current.updateField('title', 'Updated Published Review');
+    });
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({ published_at: '2025-06-01T12:00:00Z' }),
+    );
+  });
+
+  it('beforeunload handler calls preventDefault when isDirty is true', async () => {
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useEditorialReviewState('movie-1'), {
+      wrapper: Wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    // Make form dirty
+    act(() => {
+      result.current.updateField('title', 'Dirty Title');
+    });
+
+    expect(result.current.isDirty).toBe(true);
+
+    // Simulate beforeunload event
+    const preventDefaultSpy = vi.fn();
+    const event = new Event('beforeunload') as BeforeUnloadEvent;
+    Object.defineProperty(event, 'preventDefault', { value: preventDefaultSpy });
+    window.dispatchEvent(event);
+
+    expect(preventDefaultSpy).toHaveBeenCalled();
+  });
+
+  it('beforeunload handler does NOT call preventDefault when isDirty is false', async () => {
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+    const { Wrapper } = makeWrapper();
+    renderHook(() => useEditorialReviewState('movie-1'), { wrapper: Wrapper });
+
+    await waitFor(() => expect(true).toBe(true));
+
+    const preventDefaultSpy = vi.fn();
+    const event = new Event('beforeunload') as BeforeUnloadEvent;
+    Object.defineProperty(event, 'preventDefault', { value: preventDefaultSpy });
+    window.dispatchEvent(event);
+
+    expect(preventDefaultSpy).not.toHaveBeenCalled();
+  });
+
+  it('queryFn throws when supabase returns an error', async () => {
+    const dbError = new Error('DB error');
+    mockMaybeSingle.mockResolvedValue({ data: null, error: dbError });
+
+    const qc = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const Wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client: qc }, children);
+
+    renderHook(() => useEditorialReviewState('movie-1'), { wrapper: Wrapper });
+
+    await waitFor(() => {
+      const state = qc.getQueryState(['admin', 'editorial-review', 'movie-1']);
+      expect(state?.status).toBe('error');
+    });
+  });
+
+  it('cleanup: clears save timer on unmount after successful save', async () => {
+    mockMaybeSingle.mockResolvedValue({ data: null, error: null });
+    mockInsert.mockResolvedValue({ error: null });
+
+    const { Wrapper } = makeWrapper();
+    const { result, unmount } = renderHook(() => useEditorialReviewState('movie-1'), {
+      wrapper: Wrapper,
+    });
+
+    await waitFor(() => expect(result.current.isLoading).toBe(false));
+
+    act(() => {
+      result.current.updateField('title', 'Title');
+      result.current.updateField('body', 'Body');
+      result.current.updateField('rating_story', 4);
+      result.current.updateField('rating_direction', 4);
+      result.current.updateField('rating_technical', 4);
+      result.current.updateField('rating_music', 4);
+      result.current.updateField('rating_performances', 4);
+    });
+
+    // Use fake timers AFTER async setup is complete to prevent hanging
+    vi.useFakeTimers();
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    // After save, a 3000ms timer is running — advance timers to fire it
+    act(() => {
+      vi.runAllTimers();
+    });
+
+    expect(result.current.saveStatus).toBe('idle');
+
+    // Unmount after timer fired — cleanup should work without error
+    unmount();
+    vi.useRealTimers();
+  });
+
+  it('handleSave uses new ISO timestamp for published_at when existing has no published_at', async () => {
+    const existingReview = {
+      id: 'review-unpub',
+      movie_id: 'movie-1',
+      author_id: 'user-1',
+      title: 'Review',
+      body: 'Body',
+      verdict: null,
+      rating_story: 4,
+      rating_direction: 4,
+      rating_technical: 4,
+      rating_music: 4,
+      rating_performances: 4,
+      overall_rating: 4.0,
+      is_published: false,
+      published_at: null,
+      created_at: '2025-01-01T00:00:00Z',
+      updated_at: '2025-01-01T00:00:00Z',
+      agree_count: 0,
+      disagree_count: 0,
+    };
+    mockMaybeSingle.mockResolvedValue({ data: existingReview, error: null });
+    mockUpdateEq.mockResolvedValue({ error: null });
+
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useEditorialReviewState('movie-1'), {
+      wrapper: Wrapper,
+    });
+
+    await waitFor(() => {
+      expect(result.current.form.title).toBe('Review');
+    });
+
+    // Enable published and change title to make dirty
+    act(() => {
+      result.current.updateField('is_published', true);
+      result.current.updateField('title', 'Review Updated');
+    });
+
+    await act(async () => {
+      await result.current.handleSave();
+    });
+
+    // Should have been called with a newly generated ISO timestamp for published_at
+    expect(mockUpdate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        is_published: true,
+        published_at: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/),
+      }),
+    );
+  });
 });

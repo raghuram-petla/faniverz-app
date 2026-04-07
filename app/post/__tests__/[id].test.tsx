@@ -271,6 +271,11 @@ jest.mock('@/components/common/SafeAreaCover', () => ({
   SafeAreaCover: () => null,
 }));
 
+const mockShareContent = jest.fn().mockResolvedValue(undefined);
+jest.mock('@/utils/shareContent', () => ({
+  shareContent: (...args: unknown[]) => mockShareContent(...args),
+}));
+
 import React from 'react';
 import { Alert } from 'react-native';
 import { render, screen, fireEvent } from '@testing-library/react-native';
@@ -774,5 +779,30 @@ describe('PostDetailScreen', () => {
     expect(screen.getByText('feed.anonymous')).toBeTruthy();
 
     mockFeedModule.CommentsList = origCommentsList;
+  });
+
+  it('calls shareContent when Share post button is pressed', async () => {
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByLabelText('Share post'));
+    // handleShare is async — wait for shareContent to be called
+    await Promise.resolve();
+    expect(mockShareContent).toHaveBeenCalledWith({
+      type: 'post',
+      id: 'post-1',
+      title: 'Test Post',
+    });
+  });
+
+  it('does not call shareContent when post is null', async () => {
+    const mockFeedModule = jest.requireMock('@/features/feed');
+    const origUseFeedItem = mockFeedModule.useFeedItem;
+    mockFeedModule.useFeedItem = () => ({ data: null, isLoading: false, refetch: jest.fn() });
+
+    render(<PostDetailScreen />);
+    fireEvent.press(screen.getByLabelText('Share post'));
+    await Promise.resolve();
+    expect(mockShareContent).not.toHaveBeenCalled();
+
+    mockFeedModule.useFeedItem = origUseFeedItem;
   });
 });

@@ -167,6 +167,7 @@ vi.mock('@/components/movie-edit', () => ({
     { id: 'videos', label: 'Videos' },
     { id: 'cast-crew', label: 'Cast & Crew' },
     { id: 'releases', label: 'Releases' },
+    { id: 'editorial-review', label: 'Editorial Review' },
     { id: 'tmdb-sync', label: 'TMDB Sync' },
   ],
   MovieEditHeader: ({
@@ -277,6 +278,9 @@ vi.mock('@/components/movie-edit', () => ({
     </div>
   ),
   SyncSection: () => <div data-testid="sync-section">Sync</div>,
+  EditorialReviewSection: ({ movieId }: { movieId: string }) => (
+    <div data-testid="editorial-review-section">Editorial Review: {movieId}</div>
+  ),
   SectionNav: ({
     activeSection,
     onSectionChange,
@@ -285,7 +289,15 @@ vi.mock('@/components/movie-edit', () => ({
     onSectionChange: (s: string) => void;
   }) => (
     <nav data-testid="section-nav">
-      {['basic-info', 'posters', 'videos', 'cast-crew', 'releases', 'tmdb-sync'].map((s) => (
+      {[
+        'basic-info',
+        'posters',
+        'videos',
+        'cast-crew',
+        'releases',
+        'editorial-review',
+        'tmdb-sync',
+      ].map((s) => (
         <button key={s} onClick={() => onSectionChange(s)} data-testid={`nav-${s}`}>
           {s}
         </button>
@@ -630,5 +642,12 @@ describe('EditMoviePage', () => {
     defaultEditState.form.poster_url = 'https://img.test/nonexistent.jpg';
     render(<EditMoviePage />);
     expect(screen.getByTestId('preview-panel')).toBeInTheDocument();
+  });
+
+  it('navigates to editorial-review section and renders EditorialReviewSection', () => {
+    render(<EditMoviePage />);
+    fireEvent.click(screen.getByTestId('nav-editorial-review'));
+    expect(screen.getByTestId('editorial-review-section')).toBeInTheDocument();
+    expect(screen.getByText('Editorial Review: movie-123')).toBeInTheDocument();
   });
 });

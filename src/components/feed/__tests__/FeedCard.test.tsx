@@ -154,6 +154,13 @@ jest.mock('../FilmStripFrameDivider', () => ({
   },
 }));
 
+jest.mock('../FeedEditorialCard', () => ({
+  FeedEditorialCard: ({ item }: { item: { id: string; title: string } }) => {
+    const { Text } = require('react-native');
+    return <Text testID="feed-editorial-card">{item.title}</Text>;
+  },
+}));
+
 import React from 'react';
 import { render, fireEvent, screen } from '@testing-library/react-native';
 import { FeedCard } from '../FeedCard';
@@ -843,5 +850,13 @@ describe('FeedCard', () => {
       <FeedCard item={item} onPress={jest.fn()} showFullTimestamp={false} />,
     );
     expect(JSON.stringify(toJSON())).not.toContain('time-outline');
+  });
+
+  it('renders FeedEditorialCard when feed_type is editorial', () => {
+    // @edge: covers line 303 — the editorial branch in the FeedCard wrapper
+    const item = makeItem({ feed_type: 'editorial', content_type: 'editorial_review' });
+    render(<FeedCard item={item} onPress={jest.fn()} />);
+    expect(screen.getByTestId('feed-editorial-card')).toBeTruthy();
+    expect(screen.getByText('Test Trailer')).toBeTruthy();
   });
 });

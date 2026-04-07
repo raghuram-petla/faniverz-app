@@ -71,4 +71,23 @@ describe('useLoadingProgressBar', () => {
     act(() => jest.advanceTimersByTime(500));
     expect(result.current.containerStyle).toBeDefined();
   });
+
+  it('does not start bar animation when loaded is already true when timer fires', () => {
+    const { result, rerender } = renderHook(
+      (props: Parameters<typeof useLoadingProgressBar>[0]) => useLoadingProgressBar(props),
+      {
+        initialProps: {
+          loaded: false,
+          delayMs: 300,
+          screenW: 393,
+          animationsEnabled: true,
+        },
+      },
+    );
+    // Mark as loaded before the delay fires
+    rerender({ loaded: true, delayMs: 300, screenW: 393, animationsEnabled: true });
+    // Now advance timers — the setTimeout fires but loaded is true so if (!loaded) is false
+    act(() => jest.advanceTimersByTime(400));
+    expect(result.current.containerStyle).toBeDefined();
+  });
 });

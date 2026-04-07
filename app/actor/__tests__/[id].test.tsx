@@ -88,6 +88,11 @@ jest.mock('@/components/common/ScreenHeader', () => {
   };
 });
 
+const mockShareContent = jest.fn();
+jest.mock('@/utils/shareContent', () => ({
+  shareContent: (...args: unknown[]) => mockShareContent(...args),
+}));
+
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import ActorDetailScreen from '../[id]';
@@ -768,6 +773,22 @@ describe('ActorDetailScreen', () => {
     render(<ActorDetailScreen />);
     // avatar-tap should not be rendered since photo_url is null
     expect(screen.queryByTestId('avatar-tap')).toBeNull();
+  });
+
+  it('calls shareContent with actor details when share button is pressed', () => {
+    mockShareContent.mockResolvedValue(undefined);
+    (useActorDetail as jest.Mock).mockReturnValue({
+      actor: mockActor,
+      filmography: [],
+      isLoading: false,
+    });
+    render(<ActorDetailScreen />);
+    fireEvent.press(screen.getByLabelText('Share actor'));
+    expect(mockShareContent).toHaveBeenCalledWith({
+      type: 'actor',
+      id: 'actor-1',
+      title: 'Nagarjuna Akkineni',
+    });
   });
 });
 

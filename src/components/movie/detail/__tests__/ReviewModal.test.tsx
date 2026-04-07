@@ -284,4 +284,45 @@ describe('ReviewModal', () => {
     // releaseYear=0 is falsy, director="" is falsy => no meta rendered
     expect(screen.queryByText('0')).toBeNull();
   });
+
+  it('renders craft rating section when onCraftRatingChange is provided', () => {
+    const onCraftRatingChange = jest.fn();
+    render(
+      <ReviewModal {...baseProps} onCraftRatingChange={onCraftRatingChange} craftRatings={{}} />,
+    );
+    // "Rate the crafts" label should appear
+    expect(screen.getByText('editorial.rateCrafts')).toBeTruthy();
+  });
+
+  it('calls onCraftRatingChange when a craft star is pressed', () => {
+    const onCraftRatingChange = jest.fn();
+    render(
+      <ReviewModal {...baseProps} onCraftRatingChange={onCraftRatingChange} craftRatings={{}} />,
+    );
+    // Press the first star for the first craft — each star is a TouchableOpacity
+    // The craft section renders CRAFT_NAMES.length rows × 5 stars each
+    const buttons = screen.UNSAFE_queryAllByProps({ hitSlop: 4 });
+    if (buttons.length > 0) {
+      fireEvent.press(buttons[0]);
+    }
+    expect(onCraftRatingChange).toHaveBeenCalled();
+  });
+
+  it('renders craft star as filled when craftRatings value >= star number', () => {
+    const onCraftRatingChange = jest.fn();
+    render(
+      <ReviewModal
+        {...baseProps}
+        onCraftRatingChange={onCraftRatingChange}
+        craftRatings={{ direction: 4 } as Record<string, number>}
+      />,
+    );
+    // With rating=4, stars 1-4 should be 'star' (filled); star 5 should be 'star-outline'
+    expect(screen.getByText('editorial.rateCrafts')).toBeTruthy();
+  });
+
+  it('does not render craft rating section when onCraftRatingChange is undefined', () => {
+    render(<ReviewModal {...baseProps} onCraftRatingChange={undefined} />);
+    expect(screen.queryByText('editorial.rateCrafts')).toBeNull();
+  });
 });

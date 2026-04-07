@@ -64,8 +64,19 @@ describe('shareContent', () => {
     (Platform as { OS: string }).OS = original;
   });
 
-  it('swallows share cancellation errors', async () => {
+  it('swallows share cancellation errors on iOS', async () => {
+    const original = Platform.OS;
+    (Platform as { OS: string }).OS = 'ios';
     (Share.share as jest.Mock).mockRejectedValueOnce(new Error('User cancelled'));
     await expect(shareContent(base)).resolves.toBeUndefined();
+    (Platform as { OS: string }).OS = original;
+  });
+
+  it('swallows share cancellation errors on Android', async () => {
+    const original = Platform.OS;
+    (Platform as { OS: string }).OS = 'android';
+    (Share.share as jest.Mock).mockRejectedValueOnce(new Error('User cancelled'));
+    await expect(shareContent(base)).resolves.toBeUndefined();
+    (Platform as { OS: string }).OS = original;
   });
 });

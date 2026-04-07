@@ -177,4 +177,25 @@ describe('EditorialReviewSection', () => {
     fireEvent.press(screen.getByTestId('vote-agree'));
     expect(onPollVote).toHaveBeenCalledWith('agree');
   });
+
+  it('uses PLACEHOLDER_AVATAR when author_avatar_url is null', () => {
+    render(
+      <EditorialReviewSection
+        review={makeReview({ author_avatar_url: null })}
+        onPollVote={onPollVote}
+      />,
+    );
+    // Author name still renders when author_display_name is present
+    expect(screen.getByText('Jane Doe')).toBeTruthy();
+  });
+
+  it('does not render author section when author_display_name is null', () => {
+    render(
+      <EditorialReviewSection
+        review={makeReview({ author_display_name: null, author_avatar_url: null })}
+        onPollVote={onPollVote}
+      />,
+    );
+    expect(screen.queryByText('Jane Doe')).toBeNull();
+  });
 });

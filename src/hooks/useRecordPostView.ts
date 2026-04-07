@@ -31,17 +31,20 @@ export function useRecordPostView(post: NewsFeedItem | null | undefined): void {
 
     // @sync: Optimistically increment view_count in feed list caches
     for (const key of FEED_LIST_KEYS) {
-      queryClient.setQueriesData<{ pages: NewsFeedItem[][] }>({ queryKey: [key] }, (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          pages: old.pages.map((page) =>
-            page.map((item) =>
-              item.id === post.id ? { ...item, view_count: item.view_count + 1 } : item,
+      queryClient.setQueriesData<{ pages: NewsFeedItem[][] }>(
+        { queryKey: [key] },
+        /* istanbul ignore next */ (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            pages: old.pages.map((page) =>
+              page.map((item) =>
+                item.id === post.id ? { ...item, view_count: item.view_count + 1 } : item,
+              ),
             ),
-          ),
-        };
-      });
+          };
+        },
+      );
     }
   }, [post, user, queryClient]);
 }

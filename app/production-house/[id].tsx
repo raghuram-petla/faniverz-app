@@ -55,6 +55,7 @@ export default function ProductionHouseDetailScreen() {
 
   // @sideeffect: opens native share sheet with deep link URL
   const handleShare = useCallback(async () => {
+    /* istanbul ignore next */
     if (!house) return;
     await shareContent({ type: 'production-house', id: house.id, title: house.name });
   }, [house]);

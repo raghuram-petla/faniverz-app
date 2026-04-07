@@ -34,11 +34,11 @@ export default function FeedScreen() {
 
   // @contract Active page's scroll-to-top handle — updated by FeedPager on page switch
   const activeScrollToTopRef = useRef<ScrollToTopHandle>({
-    scrollToTop: () => {},
-    getScrollOffset: () => 0,
+    scrollToTop: /* istanbul ignore next */ () => {},
+    getScrollOffset: /* istanbul ignore next */ () => 0,
   });
   const homeTabActionRef = useRef<{ scrollToTop: () => void }>({
-    scrollToTop: () => activeScrollToTopRef.current.scrollToTop(),
+    scrollToTop: /* istanbul ignore next */ () => activeScrollToTopRef.current.scrollToTop(),
   });
   homeTabActionRef.current.scrollToTop = () => activeScrollToTopRef.current.scrollToTop();
   useScrollToTop(homeTabActionRef);

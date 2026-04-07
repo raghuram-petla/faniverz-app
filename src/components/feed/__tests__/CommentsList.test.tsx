@@ -132,9 +132,7 @@ describe('CommentsList', () => {
 
   it('renders comments without CommentReplies when reply_count is 0', () => {
     const comments = [makeComment('c1', 'u1'), makeComment('c2', 'u2')];
-    render(
-      <CommentsList comments={comments} userId="u1" likedCommentIds={{}} isLoading={false} />,
-    );
+    render(<CommentsList comments={comments} userId="u1" likedCommentIds={{}} isLoading={false} />);
     expect(screen.getByTestId('comment-c1')).toBeTruthy();
     expect(screen.getByTestId('comment-c2')).toBeTruthy();
     // reply_count is 0, so CommentReplies should not render
@@ -144,18 +142,14 @@ describe('CommentsList', () => {
 
   it('renders CommentReplies when reply_count > 0', () => {
     const comments = [{ ...makeComment('c1', 'u1'), reply_count: 3 }];
-    render(
-      <CommentsList comments={comments} userId="u1" likedCommentIds={{}} isLoading={false} />,
-    );
+    render(<CommentsList comments={comments} userId="u1" likedCommentIds={{}} isLoading={false} />);
     expect(screen.getByTestId('comment-c1')).toBeTruthy();
     expect(screen.getByTestId('replies-c1')).toBeTruthy();
   });
 
   it('passes isOwn correctly', () => {
     const comments = [makeComment('c1', 'u1'), makeComment('c2', 'u2')];
-    render(
-      <CommentsList comments={comments} userId="u1" likedCommentIds={{}} isLoading={false} />,
-    );
+    render(<CommentsList comments={comments} userId="u1" likedCommentIds={{}} isLoading={false} />);
     const texts = screen.getAllByText(/^(own|other)$/);
     expect(texts[0].props.children).toBe('own');
     expect(texts[1].props.children).toBe('other');
@@ -242,14 +236,7 @@ describe('CommentsList', () => {
     // When onReply/onLike/onUnlike/onDelete are not provided, CommentReplies still renders
     // and pressing its buttons does not throw (no-ops are invoked safely)
     const comments = [{ ...makeComment('c1', 'u1'), reply_count: 2 }];
-    render(
-      <CommentsList
-        comments={comments}
-        userId="u1"
-        likedCommentIds={{}}
-        isLoading={false}
-      />,
-    );
+    render(<CommentsList comments={comments} userId="u1" likedCommentIds={{}} isLoading={false} />);
     expect(screen.getByTestId('replies-c1')).toBeTruthy();
     // Pressing delete/like/unlike on CommentReplies should not throw when no handlers provided
     expect(() => {
@@ -274,5 +261,37 @@ describe('CommentsList', () => {
     fireEvent.press(screen.getByTestId('replies-delete-c1'));
     // The mock fires onDelete('reply1', 'c1'); the wrapper forwards both args to the prop
     expect(onDelete).toHaveBeenCalledWith('reply1', 'c1');
+  });
+
+  it('calls onCommentLayout with comment id and y position when provided', () => {
+    const onCommentLayout = jest.fn();
+    const comments = [makeComment('c1', 'u1')];
+    const { root } = render(
+      <CommentsList
+        comments={comments}
+        userId="u1"
+        likedCommentIds={{}}
+        isLoading={false}
+        onCommentLayout={onCommentLayout}
+      />,
+    );
+    // Find the View that wraps the comment and fire its onLayout event
+    const wrapperView = root.findAll(
+      (node: { props: Record<string, unknown> }) => typeof node.props.onLayout === 'function',
+    )[0];
+    wrapperView.props.onLayout({ nativeEvent: { layout: { y: 42 } } });
+    expect(onCommentLayout).toHaveBeenCalledWith('c1', 42);
+  });
+
+  it('does not attach onLayout when onCommentLayout is not provided', () => {
+    const comments = [makeComment('c1', 'u1')];
+    const { root } = render(
+      <CommentsList comments={comments} userId="u1" likedCommentIds={{}} isLoading={false} />,
+    );
+    // No View should have an onLayout handler when onCommentLayout is undefined
+    const viewsWithLayout = root.findAll(
+      (node: { props: Record<string, unknown> }) => typeof node.props.onLayout === 'function',
+    );
+    expect(viewsWithLayout.length).toBe(0);
   });
 });

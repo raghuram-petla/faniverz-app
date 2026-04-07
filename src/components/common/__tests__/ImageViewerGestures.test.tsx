@@ -510,3 +510,36 @@ describe('resetTransforms callback', () => {
     }
   });
 });
+
+describe('longPress gesture callbacks', () => {
+  it('longPress at scale > 1 resets transforms', () => {
+    const scale = { value: 2 } as never;
+    const translateX = { value: 30 } as never;
+    const translateY = { value: -20 } as never;
+    const backdropOpacity = { value: 0.5 } as never;
+    render(
+      <ImageViewerGestures {...makeProps({ scale, translateX, translateY, backdropOpacity })}>
+        <Text>long press reset</Text>
+      </ImageViewerGestures>,
+    );
+    if (capturedCallbacks.longPressStart) {
+      capturedCallbacks.longPressStart();
+    }
+    expect(screen.getByText('long press reset')).toBeTruthy();
+  });
+
+  it('longPress at scale = 1 fills screen (fill-to-cover mode)', () => {
+    const scale = { value: 1 } as never;
+    const translateX = { value: 0 } as never;
+    const translateY = { value: 0 } as never;
+    render(
+      <ImageViewerGestures {...makeProps({ scale, translateX, translateY })}>
+        <Text>long press fill</Text>
+      </ImageViewerGestures>,
+    );
+    if (capturedCallbacks.longPressStart) {
+      capturedCallbacks.longPressStart();
+    }
+    expect(screen.getByText('long press fill')).toBeTruthy();
+  });
+});

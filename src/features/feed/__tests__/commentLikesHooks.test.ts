@@ -23,7 +23,9 @@ import type { FeedComment } from '@shared/types';
 
 const mockLikeComment = likeComment as jest.MockedFunction<typeof likeComment>;
 const mockUnlikeComment = unlikeComment as jest.MockedFunction<typeof unlikeComment>;
-const mockFetchUserCommentLikes = fetchUserCommentLikes as jest.MockedFunction<typeof fetchUserCommentLikes>;
+const mockFetchUserCommentLikes = fetchUserCommentLikes as jest.MockedFunction<
+  typeof fetchUserCommentLikes
+>;
 
 const baseComment: FeedComment = {
   id: 'c1',
@@ -72,7 +74,10 @@ describe('useLikeComment', () => {
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
     // Seed a comment-likes cache entry so getQueriesData finds data and the forEach pushes it
-    client.setQueryData(['comment-likes-set', 'user-123', ['c1']], { c1: true } as Record<string, true>);
+    client.setQueryData(['comment-likes-set', 'user-123', ['c1']], { c1: true } as Record<
+      string,
+      true
+    >);
     client.setQueryData(['feed-comments', 'f1'], {
       pages: [[baseComment]],
       pageParams: [0],
@@ -88,7 +93,11 @@ describe('useLikeComment', () => {
     });
 
     // Optimistic update applied on top of the seeded likes cache
-    const likesCache = client.getQueryData<Record<string, true>>(['comment-likes-set', 'user-123', ['c1']]);
+    const likesCache = client.getQueryData<Record<string, true>>([
+      'comment-likes-set',
+      'user-123',
+      ['c1'],
+    ]);
     expect(likesCache).toMatchObject({ c1: true });
   });
 
@@ -123,7 +132,9 @@ describe('useLikeComment', () => {
 
   it('shows alert on error and rolls back like_count', async () => {
     mockLikeComment.mockRejectedValue(new Error('like failed'));
-    const alertSpy = jest.spyOn(require('react-native').Alert, 'alert').mockImplementation(() => {});
+    const alertSpy = jest
+      .spyOn(require('react-native').Alert, 'alert')
+      .mockImplementation(() => {});
 
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -153,7 +164,9 @@ describe('useLikeComment', () => {
 
   it('rolls back comment-likes cache via prevLikes on error (line 47)', async () => {
     mockLikeComment.mockRejectedValue(new Error('like failed'));
-    const alertSpy = jest.spyOn(require('react-native').Alert, 'alert').mockImplementation(() => {});
+    const alertSpy = jest
+      .spyOn(require('react-native').Alert, 'alert')
+      .mockImplementation(() => {});
 
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -178,14 +191,26 @@ describe('useLikeComment', () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
 
     // onError should have restored the snapshot — c1 must NOT be in the likes set
-    const restoredLikes = client.getQueryData<Record<string, true>>(['comment-likes-set', 'user-123', ['c1', 'c2']]);
+    const restoredLikes = client.getQueryData<Record<string, true>>([
+      'comment-likes-set',
+      'user-123',
+      ['c1', 'c2'],
+    ]);
     expect(restoredLikes).toEqual(initialLikes);
     alertSpy.mockRestore();
   });
 
   it('throws when user is not logged in', async () => {
-    mockUseAuth.mockReturnValueOnce({ user: null, session: null, isLoading: false, isGuest: false, setIsGuest: jest.fn() });
-    const alertSpy = jest.spyOn(require('react-native').Alert, 'alert').mockImplementation(() => {});
+    mockUseAuth.mockReturnValueOnce({
+      user: null,
+      session: null,
+      isLoading: false,
+      isGuest: false,
+      setIsGuest: jest.fn(),
+    });
+    const alertSpy = jest
+      .spyOn(require('react-native').Alert, 'alert')
+      .mockImplementation(() => {});
 
     const { result } = renderHook(() => useLikeComment('f1'), { wrapper: createWrapper() });
 
@@ -251,14 +276,20 @@ describe('useUnlikeComment', () => {
     });
 
     // After optimistic update c1 must be removed from the likes set, c2 must remain
-    const likesCache = client.getQueryData<Record<string, true>>(['comment-likes-set', 'user-123', ['c1', 'c2']]);
+    const likesCache = client.getQueryData<Record<string, true>>([
+      'comment-likes-set',
+      'user-123',
+      ['c1', 'c2'],
+    ]);
     expect(likesCache).not.toHaveProperty('c1');
     expect(likesCache).toHaveProperty('c2', true);
   });
 
   it('rolls back on error', async () => {
     mockUnlikeComment.mockRejectedValue(new Error('unlike failed'));
-    const alertSpy = jest.spyOn(require('react-native').Alert, 'alert').mockImplementation(() => {});
+    const alertSpy = jest
+      .spyOn(require('react-native').Alert, 'alert')
+      .mockImplementation(() => {});
 
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -285,8 +316,16 @@ describe('useUnlikeComment', () => {
   });
 
   it('throws when user is not logged in', async () => {
-    mockUseAuth.mockReturnValueOnce({ user: null, session: null, isLoading: false, isGuest: false, setIsGuest: jest.fn() });
-    const alertSpy = jest.spyOn(require('react-native').Alert, 'alert').mockImplementation(() => {});
+    mockUseAuth.mockReturnValueOnce({
+      user: null,
+      session: null,
+      isLoading: false,
+      isGuest: false,
+      setIsGuest: jest.fn(),
+    });
+    const alertSpy = jest
+      .spyOn(require('react-native').Alert, 'alert')
+      .mockImplementation(() => {});
 
     const { result } = renderHook(() => useUnlikeComment('f1'), { wrapper: createWrapper() });
 
@@ -301,7 +340,9 @@ describe('useUnlikeComment', () => {
 
   it('rolls back comment-likes cache via prevLikes on error (line 89)', async () => {
     mockUnlikeComment.mockRejectedValue(new Error('unlike failed'));
-    const alertSpy = jest.spyOn(require('react-native').Alert, 'alert').mockImplementation(() => {});
+    const alertSpy = jest
+      .spyOn(require('react-native').Alert, 'alert')
+      .mockImplementation(() => {});
 
     const client = new QueryClient({
       defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
@@ -326,7 +367,11 @@ describe('useUnlikeComment', () => {
     await waitFor(() => expect(result.current.isError).toBe(true));
 
     // onError for-loop should restore the snapshot — c1 must be back in the likes set
-    const restoredLikes = client.getQueryData<Record<string, true>>(['comment-likes-set', 'user-123', ['c1']]);
+    const restoredLikes = client.getQueryData<Record<string, true>>([
+      'comment-likes-set',
+      'user-123',
+      ['c1'],
+    ]);
     expect(restoredLikes).toEqual(initialLikes);
     alertSpy.mockRestore();
   });
@@ -380,8 +425,96 @@ describe('useUserCommentLikes', () => {
   });
 
   it('does not fetch when user is not authenticated', () => {
-    mockUseAuth.mockReturnValueOnce({ user: null, session: null, isLoading: false, isGuest: false, setIsGuest: jest.fn() });
+    mockUseAuth.mockReturnValueOnce({
+      user: null,
+      session: null,
+      isLoading: false,
+      isGuest: false,
+      setIsGuest: jest.fn(),
+    });
     renderHook(() => useUserCommentLikes(['c1']), { wrapper: createWrapper() });
     expect(mockFetchUserCommentLikes).not.toHaveBeenCalled();
+  });
+
+  it('sortedIds useMemo returns non-empty when idsKey is truthy (covers idsKey split branch)', async () => {
+    mockFetchUserCommentLikes.mockResolvedValue({ c1: true });
+    const { result } = renderHook(() => useUserCommentLikes(['c1']), {
+      wrapper: createWrapper(),
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    // idsKey = 'c1' (truthy) so idsKey.split(',') path taken
+    expect(result.current.data).toEqual({ c1: true });
+  });
+});
+
+describe('useLikeComment — null old branch', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('primaryUpdater spreads old ?? {} when old is null (covers ...(old ?? {}) branch)', async () => {
+    mockLikeComment.mockResolvedValue(undefined);
+
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    // Set null data for comment-likes cache so primaryUpdater is called with null
+    client.setQueryData(['comment-likes-set', 'user-123', ['c1']], null);
+    client.setQueryData(['feed-comments', 'f1'], {
+      pages: [[baseComment]],
+      pageParams: [0],
+    });
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useLikeComment('f1'), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ commentId: 'c1' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    // After optimistic update with null old, cache has { c1: true }
+    const likesCache = client.getQueryData<Record<string, true>>([
+      'comment-likes-set',
+      'user-123',
+      ['c1'],
+    ]);
+    expect(likesCache).toMatchObject({ c1: true });
+  });
+});
+
+describe('useUnlikeComment — null old branch', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('primaryUpdater returns {} when old is null (covers if (!old) return {} branch)', async () => {
+    mockUnlikeComment.mockResolvedValue(undefined);
+
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    // Set null data for comment-likes cache so primaryUpdater is called with null
+    client.setQueryData(['comment-likes-set', 'user-123', ['c1']], null);
+    client.setQueryData(['feed-comments', 'f1'], {
+      pages: [[baseComment]],
+      pageParams: [0],
+    });
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useUnlikeComment('f1'), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ commentId: 'c1' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    // After optimistic update with null old, primaryUpdater returned {}
+    const likesCache = client.getQueryData<Record<string, true>>([
+      'comment-likes-set',
+      'user-123',
+      ['c1'],
+    ]);
+    expect(likesCache).toEqual({});
   });
 });

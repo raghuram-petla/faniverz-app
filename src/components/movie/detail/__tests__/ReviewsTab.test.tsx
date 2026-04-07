@@ -7,6 +7,24 @@ jest.mock('@/styles/movieDetail.styles', () => ({
   createStyles: () => new Proxy({}, { get: () => ({}) }),
 }));
 
+jest.mock('../EditorialReviewSection', () => ({
+  EditorialReviewSection: ({
+    review,
+    onPollVote,
+  }: {
+    review: { id: string };
+    onPollVote: (v: string) => void;
+  }) => {
+    const { View, Text, TouchableOpacity } = require('react-native');
+    return (
+      <View testID="editorial-review-section">
+        <Text>{review.id}</Text>
+        <TouchableOpacity testID="editorial-poll-vote" onPress={() => onPollVote('agree')} />
+      </View>
+    );
+  },
+}));
+
 jest.mock('@/components/ui/StarRating', () => {
   const { View } = require('react-native');
   return { StarRating: () => <View /> };
@@ -118,5 +136,31 @@ describe('ReviewsTab', () => {
     const reviewNoBody = { ...mockReview, body: null };
     render(<ReviewsTab {...baseProps} reviews={[reviewNoBody] as any} />);
     expect(screen.getByText('Great Movie')).toBeTruthy();
+  });
+
+  it('renders EditorialReviewSection when editorialReview and onPollVote are provided', () => {
+    const onPollVote = jest.fn();
+    const editorialReview = { id: 'editorial-1' } as any;
+    render(<ReviewsTab {...baseProps} editorialReview={editorialReview} onPollVote={onPollVote} />);
+    expect(screen.getByTestId('editorial-review-section')).toBeTruthy();
+  });
+
+  it('calls onPollVote through EditorialReviewSection', () => {
+    const onPollVote = jest.fn();
+    const editorialReview = { id: 'editorial-1' } as any;
+    render(<ReviewsTab {...baseProps} editorialReview={editorialReview} onPollVote={onPollVote} />);
+    fireEvent.press(screen.getByTestId('editorial-poll-vote'));
+    expect(onPollVote).toHaveBeenCalledWith('agree');
+  });
+
+  it('does not render EditorialReviewSection when editorialReview is null', () => {
+    render(<ReviewsTab {...baseProps} editorialReview={null} onPollVote={jest.fn()} />);
+    expect(screen.queryByTestId('editorial-review-section')).toBeNull();
+  });
+
+  it('does not render EditorialReviewSection when onPollVote is not provided', () => {
+    const editorialReview = { id: 'editorial-1' } as any;
+    render(<ReviewsTab {...baseProps} editorialReview={editorialReview} />);
+    expect(screen.queryByTestId('editorial-review-section')).toBeNull();
   });
 });

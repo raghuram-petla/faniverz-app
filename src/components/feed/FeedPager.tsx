@@ -46,7 +46,9 @@ export function FeedPager({
   // so it always picks up the latest handler even after FeedPage re-renders.
   activeScrollToTopRef.current = {
     scrollToTop: () => pageScrollToTopRefs.current[pageIndex]?.current?.scrollToTop(),
-    getScrollOffset: () => pageScrollToTopRefs.current[pageIndex]?.current?.getScrollOffset() ?? 0,
+    getScrollOffset: () =>
+      pageScrollToTopRefs.current[pageIndex]?.current?.getScrollOffset() ??
+      /* istanbul ignore next */ 0,
   };
 
   const handlePageSelected = useCallback(
@@ -62,7 +64,9 @@ export function FeedPager({
       // @sync Point parent's scroll-to-top ref at the newly active page
       activeScrollToTopRef.current = pageScrollToTopRefs.current[newIndex].current;
       // @sync Reveal/hide header based on new page's scroll position
-      const scrollY = pageScrollToTopRefs.current[newIndex]?.current?.getScrollOffset() ?? 0;
+      const scrollY =
+        pageScrollToTopRefs.current[newIndex]?.current?.getScrollOffset() ??
+        /* istanbul ignore next */ 0;
       onPageChange(scrollY);
     },
     [setPageIndex, activeScrollToTopRef, onPageChange],

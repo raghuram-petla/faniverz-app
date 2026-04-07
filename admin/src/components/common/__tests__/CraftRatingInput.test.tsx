@@ -29,7 +29,7 @@ describe('CraftRatingInput', () => {
   it('each star button has an accessible aria-label', () => {
     render(<CraftRatingInput {...defaultProps} />);
     for (let i = 1; i <= 5; i++) {
-      expect(screen.getByLabelText(`Rate Story ${i} stars`)).toBeInTheDocument();
+      expect(screen.getByLabelText(`Rate Story & Screenplay ${i} stars`)).toBeInTheDocument();
     }
   });
 
@@ -84,7 +84,7 @@ describe('CraftRatingInput', () => {
     const onChange = vi.fn();
     render(<CraftRatingInput {...defaultProps} onChange={onChange} />);
 
-    fireEvent.click(screen.getByLabelText('Rate Story 3 stars'));
+    fireEvent.click(screen.getByLabelText('Rate Story & Screenplay 3 stars'));
     expect(onChange).toHaveBeenCalledWith(3);
     expect(onChange).toHaveBeenCalledTimes(1);
   });
@@ -93,7 +93,7 @@ describe('CraftRatingInput', () => {
     const onChange = vi.fn();
     render(<CraftRatingInput {...defaultProps} onChange={onChange} />);
 
-    fireEvent.click(screen.getByLabelText('Rate Story 1 stars'));
+    fireEvent.click(screen.getByLabelText('Rate Story & Screenplay 1 stars'));
     expect(onChange).toHaveBeenCalledWith(1);
   });
 
@@ -101,7 +101,7 @@ describe('CraftRatingInput', () => {
     const onChange = vi.fn();
     render(<CraftRatingInput {...defaultProps} onChange={onChange} />);
 
-    fireEvent.click(screen.getByLabelText('Rate Story 5 stars'));
+    fireEvent.click(screen.getByLabelText('Rate Story & Screenplay 5 stars'));
     expect(onChange).toHaveBeenCalledWith(5);
   });
 
@@ -109,6 +109,13 @@ describe('CraftRatingInput', () => {
     render(<CraftRatingInput label="Direction" value={2} onChange={vi.fn()} />);
     expect(screen.getByText('Direction')).toBeInTheDocument();
     expect(screen.getByLabelText('Rate Direction 1 stars')).toBeInTheDocument();
+  });
+
+  it('each star button has an accessible aria-label with Direction label', () => {
+    render(<CraftRatingInput label="Direction" value={0} onChange={vi.fn()} />);
+    for (let i = 1; i <= 5; i++) {
+      expect(screen.getByLabelText(`Rate Direction ${i} stars`)).toBeInTheDocument();
+    }
   });
 
   it('buttons have type="button" to prevent form submission', () => {

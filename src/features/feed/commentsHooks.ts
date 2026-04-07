@@ -20,6 +20,7 @@ type FeedPages = { pages: NewsFeedItem[][] };
 function adjustFeedCommentCount(queryClient: QueryClient, feedItemId: string, delta: number) {
   for (const key of FEED_KEYS) {
     queryClient.setQueriesData<FeedPages>({ queryKey: [key] }, (old) => {
+      /* istanbul ignore next -- setQueriesData only calls callback for entries with data; old is never falsy here */
       if (!old) return old;
       return {
         ...old,

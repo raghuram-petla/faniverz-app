@@ -169,6 +169,11 @@ describe('getFeedTypeIconName', () => {
     expect(getFeedTypeIconName('rating_milestone')).toBe('trophy');
   });
 
+  it('returns newspaper for editorial_review', () => {
+    // @edge: covers line 66 — the 'editorial_review' case
+    expect(getFeedTypeIconName('editorial_review')).toBe('newspaper');
+  });
+
   it('returns newspaper as fallback', () => {
     expect(getFeedTypeIconName('unknown')).toBe('newspaper');
   });

@@ -126,4 +126,41 @@ describe('FollowingSection', () => {
     );
     expect(screen.getByText('See 5 more')).toBeTruthy();
   });
+
+  it('renders chip with empty label when entity_type has no label key', () => {
+    // @edge: covers the ?? '' fallback on line 53 for unknown entity types
+    const follows = [
+      {
+        entity_type: 'unknown_type' as unknown as import('@shared/types').FeedEntityType,
+        entity_id: 'x1',
+        name: 'Unknown Entity',
+        image_url: null,
+        created_at: '2026-01-01',
+      },
+    ];
+    render(
+      <FollowingSection follows={follows} onEntityPress={onEntityPress} onViewAll={onViewAll} />,
+    );
+    // Should render without crashing; chip text uses empty string label fallback
+    expect(screen.getByText('Unknown Entity')).toBeTruthy();
+  });
+
+  it('presses See more button and calls onViewAll', () => {
+    const manyFollows = Array.from({ length: 5 }, (_, i) => ({
+      entity_type: 'movie' as const,
+      entity_id: `m${i}`,
+      name: `Movie ${i}`,
+      image_url: null,
+      created_at: '2026-01-01',
+    }));
+    render(
+      <FollowingSection
+        follows={manyFollows}
+        onEntityPress={onEntityPress}
+        onViewAll={onViewAll}
+      />,
+    );
+    fireEvent.press(screen.getByText('See 2 more'));
+    expect(onViewAll).toHaveBeenCalled();
+  });
 });

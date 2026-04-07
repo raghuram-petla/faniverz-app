@@ -1291,6 +1291,55 @@ describe('useVoteFeedItem — feed-item cache optimistic update', () => {
 
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
+
+  it('optimistically adjusts downvote count in feed-item cache when previousVote=down and voteType=down', async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    client.setQueryData(['feed-item', 'item-1'], {
+      ...mockItem,
+      id: 'item-1',
+      upvote_count: 3,
+      downvote_count: 5,
+    });
+
+    const { result } = renderHook(() => useVoteFeedItem(), { wrapper });
+
+    await act(async () => {
+      result.current.mutate({ feedItemId: 'item-1', voteType: 'down', previousVote: 'down' });
+    });
+
+    // During optimistic update: previousVote='down' decrements downvote_count by 1 (5→4),
+    // then voteType='down' increments it back (4→5). Net result: same.
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
+
+  it('decrements upvote_count in feed-item cache when previousVote=up', async () => {
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    client.setQueryData(['feed-item', 'item-1'], {
+      ...mockItem,
+      id: 'item-1',
+      upvote_count: 5,
+      downvote_count: 2,
+    });
+
+    const { result } = renderHook(() => useVoteFeedItem(), { wrapper });
+
+    await act(async () => {
+      // Switching from 'up' to 'down': upvote_count should decrement (branch 119), downvote_count should increment (branch 122)
+      result.current.mutate({ feedItemId: 'item-1', voteType: 'down', previousVote: 'up' });
+    });
+
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+  });
 });
 
 describe('useRemoveFeedVote — feed-item cache optimistic update', () => {

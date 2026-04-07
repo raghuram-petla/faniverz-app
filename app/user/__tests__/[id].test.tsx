@@ -43,16 +43,21 @@ jest.mock('@/components/common/ScreenHeader', () => {
   const { View, Text } = require('react-native');
   return {
     __esModule: true,
-    default: ({ title }: { title: string }) => (
+    default: ({ title, rightAction }: { title: string; rightAction?: React.ReactNode }) => (
       <View>
         <Text>{title}</Text>
+        {rightAction}
       </View>
     ),
   };
 });
 
+jest.mock('@/utils/shareContent', () => ({
+  shareContent: jest.fn().mockResolvedValue(undefined),
+}));
+
 import React from 'react';
-import { render, screen } from '@testing-library/react-native';
+import { render, screen, fireEvent } from '@testing-library/react-native';
 import UserProfileScreen from '../[id]';
 
 const fullProfile = {
@@ -293,5 +298,48 @@ describe('UserProfileScreen', () => {
     render(<UserProfileScreen />);
     expect(screen.queryByText('Something went wrong')).toBeNull();
     expect(screen.getByText('Mahesh Babu')).toBeTruthy();
+  });
+
+  it('calls shareContent when share button is pressed (covers lines 54-55)', async () => {
+    const { shareContent } = require('@/utils/shareContent');
+    mockUseQuery.mockReturnValue({ data: fullProfile, isLoading: false });
+    render(<UserProfileScreen />);
+    // The share button is rendered by ScreenHeader rightAction when profile exists
+    const shareBtn = screen.getByLabelText('Share profile');
+    fireEvent.press(shareBtn);
+    // shareContent is called asynchronously — allow microtasks
+    await Promise.resolve();
+    expect(shareContent).toHaveBeenCalledWith({
+      type: 'user',
+      id: 'user-1',
+      title: 'Mahesh Babu',
+    });
+  });
+
+  it('handleShare returns early when profile is null (covers if (!profile) return branch)', () => {
+    mockUseQuery.mockReturnValue({ data: null, isLoading: false });
+    render(<UserProfileScreen />);
+    // When profile is null, share button is not rendered (rightAction = undefined)
+    expect(screen.queryByLabelText('Share profile')).toBeNull();
+  });
+
+  it('shareContent title uses username fallback when display_name is null (line 58 ?? branch)', async () => {
+    const { shareContent } = require('@/utils/shareContent');
+    const usernameOnly = { ...fullProfile, display_name: null, username: 'mahesh_babu' };
+    mockUseQuery.mockReturnValue({ data: usernameOnly, isLoading: false });
+    render(<UserProfileScreen />);
+    fireEvent.press(screen.getByLabelText('Share profile'));
+    await Promise.resolve();
+    expect(shareContent).toHaveBeenCalledWith(expect.objectContaining({ title: 'mahesh_babu' }));
+  });
+
+  it('shareContent title uses "User" fallback when both display_name and username are null (line 58 ?? branch)', async () => {
+    const { shareContent } = require('@/utils/shareContent');
+    const noNames = { ...fullProfile, display_name: null, username: null };
+    mockUseQuery.mockReturnValue({ data: noNames, isLoading: false });
+    render(<UserProfileScreen />);
+    fireEvent.press(screen.getByLabelText('Share profile'));
+    await Promise.resolve();
+    expect(shareContent).toHaveBeenCalledWith(expect.objectContaining({ title: 'User' }));
   });
 });

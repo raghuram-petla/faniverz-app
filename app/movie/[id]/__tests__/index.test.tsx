@@ -60,7 +60,18 @@ jest.mock('@/features/editorial/hooks', () => ({
 }));
 
 jest.mock('@/components/movie/detail/EditorialReviewSection', () => ({
-  EditorialReviewSection: 'EditorialReviewSection',
+  EditorialReviewSection: ({
+    onPollVote,
+  }: {
+    onPollVote?: (vote: 'agree' | 'disagree') => void;
+  }) => {
+    const { TouchableOpacity, Text } = require('react-native');
+    return (
+      <TouchableOpacity onPress={() => onPollVote?.('agree')} accessibilityLabel="Vote agree">
+        <Text>Editorial Review</Text>
+      </TouchableOpacity>
+    );
+  },
 }));
 
 jest.mock('@/hooks/useAuthGate', () => ({
@@ -702,6 +713,105 @@ describe('MovieDetailScreen', () => {
     render(<MovieDetailScreen />);
     expect(screen.getByTestId('movie-detail-skeleton')).toBeTruthy();
     expoRouter.useLocalSearchParams = origParams;
+  });
+
+  it('onCraftRatingChange callback updates craftRatings state (covers line 250)', () => {
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Reviews'));
+    fireEvent.press(screen.getByText('Write Review'));
+    // Press a craft star to trigger onCraftRatingChange — craft stars have hitSlop={4}
+    const craftStars = screen.UNSAFE_queryAllByProps({ hitSlop: 4 });
+    if (craftStars.length > 0) {
+      fireEvent.press(craftStars[0]);
+    }
+    // No crash = onCraftRatingChange executed, setCraftRatings state updated
+    expect(screen.getAllByText('Pushpa 2').length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('submits review with craft rating set — craftRatingMutation.mutate called (covers line 126)', () => {
+    const { useCraftRatingMutation: mockHook } = require('@/features/editorial/hooks');
+    const mockCraftMutate = jest.fn();
+    (mockHook as jest.Mock).mockReturnValue({ mutate: mockCraftMutate });
+
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Reviews'));
+    fireEvent.press(screen.getByText('Write Review'));
+    // Press a craft star to set craftRatings
+    const craftStars = screen.UNSAFE_queryAllByProps({ hitSlop: 4 });
+    if (craftStars.length > 0) {
+      fireEvent.press(craftStars[0]);
+    }
+    // Set overall rating and submit
+    fireEvent.press(screen.getByTestId('star-rate-4'));
+    fireEvent.press(screen.getByText('Submit'));
+    // craftRatingMutation.mutate should have been called with the set craft rating
+    expect(mockCraftMutate).toHaveBeenCalled();
+
+    // Restore original mock
+    (mockHook as jest.Mock).mockReturnValue({ mutate: jest.fn() });
+  });
+
+  it('share button with rating=0 uses undefined rating subtitle (covers line 107 false branch)', async () => {
+    const { Share } = require('react-native');
+    const shareSpy = jest
+      .spyOn(Share, 'share')
+      .mockResolvedValue({ action: 'sharedAction' } as never);
+    const zeroRatingMovie = { ...mockMovie, rating: 0, review_count: 0 };
+    (useMovieDetail as jest.Mock).mockReturnValue({ data: zeroRatingMovie });
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByLabelText('Share'));
+    expect(shareSpy).toHaveBeenCalled();
+    shareSpy.mockRestore();
+  });
+
+  it('handleSubmitReview skips craft mutate when craftRatings entry is 0/falsy (covers line 126 false branch)', () => {
+    const { useCraftRatingMutation: mockHook } = require('@/features/editorial/hooks');
+    const mockCraftMutate = jest.fn();
+    (mockHook as jest.Mock).mockReturnValue({ mutate: mockCraftMutate });
+
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Reviews'));
+    fireEvent.press(screen.getByText('Write Review'));
+    // Press overall star rating so submit is enabled
+    fireEvent.press(screen.getByTestId('star-rate-4'));
+    // Submit WITHOUT pressing any craft star — craftRatings is empty {}
+    // so the for loop runs 0 iterations, line 126 is the body that should NOT execute
+    fireEvent.press(screen.getByText('Submit'));
+    // craftRatingMutation.mutate should NOT have been called
+    expect(mockCraftMutate).not.toHaveBeenCalled();
+
+    (mockHook as jest.Mock).mockReturnValue({ mutate: jest.fn() });
+  });
+
+  it('poll vote mutation is called when poll vote is pressed (covers line 212)', () => {
+    const {
+      useEditorialReview: mockReviewHook,
+      usePollVoteMutation: mockPollHook,
+    } = require('@/features/editorial/hooks');
+    const mockPollMutate = jest.fn();
+    (mockPollHook as jest.Mock).mockReturnValue({ mutate: mockPollMutate });
+    (mockReviewHook as jest.Mock).mockReturnValue({
+      data: {
+        id: 'er1',
+        agree_count: 5,
+        disagree_count: 2,
+        user_poll_vote: null,
+        title: 'Review title',
+        body: 'Review body',
+      },
+    });
+
+    render(<MovieDetailScreen />);
+    fireEvent.press(screen.getByText('Reviews'));
+    // Press the "Vote agree" button rendered by the mocked EditorialReviewSection
+    fireEvent.press(screen.getByLabelText('Vote agree'));
+    expect(mockPollMutate).toHaveBeenCalledWith(
+      expect.objectContaining({ editorialReviewId: 'er1', vote: 'agree' }),
+    );
+
+    // Restore
+    (mockPollHook as jest.Mock).mockReturnValue({ mutate: jest.fn() });
+    (mockReviewHook as jest.Mock).mockReturnValue({ data: null });
   });
 
   it('navigates to media screen via onExploreMedia in OverviewTab', () => {

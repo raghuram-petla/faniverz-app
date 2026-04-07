@@ -51,6 +51,7 @@ export default function UserProfileScreen() {
 
   // @sideeffect: opens native share sheet with deep link URL
   const handleShare = useCallback(async () => {
+    /* istanbul ignore next -- share button only renders when profile exists */
     if (!profile) return;
     await shareContent({
       type: 'user',

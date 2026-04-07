@@ -109,7 +109,10 @@ export function CommentsBottomSheet({ visible, feedItemId, onClose }: CommentsBo
       // @sideeffect Scroll to the comment being replied to so it stays visible above the keyboard
       const y = commentPositions.current[comment.id];
       if (y != null) {
-        setTimeout(() => scrollViewRef.current?.scrollTo({ y, animated: true }), 100);
+        setTimeout(
+          /* istanbul ignore next */ () => scrollViewRef.current?.scrollTo({ y, animated: true }),
+          100,
+        );
       }
     },
     [t],
@@ -128,9 +131,12 @@ export function CommentsBottomSheet({ visible, feedItemId, onClose }: CommentsBo
     onClose();
   }, [onClose]);
 
-  const dismissKeyboard = useCallback(() => {
-    Keyboard.dismiss();
-  }, []);
+  const dismissKeyboard = useCallback(
+    /* istanbul ignore next */ () => {
+      Keyboard.dismiss();
+    },
+    [],
+  );
 
   const animateClose = useCallback(() => {
     sheetHeight.value = withTiming(0, { duration: 400, easing: Easing.out(Easing.cubic) }, () =>

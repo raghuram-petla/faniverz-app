@@ -76,9 +76,9 @@ describe('EditorialReviewSection', () => {
     expect(screen.getByText('Review Body *')).toBeInTheDocument();
   });
 
-  it('renders verdict input', () => {
+  it('renders craft ratings section', () => {
     render(<EditorialReviewSection movieId="movie-1" />);
-    expect(screen.getByText('Verdict (one-liner)')).toBeInTheDocument();
+    expect(screen.getByText('Craft Ratings *')).toBeInTheDocument();
   });
 
   it('renders all 5 craft rating inputs', () => {
@@ -205,12 +205,75 @@ describe('EditorialReviewSection', () => {
         ...defaultHookReturn.form,
         title: 'A great film',
         body: 'Detailed review content',
-        verdict: 'Must watch',
       },
     });
     render(<EditorialReviewSection movieId="movie-1" />);
     expect(screen.getByDisplayValue('A great film')).toBeInTheDocument();
     expect(screen.getByDisplayValue('Detailed review content')).toBeInTheDocument();
-    expect(screen.getByDisplayValue('Must watch')).toBeInTheDocument();
+  });
+
+  it('calls updateField with title when title input changes', () => {
+    render(<EditorialReviewSection movieId="movie-1" />);
+    const titleInput = screen.getByPlaceholderText(
+      'e.g. A visual masterpiece with a gripping narrative',
+    );
+    fireEvent.change(titleInput, { target: { value: 'New Title' } });
+    expect(mockUpdateField).toHaveBeenCalledWith('title', 'New Title');
+  });
+
+  it('calls updateField with body when body textarea changes', () => {
+    render(<EditorialReviewSection movieId="movie-1" />);
+    const bodyTextarea = screen.getByPlaceholderText('Write the editorial review...');
+    fireEvent.change(bodyTextarea, { target: { value: 'New body text' } });
+    expect(mockUpdateField).toHaveBeenCalledWith('body', 'New body text');
+  });
+
+  it('calls updateField for craft rating when star button is clicked', () => {
+    render(<EditorialReviewSection movieId="movie-1" />);
+    // CraftRatingInput renders star buttons with aria-label "Rate {label} {n} stars"
+    const star3Button = screen.getByRole('button', {
+      name: 'Rate Story & Screenplay 3 stars',
+    });
+    fireEvent.click(star3Button);
+    expect(mockUpdateField).toHaveBeenCalledWith('rating_story', 3);
+  });
+
+  it('calls updateField with toggled is_published when toggle is clicked', () => {
+    render(<EditorialReviewSection movieId="movie-1" />);
+    // The toggle button is the only button-type="button" element before the save button
+    // It sits inside the "Draft"/"Published" row
+    const draftText = screen.getByText('Draft');
+    const toggleButton = draftText.closest('div')!.querySelector('button');
+    fireEvent.click(toggleButton!);
+    expect(mockUpdateField).toHaveBeenCalledWith('is_published', true);
+  });
+
+  it('calls updateField with false when published toggle is clicked while published', () => {
+    mockedHook.mockReturnValue({
+      ...defaultHookReturn,
+      form: { ...defaultHookReturn.form, is_published: true },
+    });
+    render(<EditorialReviewSection movieId="movie-1" />);
+    const publishedText = screen.getByText('Published');
+    const toggleButton = publishedText.closest('div')!.querySelector('button');
+    fireEvent.click(toggleButton!);
+    expect(mockUpdateField).toHaveBeenCalledWith('is_published', false);
+  });
+
+  it('clears saveError before calling handleSave', async () => {
+    // First call returns an error, second returns null
+    mockHandleSave.mockResolvedValueOnce('First error').mockResolvedValueOnce(null);
+    render(<EditorialReviewSection movieId="movie-1" />);
+
+    fireEvent.click(screen.getByText('Create Review'));
+    await waitFor(() => {
+      expect(screen.getByText('First error')).toBeInTheDocument();
+    });
+
+    // Click again — the error should be cleared before the next save
+    fireEvent.click(screen.getByText('Create Review'));
+    await waitFor(() => {
+      expect(screen.queryByText('First error')).not.toBeInTheDocument();
+    });
   });
 });

@@ -171,13 +171,17 @@ describe('FollowingScreen', () => {
   it('does not call unfollow when user is not logged in', () => {
     const mockMutate = jest.fn();
     const { useUnfollowEntity } = require('@/features/feed');
-    mockUseAuth.mockReturnValueOnce({ user: null as unknown as { id: string } });
-    useUnfollowEntity.mockReturnValueOnce({ mutate: mockMutate, isPending: false });
+    // Use mockReturnValue (not Once) so all re-renders during edit mode still return null user
+    mockUseAuth.mockReturnValue({ user: null as unknown as { id: string } });
+    useUnfollowEntity.mockReturnValue({ mutate: mockMutate, isPending: false });
     render(<FollowingScreen />);
     fireEvent.press(screen.getByText('common.edit'));
     const unfollowButtons = screen.getAllByLabelText('common.unfollowName');
     fireEvent.press(unfollowButtons[0]);
     expect(mockMutate).not.toHaveBeenCalled();
+    // Restore defaults
+    mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
+    useUnfollowEntity.mockReturnValue({ mutate: jest.fn(), isPending: false });
   });
 
   it('calls unfollow even when mutation is pending (idempotent)', () => {
@@ -190,6 +194,23 @@ describe('FollowingScreen', () => {
     fireEvent.press(unfollowButtons[0]);
     expect(mockMutate).toHaveBeenCalled();
     // Restore default mock
+    useUnfollowEntity.mockReturnValue({ mutate: jest.fn(), isPending: false });
+  });
+
+  it('does not call unfollow when user has no id (user.id is empty)', () => {
+    // @edge: covers line 83 branch where user is defined but id is falsy
+    const mockMutate = jest.fn();
+    const { useUnfollowEntity } = require('@/features/feed');
+    // Use mockReturnValue so all re-renders during edit mode still return the empty-id user
+    mockUseAuth.mockReturnValue({ user: { id: '' } });
+    useUnfollowEntity.mockReturnValue({ mutate: mockMutate, isPending: false });
+    render(<FollowingScreen />);
+    fireEvent.press(screen.getByText('common.edit'));
+    const unfollowButtons = screen.getAllByLabelText('common.unfollowName');
+    fireEvent.press(unfollowButtons[0]);
+    expect(mockMutate).not.toHaveBeenCalled();
+    // Restore defaults
+    mockUseAuth.mockReturnValue({ user: { id: 'u1' } });
     useUnfollowEntity.mockReturnValue({ mutate: jest.fn(), isPending: false });
   });
 

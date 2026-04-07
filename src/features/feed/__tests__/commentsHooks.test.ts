@@ -623,6 +623,66 @@ describe('useDeleteComment — optimistic feed comment_count', () => {
   });
 });
 
+describe('adjustFeedCommentCount — null cache and non-matching item branches', () => {
+  beforeEach(() => jest.clearAllMocks());
+
+  it('handles null feed cache in adjustFeedCommentCount (covers if !old return old branch)', async () => {
+    // @edge: covers line 23 — setQueriesData callback receives undefined when query exists but data is undefined
+    mockAddComment.mockResolvedValue(newComment);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    // Seed a news-feed query with undefined data so callback is called with undefined (old is falsy)
+    // setQueryData with undefined triggers the !old branch
+    client.setQueryData(['news-feed', 'null-scope'], undefined);
+    // Also seed a personalized-feed query with undefined data
+    client.setQueryData(['personalized-feed', 'null-scope'], undefined);
+    // Also seed a feed-item cache with a DIFFERENT id to hit the :item branch (item.id !== feedItemId)
+    client.setQueryData(['feed-item', 'f1'], { id: 'f1', comment_count: 2 });
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useAddComment('f1'), { wrapper });
+    await act(async () => {
+      result.current.mutate({ body: 'Nice!' });
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // Cache with undefined data stays undefined (null guard returned early)
+    const nf = client.getQueryData(['news-feed', 'null-scope']);
+    expect(nf).toBeUndefined();
+  });
+
+  it('leaves non-matching items unchanged in adjustFeedCommentCount (covers :item branch)', async () => {
+    // @edge: covers line 28 — the :item branch where item.id !== feedItemId
+    mockAddComment.mockResolvedValue(newComment);
+    const client = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
+    // Seed news-feed with a different item id so the ternary picks :item branch
+    client.setQueryData(['news-feed', 'scope'], {
+      pages: [[{ id: 'OTHER_ITEM', comment_count: 10 }]],
+    });
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(QueryClientProvider, { client }, children);
+
+    const { result } = renderHook(() => useAddComment('f1'), { wrapper });
+    await act(async () => {
+      result.current.mutate({ body: 'Nice!' });
+    });
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+
+    // The OTHER_ITEM should be untouched (comment_count stays 10)
+    const nf = client.getQueryData<{ pages: { id: string; comment_count: number }[][] }>([
+      'news-feed',
+      'scope',
+    ]);
+    expect(nf?.pages[0][0].comment_count).toBe(10);
+  });
+});
+
 describe('useComments — error handling', () => {
   beforeEach(() => jest.clearAllMocks());
 

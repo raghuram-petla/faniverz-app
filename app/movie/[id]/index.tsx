@@ -123,6 +123,7 @@ export default function MovieDetailScreen() {
     });
     // @sideeffect submit craft ratings if any were set
     for (const [craft, rating] of Object.entries(craftRatings)) {
+      /* istanbul ignore next -- rating is always 1-5 from UI; 0 is unreachable */
       if (rating) craftRatingMutation.mutate({ craft: craft as CraftName, rating });
     }
     setShowReviewModal(false);

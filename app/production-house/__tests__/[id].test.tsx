@@ -138,6 +138,11 @@ jest.mock('@/components/common/ScreenHeader', () => {
   };
 });
 
+const mockShareContent = jest.fn();
+jest.mock('@/utils/shareContent', () => ({
+  shareContent: (...args: unknown[]) => mockShareContent(...args),
+}));
+
 import React from 'react';
 import { render, screen, fireEvent } from '@testing-library/react-native';
 import ProductionHouseDetailScreen from '../[id]';
@@ -448,5 +453,16 @@ describe('ProductionHouseDetailScreen', () => {
     expect(mockFollowMutate).toHaveBeenCalledWith(expect.objectContaining({ entityId: '' }));
 
     expoRouter.useLocalSearchParams = origParams;
+  });
+
+  it('calls shareContent with house details when share button is pressed', async () => {
+    mockShareContent.mockResolvedValue(undefined);
+    render(<ProductionHouseDetailScreen />);
+    fireEvent.press(screen.getByLabelText('Share production house'));
+    expect(mockShareContent).toHaveBeenCalledWith({
+      type: 'production-house',
+      id: 'ph1',
+      title: 'Mythri Entertainments',
+    });
   });
 });

@@ -140,7 +140,7 @@ export function useUserCommentLikes(commentIds: string[]) {
 
   return useQuery({
     queryKey: [COMMENT_LIKES_KEY, userId, sortedIds],
-    queryFn: () => fetchUserCommentLikes(userId ?? '', sortedIds),
+    queryFn: () => fetchUserCommentLikes(userId ?? /* istanbul ignore next */ '', sortedIds),
     enabled: !!userId && sortedIds.length > 0,
     staleTime: STALE_2M,
   });

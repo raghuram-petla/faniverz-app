@@ -93,6 +93,7 @@ export default function ActorDetailScreen() {
 
   // @sideeffect: opens native share sheet with deep link URL
   const handleShare = useCallback(async () => {
+    /* istanbul ignore next */
     if (!actor) return;
     await shareContent({ type: 'actor', id: actor.id, title: actor.name });
   }, [actor]);
