@@ -1,8 +1,10 @@
 -- Fix: strip diacritics (accents) from search terms and indexed text.
 -- Problem: "Rākāsā" is stored with macron characters (ā); searching "rakasa" fails
 -- because ā ≠ a at byte level — both FTS tokens and trigram similarity don't match.
--- Fix: apply public.unaccent() to normalize diacritics before indexing and querying
+-- Fix: apply extensions.unaccent() to normalize diacritics before indexing and querying
 -- so "Rākāsā" → "Rakasa" and "rakasa" → "rakasa" → they match.
+
+CREATE EXTENSION IF NOT EXISTS unaccent WITH SCHEMA extensions;
 
 -- ── Update search_vector triggers to unaccent text ───────────────────────────────────────────────
 
@@ -13,10 +15,10 @@ SET search_path = ''
 AS $$
 BEGIN
   NEW.search_vector :=
-    setweight(to_tsvector('pg_catalog.english', public.unaccent(coalesce(NEW.title, ''))),       'A') ||
+    setweight(to_tsvector('pg_catalog.english', extensions.unaccent(coalesce(NEW.title, ''))),       'A') ||
     setweight(to_tsvector('pg_catalog.simple',  coalesce(NEW.title_te, '')),                     'A') ||
-    setweight(to_tsvector('pg_catalog.english', public.unaccent(coalesce(NEW.director, ''))),    'B') ||
-    setweight(to_tsvector('pg_catalog.english', public.unaccent(coalesce(NEW.synopsis, ''))),    'D') ||
+    setweight(to_tsvector('pg_catalog.english', extensions.unaccent(coalesce(NEW.director, ''))),    'B') ||
+    setweight(to_tsvector('pg_catalog.english', extensions.unaccent(coalesce(NEW.synopsis, ''))),    'D') ||
     setweight(to_tsvector('pg_catalog.simple',  coalesce(NEW.synopsis_te, '')),                  'D');
   RETURN NEW;
 END;
@@ -29,8 +31,8 @@ SET search_path = ''
 AS $$
 BEGIN
   NEW.search_vector :=
-    setweight(to_tsvector('pg_catalog.simple',  public.unaccent(coalesce(NEW.name, ''))),      'A') ||
-    setweight(to_tsvector('pg_catalog.english', public.unaccent(coalesce(NEW.biography, ''))), 'D');
+    setweight(to_tsvector('pg_catalog.simple',  extensions.unaccent(coalesce(NEW.name, ''))),      'A') ||
+    setweight(to_tsvector('pg_catalog.english', extensions.unaccent(coalesce(NEW.biography, ''))), 'D');
   RETURN NEW;
 END;
 $$;
@@ -42,8 +44,8 @@ SET search_path = ''
 AS $$
 BEGIN
   NEW.search_vector :=
-    setweight(to_tsvector('pg_catalog.simple',  public.unaccent(coalesce(NEW.name, ''))),        'A') ||
-    setweight(to_tsvector('pg_catalog.english', public.unaccent(coalesce(NEW.description, ''))), 'D');
+    setweight(to_tsvector('pg_catalog.simple',  extensions.unaccent(coalesce(NEW.name, ''))),        'A') ||
+    setweight(to_tsvector('pg_catalog.english', extensions.unaccent(coalesce(NEW.description, ''))), 'D');
   RETURN NEW;
 END;
 $$;
@@ -51,19 +53,19 @@ $$;
 -- ── Backfill search_vectors with unaccented text ─────────────────────────────────────────────────
 
 UPDATE public.movies SET search_vector =
-  setweight(to_tsvector('pg_catalog.english', public.unaccent(coalesce(title, ''))),       'A') ||
+  setweight(to_tsvector('pg_catalog.english', extensions.unaccent(coalesce(title, ''))),       'A') ||
   setweight(to_tsvector('pg_catalog.simple',  coalesce(title_te, '')),                     'A') ||
-  setweight(to_tsvector('pg_catalog.english', public.unaccent(coalesce(director, ''))),    'B') ||
-  setweight(to_tsvector('pg_catalog.english', public.unaccent(coalesce(synopsis, ''))),    'D') ||
+  setweight(to_tsvector('pg_catalog.english', extensions.unaccent(coalesce(director, ''))),    'B') ||
+  setweight(to_tsvector('pg_catalog.english', extensions.unaccent(coalesce(synopsis, ''))),    'D') ||
   setweight(to_tsvector('pg_catalog.simple',  coalesce(synopsis_te, '')),                  'D');
 
 UPDATE public.actors SET search_vector =
-  setweight(to_tsvector('pg_catalog.simple',  public.unaccent(coalesce(name, ''))),      'A') ||
-  setweight(to_tsvector('pg_catalog.english', public.unaccent(coalesce(biography, ''))), 'D');
+  setweight(to_tsvector('pg_catalog.simple',  extensions.unaccent(coalesce(name, ''))),      'A') ||
+  setweight(to_tsvector('pg_catalog.english', extensions.unaccent(coalesce(biography, ''))), 'D');
 
 UPDATE public.production_houses SET search_vector =
-  setweight(to_tsvector('pg_catalog.simple',  public.unaccent(coalesce(name, ''))),        'A') ||
-  setweight(to_tsvector('pg_catalog.english', public.unaccent(coalesce(description, ''))), 'D');
+  setweight(to_tsvector('pg_catalog.simple',  extensions.unaccent(coalesce(name, ''))),        'A') ||
+  setweight(to_tsvector('pg_catalog.english', extensions.unaccent(coalesce(description, ''))), 'D');
 
 -- ── Update search_movies to unaccent term and title in trigram comparison ─────────────────────────
 
@@ -130,7 +132,7 @@ DECLARE
   prefix_str  text;
 BEGIN
   -- @edge: unaccent strips diacritics so "rakasa" matches "Rākāsā"
-  term := public.unaccent(trim(regexp_replace(search_term, '\s+', ' ', 'g')));
+  term := extensions.unaccent(trim(regexp_replace(search_term, '\s+', ' ', 'g')));
 
   IF length(term) <= 3 THEN
     threshold := 0.2;
@@ -168,12 +170,12 @@ BEGIN
   trgm AS (
     SELECT m.id,
            greatest(
-             extensions.similarity(public.unaccent(m.title), term),
-             extensions.similarity(public.unaccent(coalesce(m.director, '')), term)
+             extensions.similarity(extensions.unaccent(m.title), term),
+             extensions.similarity(extensions.unaccent(coalesce(m.director, '')), term)
            ) AS score
     FROM public.movies m
-    WHERE extensions.similarity(public.unaccent(m.title), term)                  > threshold
-       OR extensions.similarity(public.unaccent(coalesce(m.director, '')), term) > threshold
+    WHERE extensions.similarity(extensions.unaccent(m.title), term)                  > threshold
+       OR extensions.similarity(extensions.unaccent(coalesce(m.director, '')), term) > threshold
   ),
   combined AS (
     SELECT
@@ -244,7 +246,7 @@ DECLARE
   threshold   float;
   prefix_str  text;
 BEGIN
-  term := public.unaccent(trim(regexp_replace(search_term, '\s+', ' ', 'g')));
+  term := extensions.unaccent(trim(regexp_replace(search_term, '\s+', ' ', 'g')));
 
   IF length(term) <= 3 THEN
     threshold := 0.2;
@@ -281,9 +283,9 @@ BEGIN
   ),
   trgm AS (
     SELECT a.id,
-           extensions.similarity(public.unaccent(a.name), term) AS score
+           extensions.similarity(extensions.unaccent(a.name), term) AS score
     FROM public.actors a
-    WHERE extensions.similarity(public.unaccent(a.name), term) > threshold
+    WHERE extensions.similarity(extensions.unaccent(a.name), term) > threshold
   ),
   combined AS (
     SELECT
@@ -336,7 +338,7 @@ DECLARE
   threshold   float;
   prefix_str  text;
 BEGIN
-  term := public.unaccent(trim(regexp_replace(search_term, '\s+', ' ', 'g')));
+  term := extensions.unaccent(trim(regexp_replace(search_term, '\s+', ' ', 'g')));
 
   IF length(term) <= 3 THEN
     threshold := 0.2;
@@ -373,9 +375,9 @@ BEGIN
   ),
   trgm AS (
     SELECT ph.id,
-           extensions.similarity(public.unaccent(ph.name), term) AS score
+           extensions.similarity(extensions.unaccent(ph.name), term) AS score
     FROM public.production_houses ph
-    WHERE extensions.similarity(public.unaccent(ph.name), term) > threshold
+    WHERE extensions.similarity(extensions.unaccent(ph.name), term) > threshold
   ),
   combined AS (
     SELECT
