@@ -1,13 +1,8 @@
--- Auto-generate news_feed entries when key movie properties change:
--- 1. release_date  → content_type = 'release_date_update'
--- 2. certification → content_type = 'certification_update'
--- 3. premiere_date → content_type = 'premiere_date_update'
---
--- All use feed_type = 'update' (existing). No TMDB suppression needed —
--- these are intentional admin edits, not bulk-sync operations.
+-- Fix all 3 movie-property feed triggers to include actual values in titles
+-- and handle removed/cleared states properly.
 
 -- ============================================================
--- 1. release_date changed → news_feed
+-- 1. release_date: date announced / moved / removed
 -- ============================================================
 CREATE OR REPLACE FUNCTION sync_release_date_change_to_feed()
 RETURNS trigger
@@ -21,7 +16,6 @@ DECLARE
   v_title text;
   v_description text;
 BEGIN
-  -- Only fire when release_date actually changes
   IF OLD.release_date IS NOT DISTINCT FROM NEW.release_date THEN
     RETURN NEW;
   END IF;
@@ -55,13 +49,8 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER trg_release_date_feed
-  AFTER UPDATE ON public.movies
-  FOR EACH ROW
-  EXECUTE FUNCTION sync_release_date_change_to_feed();
-
 -- ============================================================
--- 2. certification set, changed, or removed → news_feed
+-- 2. certification: rated / changed / removed
 -- ============================================================
 CREATE OR REPLACE FUNCTION sync_certification_change_to_feed()
 RETURNS trigger
@@ -103,13 +92,8 @@ BEGIN
 END;
 $$;
 
-CREATE TRIGGER trg_certification_feed
-  AFTER UPDATE ON public.movies
-  FOR EACH ROW
-  EXECUTE FUNCTION sync_certification_change_to_feed();
-
 -- ============================================================
--- 3. premiere_date announced, moved, or cancelled → news_feed
+-- 3. premiere_date: announced / moved / removed
 -- ============================================================
 CREATE OR REPLACE FUNCTION sync_premiere_date_change_to_feed()
 RETURNS trigger
@@ -155,10 +139,5 @@ BEGIN
   RETURN NEW;
 END;
 $$;
-
-CREATE TRIGGER trg_premiere_date_feed
-  AFTER UPDATE ON public.movies
-  FOR EACH ROW
-  EXECUTE FUNCTION sync_premiere_date_change_to_feed();
 
 NOTIFY pgrst, 'reload schema';
