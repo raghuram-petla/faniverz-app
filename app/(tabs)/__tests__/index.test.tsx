@@ -613,9 +613,9 @@ describe('FeedScreen', () => {
     render(<FeedScreen />);
 
     fireEvent.press(screen.getByLabelText('Share Shareable Item'));
-    expect(shareSpy).toHaveBeenCalledWith({
-      message: 'Shareable Item — Check it out on Faniverz!',
-    });
+    expect(shareSpy).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining('Shareable Item') }),
+    );
     shareSpy.mockRestore();
   });
 

@@ -104,6 +104,8 @@ export default ({ config }: ConfigContext): ExpoConfig =>
     ios: {
       supportsTablet: true,
       bundleIdentifier: getBundleId(),
+      // @contract: enables universal links — requires matching apple-app-site-association on faniverz.com
+      associatedDomains: ['applinks:faniverz.com'],
       icon: IS_DEV
         ? {
             light: './assets/icon-dev-light.png',
@@ -132,6 +134,15 @@ export default ({ config }: ConfigContext): ExpoConfig =>
       },
       edgeToEdgeEnabled: true,
       package: getBundleId(),
+      // @contract: enables Android App Links — requires matching assetlinks.json on faniverz.com
+      intentFilters: [
+        {
+          action: 'VIEW',
+          autoVerify: true,
+          data: [{ scheme: 'https', host: 'faniverz.com', pathPrefix: '/' }],
+          category: ['BROWSABLE', 'DEFAULT'],
+        },
+      ],
     },
     web: {
       favicon: './assets/favicon.png',

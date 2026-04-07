@@ -166,22 +166,28 @@ describe('useFeedActions', () => {
   });
 
   describe('share', () => {
-    it('calls Share.share with item title', () => {
+    it('calls Share.share with item title and deep link', async () => {
       const { Share: rn } = require('react-native');
       const shareSpy = jest.spyOn(rn, 'share').mockResolvedValue({ action: 'sharedAction' });
       const actions = setup({ allItems: [makeItem({ id: 'item-1', title: 'My Movie' })] });
-      act(() => actions.handleShare('item-1'));
-      expect(shareSpy).toHaveBeenCalledWith({
-        message: 'My Movie — Check it out on Faniverz!',
-      });
+      await act(async () => actions.handleShare('item-1'));
+      expect(shareSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: expect.stringContaining('My Movie'),
+        }),
+      );
+      // On iOS the URL is passed as a separate field; on Android it's in the message
+      const call = shareSpy.mock.calls[0][0] as { message?: string; url?: string };
+      const combined = `${call.message ?? ''}${call.url ?? ''}`;
+      expect(combined).toContain('https://faniverz.com/post/item-1');
       shareSpy.mockRestore();
     });
 
-    it('does nothing if item is not found', () => {
+    it('does nothing if item is not found', async () => {
       const { Share: rn } = require('react-native');
       const shareSpy = jest.spyOn(rn, 'share').mockResolvedValue({ action: 'sharedAction' });
       const actions = setup({ allItems: [] });
-      act(() => actions.handleShare('nonexistent'));
+      await act(async () => actions.handleShare('nonexistent'));
       expect(shareSpy).not.toHaveBeenCalled();
       shareSpy.mockRestore();
     });

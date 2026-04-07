@@ -1,5 +1,5 @@
 import { useState, useMemo } from 'react';
-import { View, Share } from 'react-native';
+import { View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,6 +20,7 @@ import { MovieDetailHeader } from '@/components/movie/detail/MovieDetailHeader';
 import { createStyles } from '@/styles/movieDetail.styles';
 import { useTheme } from '@/theme';
 import { extractReleaseYear } from '@/utils/formatDate';
+import { shareContent } from '@/utils/shareContent';
 import { AnimatedTabBar } from '@/components/ui/AnimatedTabBar';
 import { SafeAreaCover } from '@/components/common/SafeAreaCover';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
@@ -95,10 +96,16 @@ export default function MovieDetailScreen() {
     return <MovieDetailSkeleton />;
   }
 
+  // @sideeffect: opens native share sheet with deep link URL
   const handleShare = async () => {
     const year = extractReleaseYear(movie.release_date);
-    const text = `${movie.title}${year ? ` (${year})` : ''} — ${movie.rating}★\n${movie.synopsis?.slice(0, 100) ?? ''}\n\nTrack it on Faniverz!`;
-    await Share.share({ message: text }).catch(() => {});
+    await shareContent({
+      type: 'movie',
+      id: movie.id,
+      title: movie.title,
+      subtitle: year ? String(year) : undefined,
+      rating: movie.rating > 0 ? `${movie.rating}★` : undefined,
+    });
   };
 
   // @edge: rating === 0 guard prevents submitting empty reviews

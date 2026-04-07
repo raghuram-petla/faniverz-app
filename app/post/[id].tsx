@@ -34,6 +34,7 @@ import { usePullToRefresh } from '@/hooks/usePullToRefresh';
 import { useRecordPostView } from '@/hooks/useRecordPostView';
 import { createPostDetailStyles } from '@/styles/postDetail.styles';
 import { PostContentSkeleton } from '@/components/feed/PostContentSkeleton';
+import { shareContent } from '@/utils/shareContent';
 import type { NewsFeedItem, FeedEntityType, FeedComment } from '@shared/types';
 
 // @boundary: Post detail — single feed item with comments, voting, likes, and reply input
@@ -166,6 +167,12 @@ export default function PostDetailScreen() {
     router.push(routes[entityType] as Parameters<typeof router.push>[0]);
   };
 
+  // @sideeffect: opens native share sheet with deep link URL
+  const handleShare = useCallback(async () => {
+    if (!post) return;
+    await shareContent({ type: 'post', id: post.id, title: post.title });
+  }, [post]);
+
   return (
     <KeyboardAvoidingView
       style={styles.screen}
@@ -183,6 +190,13 @@ export default function PostDetailScreen() {
           <Ionicons name="arrow-back" size={20} color={theme.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>{t('postDetail.title')}</Text>
+        <TouchableOpacity
+          style={styles.headerButton}
+          onPress={handleShare}
+          accessibilityLabel="Share post"
+        >
+          <Ionicons name="share-outline" size={20} color={theme.textPrimary} />
+        </TouchableOpacity>
       </View>
 
       {/* @contract ScrollView flex:1; CommentInput below in flex column for keyboard avoidance */}

@@ -1,13 +1,5 @@
 import { useCallback, useMemo, useState } from 'react';
-import {
-  View,
-  Text,
-  TouchableOpacity,
-  Linking,
-  LayoutAnimation,
-  Platform,
-  UIManager,
-} from 'react-native';
+import { View, Text, TouchableOpacity, LayoutAnimation, Platform, UIManager } from 'react-native';
 
 // @sideeffect: enables LayoutAnimation on Android — must be called at module scope before any animation
 if (Platform.OS === 'android' && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -28,6 +20,8 @@ import { ActorAvatar } from '@/components/common/ActorAvatar';
 import { ActorFilmography } from '@/components/actor/ActorFilmography';
 import { ActorKnownFor } from '@/components/actor/ActorKnownFor';
 import { FollowButton } from '@/components/feed/FollowButton';
+import { shareContent } from '@/utils/shareContent';
+import { ActorSocialLinks } from './components/ActorSocialLinks';
 import { PullToRefreshIndicator } from '@/components/common/PullToRefreshIndicator';
 import { useRefresh } from '@/hooks/useRefresh';
 import { usePullToRefresh } from '@/hooks/usePullToRefresh';
@@ -97,6 +91,12 @@ export default function ActorDetailScreen() {
     [router],
   );
 
+  // @sideeffect: opens native share sheet with deep link URL
+  const handleShare = useCallback(async () => {
+    if (!actor) return;
+    await shareContent({ type: 'actor', id: actor.id, title: actor.name });
+  }, [actor]);
+
   if (isLoading) {
     return (
       <View style={styles.screen}>
@@ -131,8 +131,6 @@ export default function ActorDetailScreen() {
       : t('actorDetail.actor');
   const hasBioInfo =
     actor.birth_date || actor.place_of_birth || actor.height_cm || actor.death_date;
-  /** @nullable social link IDs come from TMDB external_ids endpoint; null when not available */
-  const hasSocialLinks = actor.imdb_id || actor.instagram_id || actor.twitter_id;
   const alsoKnownAs = (actor.also_known_as ?? []).filter(Boolean);
 
   return (
@@ -143,11 +141,16 @@ export default function ActorDetailScreen() {
         onBack={() => router.back()}
         onImagePress={actor.photo_url ? () => setShowPhoto(true) : undefined}
         rightContent={
-          <FollowButton
-            isFollowing={isFollowing}
-            onPress={handleFollowToggle}
-            entityName={actor.name}
-          />
+          <View style={styles.rightContentRow}>
+            <TouchableOpacity onPress={handleShare} accessibilityLabel="Share actor">
+              <Ionicons name="share-outline" size={22} color={theme.textPrimary} />
+            </TouchableOpacity>
+            <FollowButton
+              isFollowing={isFollowing}
+              onPress={handleFollowToggle}
+              entityName={actor.name}
+            />
+          </View>
         }
         heroContent={
           <>
@@ -170,42 +173,13 @@ export default function ActorDetailScreen() {
                 ))}
               </View>
             )}
-            {hasSocialLinks && (
-              <View style={styles.socialLinksRow}>
-                {actor.imdb_id && (
-                  <TouchableOpacity
-                    style={styles.socialButton}
-                    onPress={() => Linking.openURL(`https://www.imdb.com/name/${actor.imdb_id}`)}
-                    accessibilityLabel="IMDb profile"
-                    testID="social-imdb"
-                  >
-                    <Text style={styles.socialButtonText}>IMDb</Text>
-                  </TouchableOpacity>
-                )}
-                {actor.instagram_id && (
-                  <TouchableOpacity
-                    style={styles.socialButton}
-                    onPress={() =>
-                      Linking.openURL(`https://www.instagram.com/${actor.instagram_id}`)
-                    }
-                    accessibilityLabel="Instagram profile"
-                    testID="social-instagram"
-                  >
-                    <Ionicons name="logo-instagram" size={18} color={theme.textPrimary} />
-                  </TouchableOpacity>
-                )}
-                {actor.twitter_id && (
-                  <TouchableOpacity
-                    style={styles.socialButton}
-                    onPress={() => Linking.openURL(`https://twitter.com/${actor.twitter_id}`)}
-                    accessibilityLabel="Twitter profile"
-                    testID="social-twitter"
-                  >
-                    <Ionicons name="logo-twitter" size={18} color={theme.textPrimary} />
-                  </TouchableOpacity>
-                )}
-              </View>
-            )}
+            <ActorSocialLinks
+              imdbId={actor.imdb_id}
+              instagramId={actor.instagram_id}
+              twitterId={actor.twitter_id}
+              styles={styles}
+              textPrimaryColor={theme.textPrimary}
+            />
           </>
         }
         onScroll={handlePullScroll}

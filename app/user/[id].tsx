@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { View, Text, ScrollView, ActivityIndicator } from 'react-native';
+import { useCallback, useMemo } from 'react';
+import { View, Text, ScrollView, ActivityIndicator, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,6 +12,7 @@ import { PLACEHOLDER_AVATAR } from '@/constants/placeholders';
 import { getImageUrl } from '@shared/imageUrl';
 import { createUserProfileStyles } from '@/styles/userProfile.styles';
 import ScreenHeader from '@/components/common/ScreenHeader';
+import { shareContent } from '@/utils/shareContent';
 import type { UserProfile } from '@/types';
 
 // @boundary: fetches public-facing profile fields only — no private data (email, phone) exposed
@@ -48,10 +49,29 @@ export default function UserProfileScreen() {
     enabled: !!id,
   });
 
+  // @sideeffect: opens native share sheet with deep link URL
+  const handleShare = useCallback(async () => {
+    if (!profile) return;
+    await shareContent({
+      type: 'user',
+      id: profile.id,
+      title: profile.display_name ?? profile.username ?? 'User',
+    });
+  }, [profile]);
+
   return (
     <View style={styles.screen}>
       <View style={{ paddingTop: insets.top + 8, paddingHorizontal: 16 }}>
-        <ScreenHeader title={t('profile.title')} />
+        <ScreenHeader
+          title={t('profile.title')}
+          rightAction={
+            profile ? (
+              <TouchableOpacity onPress={handleShare} accessibilityLabel="Share profile">
+                <Ionicons name="share-outline" size={22} color={theme.textPrimary} />
+              </TouchableOpacity>
+            ) : undefined
+          }
+        />
       </View>
 
       {isLoading ? (

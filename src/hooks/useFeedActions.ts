@@ -1,5 +1,4 @@
 import { useCallback, useMemo } from 'react';
-import { Share } from 'react-native';
 import { useRouter } from 'expo-router';
 import {
   useVoteFeedItem,
@@ -8,6 +7,7 @@ import {
   useUnfollowEntity,
 } from '@/features/feed';
 import { useAuthGate } from '@/hooks/useAuthGate';
+import { shareContent } from '@/utils/shareContent';
 import { useAuth } from '@/features/auth/providers/AuthProvider';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 
@@ -67,11 +67,12 @@ export function useFeedActions({
     [userVotes, voteMutation, removeMutation],
   );
 
+  // @sideeffect: opens native share sheet with deep link URL
   const handleShare = useCallback(
-    (itemId: string) => {
+    async (itemId: string) => {
       const item = allItems.find((i) => i.id === itemId);
       /* istanbul ignore next */ if (!item) return;
-      Share.share({ message: `${item.title} — Check it out on Faniverz!` }).catch(() => {});
+      await shareContent({ type: 'post', id: item.id, title: item.title });
     },
     [allItems],
   );

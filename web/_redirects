@@ -1,0 +1,5 @@
+/movie/*              /link/index.html   200
+/actor/*              /link/index.html   200
+/production-house/*   /link/index.html   200
+/post/*               /link/index.html   200
+/user/*               /link/index.html   200

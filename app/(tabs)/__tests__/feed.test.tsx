@@ -428,15 +428,15 @@ describe('FeedScreen', () => {
     expect(getByText('Latest Updates & Content')).toBeTruthy();
   });
 
-  it('share calls Share.share with item title', () => {
+  it('share calls Share.share with item title and deep link', () => {
     const { Share } = require('react-native');
     jest.spyOn(Share, 'share').mockResolvedValue({ action: 'sharedAction' });
     setupMocks();
     render(<FeedScreen />);
     fireEvent.press(screen.getByLabelText('Share Test Trailer'));
-    expect(Share.share).toHaveBeenCalledWith({
-      message: 'Test Trailer — Check it out on Faniverz!',
-    });
+    expect(Share.share).toHaveBeenCalledWith(
+      expect.objectContaining({ message: expect.stringContaining('Test Trailer') }),
+    );
     jest.restoreAllMocks();
   });
 

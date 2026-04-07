@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -19,6 +19,7 @@ import { createProductionHouseStyles } from '@/styles/productionHouseDetail.styl
 import { getImageUrl, posterBucket } from '@shared/imageUrl';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { extractReleaseYear } from '@/utils/formatDate';
+import { shareContent } from '@/utils/shareContent';
 import { ProductionHouseDetailSkeleton } from '@/components/productionHouse/ProductionHouseDetailSkeleton';
 import ScreenHeader from '@/components/common/ScreenHeader';
 
@@ -51,6 +52,12 @@ export default function ProductionHouseDetailScreen() {
 
   // @coupling: followSet uses "entityType:entityId" composite key format
   const isFollowing = followSet.has(`production_house:${id}`);
+
+  // @sideeffect: opens native share sheet with deep link URL
+  const handleShare = useCallback(async () => {
+    if (!house) return;
+    await shareContent({ type: 'production-house', id: house.id, title: house.name });
+  }, [house]);
 
   // @contract: gate() redirects to login if unauthenticated; otherwise toggles follow state
   // @contract: mutations are idempotent (upsert + delete) so no isPending guard needed
@@ -126,11 +133,16 @@ export default function ProductionHouseDetailScreen() {
       renderImage={renderLogo}
       onBack={() => router.back()}
       rightContent={
-        <FollowButton
-          isFollowing={isFollowing}
-          onPress={handleFollowToggle}
-          entityName={house.name}
-        />
+        <View style={styles.rightContentRow}>
+          <TouchableOpacity onPress={handleShare} accessibilityLabel="Share production house">
+            <Ionicons name="share-outline" size={22} color={theme.textPrimary} />
+          </TouchableOpacity>
+          <FollowButton
+            isFollowing={isFollowing}
+            onPress={handleFollowToggle}
+            entityName={house.name}
+          />
+        </View>
       }
       heroContent={
         house.description ? (

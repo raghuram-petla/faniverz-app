@@ -5,6 +5,7 @@ import type { SemanticTheme } from '@shared/themes';
 export const createStyles = (t: SemanticTheme) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: t.background },
+    rightContentRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     badgeRow: {
       flexDirection: 'row',
       justifyContent: 'center',

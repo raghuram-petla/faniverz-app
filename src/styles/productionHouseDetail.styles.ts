@@ -4,6 +4,7 @@ import type { SemanticTheme } from '@shared/themes';
 
 export const createProductionHouseStyles = (t: SemanticTheme) =>
   StyleSheet.create({
+    rightContentRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
     screen: {
       flex: 1,
       backgroundColor: t.background,

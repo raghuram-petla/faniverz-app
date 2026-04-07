@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Faniverz</title>
+  <link rel="icon" type="image/x-icon" href="/sources/favicon.ico"/>
+
+  <!-- Open Graph — static branding; dynamic per-content OG requires a Cloudflare Worker -->
+  <meta property="og:title" content="Faniverz — Global Movie Discovery"/>
+  <meta property="og:description" content="Track movies, discover actors, write reviews, and more on Faniverz."/>
+  <meta property="og:image" content="https://faniverz.com/sources/faniverz%20logo.png"/>
+  <meta property="og:url" content="https://faniverz.com"/>
+  <meta property="og:type" content="website"/>
+  <meta name="twitter:card" content="summary_large_image"/>
+
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #000; color: #fff;
+      display: flex; align-items: center; justify-content: center;
+      min-height: 100vh; text-align: center; padding: 24px;
+    }
+    .container { max-width: 400px; }
+    .logo { width: 80px; height: 80px; margin: 0 auto 24px; border-radius: 16px; }
+    h1 { font-size: 24px; margin-bottom: 8px; }
+    .subtitle { color: #a1a1aa; font-size: 16px; margin-bottom: 32px; }
+    .content-type { color: #dc2626; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+    .store-buttons { display: flex; flex-direction: column; gap: 12px; margin-top: 24px; }
+    .store-btn {
+      display: inline-flex; align-items: center; justify-content: center; gap: 8px;
+      background: #18181b; color: #fff; padding: 14px 24px; border-radius: 12px;
+      text-decoration: none; font-size: 16px; font-weight: 600;
+      border: 1px solid #27272a; transition: background 0.2s;
+    }
+    .store-btn:hover { background: #27272a; }
+    .spinner { display: inline-block; width: 20px; height: 20px; border: 2px solid #52525b;
+      border-top-color: #dc2626; border-radius: 50%;
+      animation: spin 0.8s linear infinite; margin-bottom: 16px; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    #loading { margin-bottom: 24px; }
+    #fallback { display: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div id="loading">
+      <div class="spinner"></div>
+      <p style="color: #a1a1aa;">Opening Faniverz...</p>
+    </div>
+
+    <div id="fallback">
+      <img src="/sources/faniverz%20logo.png" alt="Faniverz" class="logo"/>
+      <p id="content-label" class="content-type"></p>
+      <h1>View this on Faniverz</h1>
+      <p class="subtitle">The global movie discovery app</p>
+
+      <div class="store-buttons">
+        <a href="#" class="store-btn" id="ios-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+          App Store
+        </a>
+        <a href="#" class="store-btn" id="android-btn">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M3.18 23.04c.17.46.55.78 1.02.86.12.02.25.02.38.01l.14-.02L7.67 22H16.33l2.95 1.89.14.02c.13.01.26.01.38-.01.47-.08.85-.4 1.02-.86.1-.27.12-.56.05-.84L18.7 14H5.3L3.13 22.2c-.07.28-.05.57.05.84zM21.4 12.84l-.49-1.6c-.36-1.16-.96-2.14-1.72-2.88l1.6-2.76a.997.997 0 10-1.73-1l-1.46 2.52A7.98 7.98 0 0012 5.5c-1.96 0-3.77.71-5.18 1.88L5.36 4.86a1 1 0 10-1.73 1l1.6 2.76c-.76.74-1.36 1.72-1.72 2.88l-.49 1.6c-.13.43.11.88.55 1.01.08.03.17.04.25.04a.8.8 0 00.76-.59l.35-1.15h12.14l.35 1.15a.8.8 0 00.76.59c.08 0 .17-.01.25-.04.44-.13.68-.58.55-1.01zM9.5 10a1 1 0 110-2 1 1 0 010 2zm5 0a1 1 0 110-2 1 1 0 010 2z"/></svg>
+          Google Play
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      var path = window.location.pathname;
+      var parts = path.split('/').filter(Boolean);
+      var contentType = parts[0] || '';
+      var labels = {
+        'movie': 'Movie',
+        'actor': 'Actor',
+        'production-house': 'Production House',
+        'post': 'Post',
+        'user': 'User Profile'
+      };
+
+      // Set content type label
+      var label = document.getElementById('content-label');
+      if (label && labels[contentType]) label.textContent = labels[contentType];
+
+      // Attempt to open the app via custom scheme redirect
+      // Universal Links / App Links intercept the HTTPS URL before this page loads
+      // when the app is installed. This custom scheme redirect is a fallback for
+      // cases where universal links aren't configured yet.
+      window.location.href = 'faniverz:/' + path;
+
+      // Show fallback landing page after timeout (app didn't open)
+      setTimeout(function() {
+        document.getElementById('loading').style.display = 'none';
+        document.getElementById('fallback').style.display = 'block';
+      }, 1500);
+    })();
+  </script>
+</body>
+</html>

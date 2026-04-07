@@ -1,0 +1,17 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "TEAM_ID.com.faniverz.app",
+        "paths": [
+          "/movie/*",
+          "/actor/*",
+          "/production-house/*",
+          "/post/*",
+          "/user/*"
+        ]
+      }
+    ]
+  }
+}
