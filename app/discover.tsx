@@ -251,7 +251,7 @@ export default function DiscoverScreen() {
             />
           }
           renderItem={({ item, index }: { item: Movie; index: number }) => (
-            <AnimatedListItem index={index} stagger={50}>
+            <AnimatedListItem index={index} stagger={50} style={styles.gridItem}>
               <DiscoverGridItem
                 item={item}
                 platforms={platformMap[item.id] ?? []}

@@ -25,6 +25,8 @@ export interface AnimatedListItemProps {
   direction?: 'up' | 'right';
   /** Translation distance in px (default 30) */
   distance?: number;
+  // @contract: pass flex:1 when used inside a FlatList grid row so Animated.View doesn't break equal-width distribution
+  style?: object;
 }
 
 const DURATION = 300;
@@ -37,6 +39,7 @@ export function AnimatedListItem({
   maxDelay = 400,
   direction = 'up',
   distance = 30,
+  style,
 }: AnimatedListItemProps) {
   const animationsEnabled = useAnimationsEnabled();
   const opacity = useSharedValue(animationsEnabled ? 0 : 1);
@@ -60,5 +63,5 @@ export function AnimatedListItem({
     ],
   }));
 
-  return <Animated.View style={animatedStyle}>{children}</Animated.View>;
+  return <Animated.View style={[style, animatedStyle]}>{children}</Animated.View>;
 }
