@@ -234,20 +234,11 @@ export default function DiscoverScreen() {
           overScrollMode="never"
           {...androidPullProps}
           ListHeaderComponent={
-            <>
-              <PullToRefreshIndicator
-                pullDistance={pullDistance}
-                isRefreshing={isRefreshing}
-                refreshing={refreshing}
-              />
-              {isSearching && universalResults && (
-                <DiscoverSearchEntities
-                  actors={universalResults.actors}
-                  productionHouses={universalResults.productionHouses}
-                  platforms={universalResults.platforms}
-                />
-              )}
-            </>
+            <PullToRefreshIndicator
+              pullDistance={pullDistance}
+              isRefreshing={isRefreshing}
+              refreshing={refreshing}
+            />
           }
           renderItem={({ item, index }: { item: Movie; index: number }) => (
             <AnimatedListItem index={index} stagger={50} style={styles.gridItem}>
@@ -268,11 +259,20 @@ export default function DiscoverScreen() {
             />
           }
           ListFooterComponent={
-            isFetchingNextPage ? (
-              <View style={styles.footerLoader}>
-                <ActivityIndicator size="small" color={colors.red600} />
-              </View>
-            ) : null
+            <>
+              {isFetchingNextPage && (
+                <View style={styles.footerLoader}>
+                  <ActivityIndicator size="small" color={colors.red600} />
+                </View>
+              )}
+              {isSearching && universalResults && (
+                <DiscoverSearchEntities
+                  actors={universalResults.actors}
+                  productionHouses={universalResults.productionHouses}
+                  platforms={universalResults.platforms}
+                />
+              )}
+            </>
           }
           showsVerticalScrollIndicator={false}
         />
