@@ -15,7 +15,6 @@ RETURNS TABLE (
   display_order       integer,
   logo_url            text,
   tmdb_provider_id    integer,
-  tmdb_alias_ids      integer[],
   regions             text[],
   search_score        float
 )
@@ -31,7 +30,7 @@ DECLARE
   prefix_str  text;
 BEGIN
   -- @edge: unaccent strips diacritics so accented platform names still match
-  term := public.unaccent(trim(regexp_replace(search_term, '\s+', ' ', 'g')));
+  term := extensions.unaccent(trim(regexp_replace(search_term, '\s+', ' ', 'g')));
 
   IF length(term) <= 3 THEN
     threshold := 0.2;
@@ -60,18 +59,18 @@ BEGIN
     -- @assumes: no stored search_vector on platforms — compute inline with simple config
     SELECT p.id,
            greatest(
-             ts_rank_cd(to_tsvector('pg_catalog.simple', public.unaccent(p.name)), tsq, 32),
-             ts_rank_cd(to_tsvector('pg_catalog.simple', public.unaccent(p.name)), tsq_prefix, 32)
+             ts_rank_cd(to_tsvector('pg_catalog.simple', extensions.unaccent(p.name)), tsq, 32),
+             ts_rank_cd(to_tsvector('pg_catalog.simple', extensions.unaccent(p.name)), tsq_prefix, 32)
            ) AS score
     FROM public.platforms p
-    WHERE to_tsvector('pg_catalog.simple', public.unaccent(p.name)) @@ tsq
-       OR to_tsvector('pg_catalog.simple', public.unaccent(p.name)) @@ tsq_prefix
+    WHERE to_tsvector('pg_catalog.simple', extensions.unaccent(p.name)) @@ tsq
+       OR to_tsvector('pg_catalog.simple', extensions.unaccent(p.name)) @@ tsq_prefix
   ),
   trgm AS (
     SELECT p.id,
-           extensions.similarity(public.unaccent(p.name), term) AS score
+           extensions.similarity(extensions.unaccent(p.name), term) AS score
     FROM public.platforms p
-    WHERE extensions.similarity(public.unaccent(p.name), term) > threshold
+    WHERE extensions.similarity(extensions.unaccent(p.name), term) > threshold
   ),
   combined AS (
     SELECT
@@ -83,7 +82,7 @@ BEGIN
   )
   SELECT
     p.id, p.name, p.logo, p.color, p.display_order,
-    p.logo_url, p.tmdb_provider_id, p.tmdb_alias_ids, p.regions,
+    p.logo_url, p.tmdb_provider_id, p.regions,
     c.score::float AS search_score
   FROM combined c
   JOIN public.platforms p ON p.id = c.id
