@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useCallback } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { View, Text, ActivityIndicator } from 'react-native';
 import { FlatList } from 'react-native-gesture-handler';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
@@ -34,7 +34,6 @@ import { useSmartPagination } from '@/hooks/useSmartPagination';
 import { DISCOVER_PAGINATION } from '@/constants/paginationConfig';
 import { useAnimationsEnabled } from '@/hooks/useAnimationsEnabled';
 
-// @boundary: Discover screen — paginated movie grid with search showing artists/studios/platforms
 export default function DiscoverScreen() {
   const { t } = useTranslation();
   const { theme, colors } = useTheme();
@@ -65,13 +64,12 @@ export default function DiscoverScreen() {
   useEffect(() => {
     const deg = showSortDropdown ? 180 : 0;
     chevronRotate.value = animationsEnabled ? withTiming(deg, { duration: 200 }) : deg;
-  }, [showSortDropdown, animationsEnabled]); // chevronRotate is a SharedValue (stable ref)
-  /* istanbul ignore next -- Reanimated worklet cannot execute in Jest */
+  }, [showSortDropdown, animationsEnabled]);
+  /* istanbul ignore next */
   const chevronStyle = useAnimatedStyle(() => ({
     transform: [{ rotate: `${chevronRotate.value}deg` }],
   }));
 
-  // @edge: only togglePlatform if not already selected — prevents toggling OFF on re-mount
   useEffect(() => {
     if (params.filter) setFilter(params.filter as 'all' | MovieStatus);
     if (params.platform && !useFilterStore.getState().selectedPlatforms.includes(params.platform)) {
@@ -79,7 +77,6 @@ export default function DiscoverScreen() {
     }
   }, [params.filter, params.platform, setFilter, togglePlatform]);
 
-  // @contract: only movieStatus and sortBy are sent to the API; genre/platform/PH filtering is client-side
   const filters = useMemo(
     () => ({
       ...(selectedFilter !== 'all' && { movieStatus: selectedFilter }),
@@ -97,11 +94,11 @@ export default function DiscoverScreen() {
     refetch,
   } = useMoviesPaginated(filters);
 
-  // @contract: server-side search replaces client-side filter when query ≥2 chars
   const isSearching = searchQuery.length >= 2;
   const srch = useSearchMoviesPaginated(searchQuery);
-  // @contract: universal search returns actors/production houses/platforms alongside movies
   const { data: universalResults } = useUniversalSearch(searchQuery);
+  const entitiesFirst =
+    (universalResults?.topEntityScore ?? 0) > (universalResults?.topMovieScore ?? 0);
 
   const { refreshing, onRefresh } = useRefresh(refetch);
   const {
@@ -122,7 +119,6 @@ export default function DiscoverScreen() {
   /* istanbul ignore next */
   const { data: phMovieIds = [] } = useMovieIdsByProductionHouse(selectedProductionHouses);
 
-  // @contract: when isSearching, use RPC results; genre/platform/PH filters still apply on top
   const filteredMovies = useMemo(() => {
     let movies = isSearching ? (srch.allItems ?? []) : allMovies;
 
@@ -234,11 +230,20 @@ export default function DiscoverScreen() {
           overScrollMode="never"
           {...androidPullProps}
           ListHeaderComponent={
-            <PullToRefreshIndicator
-              pullDistance={pullDistance}
-              isRefreshing={isRefreshing}
-              refreshing={refreshing}
-            />
+            <>
+              <PullToRefreshIndicator
+                pullDistance={pullDistance}
+                isRefreshing={isRefreshing}
+                refreshing={refreshing}
+              />
+              {isSearching && entitiesFirst && universalResults && (
+                <DiscoverSearchEntities
+                  actors={universalResults.actors}
+                  productionHouses={universalResults.productionHouses}
+                  platforms={universalResults.platforms}
+                />
+              )}
+            </>
           }
           renderItem={({ item, index }: { item: Movie; index: number }) => (
             <AnimatedListItem index={index} stagger={50} style={styles.gridItem}>
@@ -265,7 +270,7 @@ export default function DiscoverScreen() {
                   <ActivityIndicator size="small" color={colors.red600} />
                 </View>
               )}
-              {isSearching && universalResults && (
+              {isSearching && !entitiesFirst && universalResults && (
                 <DiscoverSearchEntities
                   actors={universalResults.actors}
                   productionHouses={universalResults.productionHouses}

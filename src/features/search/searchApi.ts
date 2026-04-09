@@ -1,12 +1,21 @@
 import { supabase } from '@/lib/supabase';
 import type { Movie, Actor, ProductionHouse, OTTPlatform } from '@shared/types';
 
+// @contract: search_score is present on every item returned by the search RPCs
+type Scored = { search_score?: number };
+
+function topScore(items: Scored[]): number {
+  return items.reduce((max, i) => Math.max(max, i.search_score ?? 0), 0);
+}
+
 export interface UniversalSearchResult {
   movies: Movie[];
   actors: Actor[];
   productionHouses: ProductionHouse[];
-  // @contract: platforms key added in migration 20260407000142_search_platforms
   platforms: OTTPlatform[];
+  // @contract: top score per entity type — used to order sections by relevance
+  topMovieScore: number;
+  topEntityScore: number;
 }
 
 // @boundary: search_term is passed as a parameterized RPC argument — no ILIKE escaping needed.
@@ -29,11 +38,18 @@ export async function searchAll(query: string): Promise<UniversalSearchResult> {
     platforms: OTTPlatform[];
   } | null;
 
+  const movies = (result?.movies ?? []) as (Movie & Scored)[];
+  const actors = (result?.actors ?? []) as (Actor & Scored)[];
+  const houses = (result?.production_houses ?? []) as (ProductionHouse & Scored)[];
+  const plats = (result?.platforms ?? []) as (OTTPlatform & Scored)[];
+
   return {
-    movies: result?.movies ?? [],
-    actors: result?.actors ?? [],
-    productionHouses: result?.production_houses ?? [],
-    platforms: result?.platforms ?? [],
+    movies,
+    actors,
+    productionHouses: houses,
+    platforms: plats,
+    topMovieScore: topScore(movies),
+    topEntityScore: Math.max(topScore(actors), topScore(houses), topScore(plats)),
   };
 }
 
