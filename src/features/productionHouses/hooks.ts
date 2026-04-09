@@ -41,6 +41,24 @@ export function useMovieIdsByProductionHouse(productionHouseIds: string[]) {
   });
 }
 
+export function useMoviesByProductionHouseIds(productionHouseIds: string[]) {
+  const { data: movieIds = [] } = useMovieIdsByProductionHouse(productionHouseIds);
+  return useQuery({
+    queryKey: ['movies_by_ph_search', movieIds],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('movies')
+        .select('*')
+        .in('id', movieIds)
+        .order('release_date', { ascending: false });
+      if (error) throw error;
+      return (data ?? []) as import('@/types').Movie[];
+    },
+    enabled: movieIds.length > 0,
+    staleTime: STALE_5M,
+  });
+}
+
 export function useProductionHouseDetail(id: string) {
   // @coupling: fetches house and movies as two independent queries — no shared loading/error boundary.
   // If house fetch succeeds but movies fetch fails, isLoading stays true until movies also resolves (OR logic).

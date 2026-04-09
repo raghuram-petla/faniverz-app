@@ -10,7 +10,7 @@ import { useTheme } from '@/theme';
 import { EmptyState } from '@/components/ui/EmptyState';
 import { AnimatedListItem } from '@/components/ui/AnimatedListItem';
 import { useMoviesPaginated } from '@/features/movies/hooks/useMoviesPaginated';
-import { useSearchMoviesPaginated, useUniversalSearch } from '@/features/search/searchHooks';
+import { useDiscoverSearch } from '@/features/search/useDiscoverSearch';
 import { usePlatforms, useMoviePlatformMap } from '@/features/ott/hooks';
 import { useFilterStore } from '@/stores/useFilterStore';
 import { Movie, MovieStatus } from '@/types';
@@ -94,11 +94,8 @@ export default function DiscoverScreen() {
     refetch,
   } = useMoviesPaginated(filters);
 
-  const isSearching = searchQuery.length >= 2;
-  const srch = useSearchMoviesPaginated(searchQuery);
-  const { data: universalResults } = useUniversalSearch(searchQuery);
-  const entitiesFirst =
-    (universalResults?.topEntityScore ?? 0) > (universalResults?.topMovieScore ?? 0);
+  const { isSearching, searchMovies, universalResults, entitiesFirst, srch } =
+    useDiscoverSearch(searchQuery);
 
   const { refreshing, onRefresh } = useRefresh(refetch);
   const {
@@ -120,7 +117,7 @@ export default function DiscoverScreen() {
   const { data: phMovieIds = [] } = useMovieIdsByProductionHouse(selectedProductionHouses);
 
   const filteredMovies = useMemo(() => {
-    let movies = isSearching ? (srch.allItems ?? []) : allMovies;
+    let movies = isSearching ? searchMovies : allMovies;
 
     if (selectedGenres.length > 0) {
       movies = movies.filter((m) => selectedGenres.some((g) => (m.genres ?? []).includes(g)));
@@ -140,7 +137,7 @@ export default function DiscoverScreen() {
     return movies;
   }, [
     isSearching,
-    srch.allItems,
+    searchMovies,
     allMovies,
     selectedGenres,
     selectedPlatforms,
