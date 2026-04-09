@@ -14,7 +14,16 @@
     "preview": {
       "distribution": "internal",
       "env": {
-        "APP_VARIANT": "preview"
+        "APP_VARIANT": "preview",
+        "EXPO_PUBLIC_SUPABASE_URL": "https://nolfeefxpgngrvhxhnvo.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_UAebmz05W_L9Coh6rDCIhQ_XDblGzmE",
+        "EXPO_PUBLIC_R2_BASE_URL_POSTERS": "https://posters.faniverz.com",
+        "EXPO_PUBLIC_R2_BASE_URL_BACKDROPS": "https://backdrops.faniverz.com",
+        "EXPO_PUBLIC_R2_BASE_URL_ACTORS": "https://actors.faniverz.com",
+        "EXPO_PUBLIC_R2_BASE_URL_AVATARS": "https://avatars.faniverz.com",
+        "EXPO_PUBLIC_R2_BASE_URL_PLATFORMS": "https://platforms.faniverz.com",
+        "EXPO_PUBLIC_R2_BASE_URL_PRODUCTION_HOUSES": "https://production-houses.faniverz.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "753020744218-k1g5h1kks7l7secsu0tk9i1qmggnc70u.apps.googleusercontent.com"
       }
     },
     "production": {
