@@ -33,7 +33,7 @@ import type {
 // @boundary Proxy to /api/sync/* routes — server handles TMDB API key securely.
 // @coupling: all sync mutations share the same syncApi helper — a change to error handling
 // or auth here affects every sync operation (import, refresh, fill-fields, discover, search).
-async function syncApi<T>(path: string, body?: unknown): Promise<T> {
+async function syncApi<T>(path: string, body?: unknown, signal?: AbortSignal): Promise<T> {
   const {
     data: { session },
   } = await supabase.auth.getSession();
@@ -51,6 +51,7 @@ async function syncApi<T>(path: string, body?: unknown): Promise<T> {
     method: body !== undefined ? 'POST' : 'GET',
     headers,
     body: body !== undefined ? JSON.stringify(body) : undefined,
+    signal,
   });
 
   // @edge: check status before parsing JSON — non-JSON 401 responses (e.g., HTML from edge proxy) would throw SyntaxError
@@ -140,8 +141,12 @@ export function useTmdbMovieLookup(tmdbId: number, originalLanguage?: string | n
 export function useImportMovies() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (params: { tmdbIds: number[]; originalLanguage?: string }) =>
-      syncApi<ImportMoviesResponse>('import-movies', params),
+    mutationFn: (params: { tmdbIds: number[]; originalLanguage?: string; signal?: AbortSignal }) =>
+      syncApi<ImportMoviesResponse>(
+        'import-movies',
+        { tmdbIds: params.tmdbIds, originalLanguage: params.originalLanguage },
+        params.signal,
+      ),
     onSuccess: () => {
       invalidateSync(qc, [...MOVIE_SYNC_KEYS, 'platform-movie-ids']);
     },

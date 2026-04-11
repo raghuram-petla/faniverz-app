@@ -29,6 +29,8 @@ export function DiscoverByYear({ data, onImportingChange, isReadOnly }: Discover
   // @contract: cancel ref checked between movies — when true, pending movies are skipped
   // @invariant cancelledRef is reset to false at the start of each runBatchImport call
   const cancelledRef = useRef(false);
+  // @contract: abortControllerRef aborts the in-flight fetch so cancel takes effect immediately
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const existingMovies = useMemo(
     () => [...((data.existingMovies ?? []) as ExistingMovieData[]), ...importedMovieData],
@@ -101,6 +103,7 @@ export function DiscoverByYear({ data, onImportingChange, isReadOnly }: Discover
     movies: Array<{ id: number; title: string; original_language: string }>,
   ) => {
     cancelledRef.current = false;
+    abortControllerRef.current = new AbortController();
     setImportProgress(
       movies.map((m) => ({ tmdbId: m.id, title: m.title, status: 'pending' as const })),
     );
@@ -129,6 +132,7 @@ export function DiscoverByYear({ data, onImportingChange, isReadOnly }: Discover
           const response = await importMovies.mutateAsync({
             tmdbIds: batch,
             originalLanguage: movie.original_language,
+            signal: abortControllerRef.current?.signal,
           });
           const successResults = response.results;
           if (successResults.length > 0) {
@@ -182,6 +186,17 @@ export function DiscoverByYear({ data, onImportingChange, isReadOnly }: Discover
           );
           break;
         } catch (err) {
+          // @edge: AbortError = user clicked cancel — mark remaining as cancelled and exit
+          if (err instanceof DOMException && err.name === 'AbortError') {
+            setImportProgress((prev) =>
+              prev.map((p) =>
+                p.status === 'pending' || p.status === 'importing'
+                  ? { ...p, status: 'failed', error: 'Cancelled' }
+                  : p,
+              ),
+            );
+            break;
+          }
           // @edge: 504/502 = gateway timeout — backend was killed but saved progress, retry
           const status = (err as Error & { status?: number }).status;
           const isTimeout = status === 504 || status === 502;
@@ -225,6 +240,8 @@ export function DiscoverByYear({ data, onImportingChange, isReadOnly }: Discover
 
   const handleCancelImport = useCallback(() => {
     cancelledRef.current = true;
+    // @sideeffect: abort the in-flight fetch so cancel takes effect immediately
+    abortControllerRef.current?.abort();
   }, []);
 
   const handleImportAllNew = () => {
