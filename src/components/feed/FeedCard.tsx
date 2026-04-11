@@ -25,6 +25,7 @@ import {
 import { createFeedCardStyles } from '@/styles/tabs/feed.styles';
 import { PLACEHOLDER_POSTER } from '@/constants/placeholders';
 import { FeedEditorialCard } from './FeedEditorialCard';
+import { FeedCastCrew } from './FeedCastCrew';
 import type { NewsFeedItem, FeedEntityType } from '@shared/types';
 import type { ImageViewerTopChrome } from '@/providers/ImageViewerProvider';
 
@@ -173,6 +174,7 @@ function FeedCardInner({
                   <FeedContentBadge contentType={item.content_type} />
                   <Text style={styles.timestamp}>{relativeTime}</Text>
                 </View>
+                {item.movie_id ? <FeedCastCrew movieId={item.movie_id} /> : null}
                 <Text style={styles.headerTitle} numberOfLines={2}>
                   {item.title}
                 </Text>
@@ -242,7 +244,6 @@ function FeedCardInner({
               />
             </View>
           ) : null}
-
           <View style={styles.actionBar}>
             <FeedActionBar
               commentCount={item.comment_count}

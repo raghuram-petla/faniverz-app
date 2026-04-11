@@ -177,3 +177,101 @@ export const createFeedCardStyles = (t: SemanticTheme) =>
       borderRadius: 1,
     },
   });
+
+// ── Feed cast/crew avatar circles ────────────────────────────────────────────────
+
+export const createFeedCastCrewStyles = (t: SemanticTheme) =>
+  StyleSheet.create({
+    container: {
+      paddingTop: 4,
+      paddingBottom: 2,
+    },
+    circlesRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-start',
+      gap: 5,
+    },
+    smallCircleBorder: {
+      borderRadius: 999,
+      borderWidth: 1.5,
+      borderColor: 'rgba(150,150,150,0.4)',
+    },
+    popupGestureRoot: {
+      flex: 1,
+    },
+    popupBackdrop: {
+      ...StyleSheet.absoluteFillObject,
+      backgroundColor: 'rgba(0,0,0,0.7)',
+    },
+    popupOverlayContent: {
+      position: 'absolute',
+    },
+    // Carousel: transparent viewport that clips the sliding strip
+    carouselWrapper: {
+      width: 200,
+      overflow: 'hidden',
+      paddingVertical: 12,
+    },
+    // Fallback centering when measureInWindow hasn't fired yet
+    carouselFallback: {
+      alignSelf: 'center',
+      marginTop: '40%',
+    },
+    carouselStrip: {
+      flexDirection: 'row',
+    },
+    carouselCard: {
+      width: 200,
+      alignItems: 'center',
+      gap: 10,
+      paddingHorizontal: 16,
+    },
+    // Glowing ring around the avatar photo
+    avatarRing: {
+      borderRadius: 999,
+      borderWidth: 2,
+      borderColor: 'rgba(255,255,255,0.35)',
+      shadowColor: '#fff',
+      shadowOffset: { width: 0, height: 0 },
+      shadowOpacity: 0.4,
+      shadowRadius: 12,
+      elevation: 8,
+    },
+    // Frosted pill behind name text
+    namePill: {
+      backgroundColor: 'rgba(0,0,0,0.75)',
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+    },
+    popupName: {
+      fontSize: 17,
+      fontWeight: '700',
+      color: '#fff',
+      textAlign: 'center',
+      textShadowColor: 'rgba(0,0,0,0.8)',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 4,
+    },
+    popupRole: {
+      fontSize: 13,
+      color: 'rgba(255,255,255,0.75)',
+      textAlign: 'center',
+      textShadowColor: 'rgba(0,0,0,0.8)',
+      textShadowOffset: { width: 0, height: 1 },
+      textShadowRadius: 3,
+    },
+    hintPill: {
+      backgroundColor: 'rgba(0,0,0,0.65)',
+      borderRadius: 8,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      alignSelf: 'center',
+      marginTop: 6,
+    },
+    popupPosition: {
+      fontSize: 13,
+      color: 'rgba(255,255,255,0.6)',
+      textAlign: 'center',
+    },
+  });

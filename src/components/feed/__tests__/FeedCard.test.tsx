@@ -161,6 +161,17 @@ jest.mock('../FeedEditorialCard', () => ({
   },
 }));
 
+jest.mock('../FeedCastCrew', () => ({
+  FeedCastCrew: ({ movieId }: { movieId: string }) => {
+    const { View, Text } = require('react-native');
+    return (
+      <View testID="feed-cast-crew">
+        <Text testID="feed-cast-crew-movie-id">{movieId}</Text>
+      </View>
+    );
+  },
+}));
+
 import React from 'react';
 import { render, fireEvent, screen } from '@testing-library/react-native';
 import { FeedCard } from '../FeedCard';
@@ -859,5 +870,18 @@ describe('FeedCard', () => {
     render(<FeedCard item={item} onPress={jest.fn()} />);
     expect(screen.getByTestId('feed-editorial-card')).toBeTruthy();
     expect(screen.getByText('Test Trailer')).toBeTruthy();
+  });
+
+  it('renders FeedCastCrew when item has movie_id', () => {
+    const item = makeItem({ movie_id: 'm1' });
+    render(<FeedCard item={item} onPress={jest.fn()} />);
+    expect(screen.getByTestId('feed-cast-crew')).toBeTruthy();
+    expect(screen.getByTestId('feed-cast-crew-movie-id')).toHaveTextContent('m1');
+  });
+
+  it('does not render FeedCastCrew when item has no movie_id', () => {
+    const item = makeItem({ movie_id: null });
+    render(<FeedCard item={item} onPress={jest.fn()} />);
+    expect(screen.queryByTestId('feed-cast-crew')).toBeNull();
   });
 });

@@ -48,7 +48,13 @@ jest.mock('@/lib/supabase', () => ({
 }));
 
 import { supabase } from '@/lib/supabase';
-import { fetchMovies, fetchMovieById, fetchMoviesPaginated, fetchUpcomingMovies } from '../api';
+import {
+  fetchMovies,
+  fetchMovieById,
+  fetchMoviesPaginated,
+  fetchUpcomingMovies,
+  fetchMovieTopCredits,
+} from '../api';
 
 describe('movies api', () => {
   beforeEach(() => {
@@ -760,6 +766,93 @@ describe('movies api', () => {
 
       const result = await fetchMoviesPaginated(0, 10, { movieStatus: 'streaming' });
       expect(result).toEqual([]);
+    });
+  });
+
+  describe('fetchMovieTopCredits', () => {
+    function makeLimitResult(data: object[] | null, error: Error | null = null) {
+      return {
+        then(resolve: (v: unknown) => void, reject?: (e: unknown) => void) {
+          return Promise.resolve({ data, error }).then(resolve, reject);
+        },
+        catch(reject: (e: unknown) => void) {
+          return Promise.resolve({ data, error }).catch(reject);
+        },
+      };
+    }
+
+    function mockFromForTopCredits(
+      castData: object[] | null,
+      crewData: object[] | null,
+      castError: Error | null = null,
+      crewError: Error | null = null,
+    ) {
+      (supabase.from as jest.Mock).mockImplementation(() => {
+        const mockLimitLocal = jest.fn();
+        const mockOrderLocal = jest.fn().mockReturnValue({ limit: mockLimitLocal });
+        let eqCallCount = 0;
+        const mockEqChained = jest.fn().mockImplementation(() => {
+          eqCallCount++;
+          // First .eq() is movie_id, second is credit_type
+          if (eqCallCount === 1) {
+            return { eq: mockEqChained };
+          }
+          // Second eq — determine cast or crew based on call order
+          return { order: mockOrderLocal };
+        });
+        // Track which branch we're on via a closure trick:
+        // The Promise.all creates two calls to supabase.from(). Each gets its own mock chain.
+        let fromCallCount = 0;
+        // Actually, mockImplementation is called fresh each time supabase.from() is called.
+        // So we need to use the outer closure to track.
+        return {
+          select: jest.fn().mockReturnValue({
+            eq: jest.fn().mockImplementation(() => ({
+              eq: jest.fn().mockImplementation((_col: string, val: string) => ({
+                order: jest.fn().mockReturnValue({
+                  limit: jest
+                    .fn()
+                    .mockReturnValue(
+                      val === 'cast'
+                        ? makeLimitResult(castData, castError)
+                        : makeLimitResult(crewData, crewError),
+                    ),
+                }),
+              })),
+            })),
+          }),
+        };
+      });
+    }
+
+    it('returns top 3 cast + top 3 crew combined', async () => {
+      const cast = [
+        { id: 'c1', credit_type: 'cast', actor: { id: 'a1', name: 'Actor 1' } },
+        { id: 'c2', credit_type: 'cast', actor: { id: 'a2', name: 'Actor 2' } },
+      ];
+      const crew = [{ id: 'cr1', credit_type: 'crew', actor: { id: 'a3', name: 'Director' } }];
+      mockFromForTopCredits(cast, crew);
+
+      const result = await fetchMovieTopCredits('movie-1');
+      expect(result).toHaveLength(3);
+      expect(result[0].id).toBe('c1');
+      expect(result[2].id).toBe('cr1');
+    });
+
+    it('returns empty array when no credits exist', async () => {
+      mockFromForTopCredits([], []);
+      const result = await fetchMovieTopCredits('movie-empty');
+      expect(result).toEqual([]);
+    });
+
+    it('throws when cast query errors', async () => {
+      mockFromForTopCredits(null, [], new Error('cast error'));
+      await expect(fetchMovieTopCredits('movie-err')).rejects.toThrow('cast error');
+    });
+
+    it('throws when crew query errors', async () => {
+      mockFromForTopCredits([], null, null, new Error('crew error'));
+      await expect(fetchMovieTopCredits('movie-err')).rejects.toThrow('crew error');
     });
   });
 });

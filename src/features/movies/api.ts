@@ -1,5 +1,5 @@
 import { supabase } from '@/lib/supabase';
-import { Movie, MovieWithDetails, MovieStatus } from '@/types';
+import { Movie, MovieWithDetails, MovieStatus, CastMember } from '@/types';
 import { unwrapList } from '@/utils/supabaseQuery';
 
 /** Returns today's date as YYYY-MM-DD in local timezone (avoids UTC offset bug with toISOString). */
@@ -237,4 +237,35 @@ export async function fetchUpcomingMovies(offset: number, limit: number = 10): P
       .order('release_date', { ascending: true })
       .range(offset, to),
   );
+}
+
+const TOP_CREDITS_SELECT =
+  'id, movie_id, actor_id, role_name, credit_type, display_order, role_order, actor:actors(id, name, photo_url, birth_date, gender)';
+
+// @contract Fetches top 3 cast + top 3 crew for a movie. Two queries ensure balanced representation.
+export async function fetchMovieTopCredits(movieId: string): Promise<CastMember[]> {
+  const [castResult, crewResult] = await Promise.all([
+    supabase
+      .from('movie_cast')
+      .select(TOP_CREDITS_SELECT)
+      .eq('movie_id', movieId)
+      .eq('credit_type', 'cast')
+      .order('display_order', { ascending: true })
+      .limit(3),
+    supabase
+      .from('movie_cast')
+      .select(TOP_CREDITS_SELECT)
+      .eq('movie_id', movieId)
+      .eq('credit_type', 'crew')
+      .order('role_order', { ascending: true })
+      .limit(3),
+  ]);
+
+  if (castResult.error) throw castResult.error;
+  if (crewResult.error) throw crewResult.error;
+
+  return [
+    ...(castResult.data as unknown as CastMember[]),
+    ...(crewResult.data as unknown as CastMember[]),
+  ];
 }
