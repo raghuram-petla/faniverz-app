@@ -4,14 +4,22 @@ import { render, fireEvent } from '@testing-library/react-native';
 import ScreenHeader from '../ScreenHeader';
 
 const mockBack = jest.fn();
-const mockDismissAll = jest.fn();
+const mockDispatch = jest.fn();
 
 // Mutable state returned by useNavigation().getState()
 const mockState = { index: 1 };
 
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ back: mockBack, dismissAll: mockDismissAll }),
-  useNavigation: () => ({ getState: () => mockState }),
+  useRouter: () => ({ back: mockBack }),
+  useNavigation: () => ({
+    getState: () => mockState,
+    getParent: () => undefined,
+    dispatch: mockDispatch,
+  }),
+}));
+
+jest.mock('@react-navigation/native', () => ({
+  StackActions: { pop: (n: number) => ({ type: 'POP', payload: { count: n } }) },
 }));
 
 describe('ScreenHeader', () => {
@@ -79,11 +87,11 @@ describe('ScreenHeader', () => {
     expect(getByTestId('home-button')).toBeTruthy();
   });
 
-  it('home button dismisses all screens', () => {
+  it('home button pops all screens', () => {
     mockState.index = 3;
     const { getByTestId } = render(<ScreenHeader title="Test" />);
     fireEvent.press(getByTestId('home-button'));
-    expect(mockDismissAll).toHaveBeenCalledTimes(1);
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'POP', payload: { count: 3 } });
   });
 
   it('shows home button when forceShowHome is true regardless of stack depth', () => {

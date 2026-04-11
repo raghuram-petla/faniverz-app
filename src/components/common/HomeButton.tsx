@@ -10,6 +10,8 @@ export interface HomeButtonProps {
   forceShow?: boolean;
   /** Icon color override (e.g., white for overlay headers) */
   iconColor?: string;
+  /** Icon size override (default 22) */
+  iconSize?: number;
   /** Container style override */
   style?: ViewStyle;
 }
@@ -19,7 +21,7 @@ export interface HomeButtonProps {
  * @sideeffect Pops entire root stack back to (tabs) with slide-right animation.
  * @coupling Relies on expo-router navigation state; getParent() may be undefined in tests.
  */
-export function HomeButton({ forceShow, iconColor, style }: HomeButtonProps) {
+export function HomeButton({ forceShow, iconColor, iconSize = 22, style }: HomeButtonProps) {
   const { theme } = useTheme();
   const navigation = useNavigation();
 
@@ -73,7 +75,7 @@ export function HomeButton({ forceShow, iconColor, style }: HomeButtonProps) {
       accessibilityLabel="Go to home"
       testID="home-button"
     >
-      <Ionicons name="home-outline" size={22} color={iconColor ?? theme.textPrimary} />
+      <Ionicons name="home-outline" size={iconSize} color={iconColor ?? theme.textPrimary} />
     </TouchableOpacity>
   );
 }

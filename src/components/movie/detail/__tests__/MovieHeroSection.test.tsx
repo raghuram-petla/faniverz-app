@@ -45,17 +45,19 @@ const mockMovie = {
   premiere_date: null,
 } as any;
 
-const baseProps = { movie: mockMovie, movieStatus: 'in_theaters' as any, releaseYear: 2024 };
+const mockScrollOffset = { value: 0 } as any;
+const baseProps = {
+  movie: mockMovie,
+  movieStatus: 'in_theaters' as any,
+  releaseYear: 2024,
+  scrollOffset: mockScrollOffset,
+  heroInfoFadeStyle: { opacity: 1 },
+};
 
 describe('MovieHeroSection', () => {
-  it('renders movie title', () => {
+  it('renders backdrop image', () => {
     render(<MovieHeroSection {...baseProps} />);
-    expect(screen.getByText('Pushpa 2')).toBeTruthy();
-  });
-
-  it('renders status badge text', () => {
-    render(<MovieHeroSection {...baseProps} />);
-    expect(screen.getByText('In Theaters')).toBeTruthy();
+    expect(screen.getByLabelText('View backdrop image')).toBeTruthy();
   });
 
   it('renders rating when greater than 0', () => {
@@ -96,7 +98,7 @@ describe('MovieHeroSection', () => {
   it('renders null releaseYear without crashing', () => {
     render(<MovieHeroSection {...baseProps} releaseYear={null} />);
     // Should still render the title
-    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+    expect(screen.getByLabelText('View backdrop image')).toBeTruthy();
   });
 
   it('renders review count when rating > 0', () => {
@@ -119,7 +121,7 @@ describe('MovieHeroSection', () => {
       detail_focus_y: 0.3,
     };
     render(<MovieHeroSection {...baseProps} movie={movieWithFocus} />);
-    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+    expect(screen.getByLabelText('View backdrop image')).toBeTruthy();
   });
 
   it('renders with backdrop focus position when only backdrop_focus values are set', () => {
@@ -131,7 +133,7 @@ describe('MovieHeroSection', () => {
       backdrop_focus_y: 0.4,
     };
     render(<MovieHeroSection {...baseProps} movie={movieWithBackdropFocus} />);
-    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+    expect(screen.getByLabelText('View backdrop image')).toBeTruthy();
   });
 
   it('renders without focus position when no focus values are set', () => {
@@ -143,7 +145,7 @@ describe('MovieHeroSection', () => {
       backdrop_focus_y: null,
     };
     render(<MovieHeroSection {...baseProps} movie={movieNoFocus} />);
-    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+    expect(screen.getByLabelText('View backdrop image')).toBeTruthy();
   });
 
   it('renders runtime separator correctly when releaseYear is null', () => {
@@ -178,7 +180,7 @@ describe('MovieHeroSection', () => {
         releaseYear={null}
       />,
     );
-    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+    expect(screen.getByLabelText('View backdrop image')).toBeTruthy();
   });
 
   it('renders with detail_focus_x set but detail_focus_y null (mixed null branch)', () => {
@@ -192,7 +194,7 @@ describe('MovieHeroSection', () => {
     render(<MovieHeroSection {...baseProps} movie={movieMixed} />);
     // (detail_focus_x ?? backdrop_focus_x) = 0.5, (detail_focus_y ?? backdrop_focus_y) = null
     // Since y is null, contentPosition = undefined (no position set)
-    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+    expect(screen.getByLabelText('View backdrop image')).toBeTruthy();
   });
 
   it('renders with detail_focus_y set but detail_focus_x null, backdrop_focus_x null (x null branch)', () => {
@@ -205,7 +207,7 @@ describe('MovieHeroSection', () => {
     };
     render(<MovieHeroSection {...baseProps} movie={movieYOnly} />);
     // (detail_focus_x ?? backdrop_focus_x) = null, so first condition fails => no contentPosition
-    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+    expect(screen.getByLabelText('View backdrop image')).toBeTruthy();
   });
 
   it('renders runtime separator pipe when releaseYear is present', () => {
@@ -229,13 +231,13 @@ describe('MovieHeroSection', () => {
     const movieNoBackdrop = { ...mockMovie, backdrop_url: null };
     render(<MovieHeroSection {...baseProps} movie={movieNoBackdrop} />);
     // Should still render — falls back to poster_url for hero image
-    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+    expect(screen.getByLabelText('View backdrop image')).toBeTruthy();
   });
 
   it('falls back to PLACEHOLDER_POSTER when both backdrop_url and poster_url are null', () => {
     const movieNoImages = { ...mockMovie, backdrop_url: null, poster_url: null };
     render(<MovieHeroSection {...baseProps} movie={movieNoImages} />);
     // Should still render — falls back to PLACEHOLDER_POSTER
-    expect(screen.getByText('Pushpa 2')).toBeTruthy();
+    expect(screen.getByLabelText('View backdrop image')).toBeTruthy();
   });
 });

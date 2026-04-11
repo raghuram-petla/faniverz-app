@@ -2,8 +2,15 @@ import { StyleSheet, Dimensions } from 'react-native';
 import { colors } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
 import { DETAIL_HERO_HEIGHT, DETAIL_HERO_INFO_OFFSET } from '@shared/constants';
+import {
+  DETAIL_POSTER_EXPANDED_W,
+  DETAIL_POSTER_EXPANDED_H,
+} from '@/hooks/useDetailScrollAnimations';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
+
+/** Nav row height below safe area: paddingTop(8) + button(30) + paddingBottom(8) */
+export const DETAIL_NAV_ROW_HEIGHT = 46;
 
 export const createStyles = (t: SemanticTheme) =>
   StyleSheet.create({
@@ -14,22 +21,51 @@ export const createStyles = (t: SemanticTheme) =>
       backgroundColor: '#000',
     },
     heroBackdrop: { height: DETAIL_HERO_HEIGHT, width: SCREEN_WIDTH, overflow: 'hidden' as const },
+
+    // Floating poster (absolutely positioned, animated via transforms)
+    // @invariant zIndex 51 > heroHeader's 50 so poster/title appear above the nav bar
+    floatingPoster: {
+      position: 'absolute',
+      width: DETAIL_POSTER_EXPANDED_W,
+      height: DETAIL_POSTER_EXPANDED_H,
+      zIndex: 51,
+    },
+    floatingPosterImage: {
+      width: DETAIL_POSTER_EXPANDED_W,
+      height: DETAIL_POSTER_EXPANDED_H,
+      borderRadius: 12,
+    },
+    // Floating title (absolutely positioned, animated via transforms)
+    floatingTitle: { position: 'absolute', zIndex: 51 },
+    floatingTitleText: { fontSize: 28, fontWeight: '800' },
+
+    // Fixed nav bar overlay at top
     heroHeader: {
       position: 'absolute',
       top: 0,
       left: 0,
       right: 0,
       paddingHorizontal: 16,
+      paddingBottom: 8,
       flexDirection: 'row',
       justifyContent: 'space-between',
+      alignItems: 'flex-end',
       zIndex: 50,
     },
-    heroHeaderLeft: { flexDirection: 'row', gap: 8 },
-    heroHeaderRight: { flexDirection: 'row', gap: 8 },
+    heroHeaderLeft: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    heroHeaderRight: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    stickyNavBg: {
+      position: 'absolute',
+      top: -100,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      backgroundColor: t.background,
+    },
     heroButton: {
-      width: 40,
-      height: 40,
-      borderRadius: 20,
+      width: 30,
+      height: 30,
+      borderRadius: 15,
       backgroundColor: t.overlay,
       alignItems: 'center',
       justifyContent: 'center',
@@ -46,12 +82,15 @@ export const createStyles = (t: SemanticTheme) =>
     heroPoster: { width: 112, aspectRatio: 2 / 3, borderRadius: 12 },
     heroInfoText: { flex: 1, justifyContent: 'flex-end' },
     statusBadge: {
+      position: 'absolute',
+      bottom: '100%',
+      left: 0,
+      marginBottom: 6,
       backgroundColor: colors.red600,
       paddingHorizontal: 10,
       paddingVertical: 3,
       borderRadius: 12,
       alignSelf: 'flex-start',
-      marginBottom: 8,
     },
     statusBadgeText: {
       color: colors.white,
