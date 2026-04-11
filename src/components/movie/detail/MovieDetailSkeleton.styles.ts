@@ -1,9 +1,8 @@
 import { StyleSheet, Dimensions } from 'react-native';
 import type { SemanticTheme } from '@shared/themes';
-import { DETAIL_HERO_HEIGHT, DETAIL_HERO_INFO_OFFSET } from '@shared/constants';
 
 export const SCREEN_WIDTH = Dimensions.get('window').width;
-export const HERO_HEIGHT = DETAIL_HERO_HEIGHT + DETAIL_HERO_INFO_OFFSET;
+export const HERO_HEIGHT = 600;
 export const POSTER_WIDTH = 112;
 export const POSTER_HEIGHT = 168; // 112 * 3/2
 

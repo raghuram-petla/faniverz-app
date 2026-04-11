@@ -94,10 +94,13 @@ export function MainImageSelector({
       : aspectClass;
   const thumbWidth = isSelectedLandscape ? 'w-56' : isSelectedPortrait ? 'w-28' : widthClass;
 
-  // @contract focal picker target aspect: when focalTargetAspect is explicitly set (poster context),
-  // use it. When not set (backdrop context), always use picker default (hero aspect) so the frame
-  // shows the actual crop — even portrait images get cropped in the landscape-ish detail hero.
-  const effectiveFocalAspect = focalTargetAspect != null ? focalTargetAspect : undefined;
+  // @contract focal picker target aspect adapts to the selected image's type.
+  // A poster image (2:3) selected as backdrop should use 2/3 target — not the hero aspect.
+  const effectiveFocalAspect = isSelectedPortrait
+    ? 2 / 3
+    : isSelectedLandscape
+      ? undefined
+      : focalTargetAspect;
   // @contract hide gradient when a poster is used as backdrop (gradient is hero-specific)
   const effectiveHideGradient = isSelectedPortrait ? true : focalHideGradient;
 

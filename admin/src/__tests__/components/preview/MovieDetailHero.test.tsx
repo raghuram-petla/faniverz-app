@@ -5,8 +5,6 @@ import type { MovieStatus } from '@shared/types';
 
 vi.mock('@shared/constants', () => ({
   HERO_HEIGHT: 600,
-  DETAIL_HERO_HEIGHT: 320,
-  DETAIL_HERO_INFO_OFFSET: 55,
   MOVIE_STATUS_CONFIG: {
     announced: { label: 'Announced', color: '#F59E0B' },
     upcoming: { label: 'Coming Soon', color: '#2563EB' },

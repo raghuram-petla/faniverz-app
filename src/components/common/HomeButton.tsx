@@ -1,6 +1,7 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import { TouchableOpacity, StyleSheet, type ViewStyle } from 'react-native';
-import { useRouter, useNavigation } from 'expo-router';
+import { useNavigation } from 'expo-router';
+import { StackActions } from '@react-navigation/native';
 import { Ionicons } from '@expo/vector-icons';
 import { useTheme } from '@/theme';
 
@@ -15,12 +16,11 @@ export interface HomeButtonProps {
 
 /**
  * @contract Renders a circular home icon when navigation depth >= 2 (or forceShow).
- * @sideeffect router.dismissAll() pops entire stack back to root on press.
+ * @sideeffect Traverses to root navigator and pops entire stack back to (tabs) on press.
  * @coupling Relies on expo-router navigation state; getParent() may be undefined in tests.
  */
 export function HomeButton({ forceShow, iconColor, style }: HomeButtonProps) {
   const { theme } = useTheme();
-  const router = useRouter();
   const navigation = useNavigation();
 
   // For screens in nested stacks (e.g. movie/[id]/_layout), the nearest
@@ -40,12 +40,28 @@ export function HomeButton({ forceShow, iconColor, style }: HomeButtonProps) {
   // @invariant Button hidden at depth 0-1 unless forceShow overrides
   const shouldShow = forceShow ?? stackDepth >= 2;
 
+  // @sideeffect Traverse to the root navigator so popToTop clears the entire
+  // root stack — not just the nearest nested stack (movie/[id], profile/, etc.).
+  // Without this, dismissAll() from inside a nested _layout.tsx only pops within
+  // that nested stack, making the home button act like a back button.
+  const handleGoHome = useCallback(() => {
+    let root = navigation;
+    try {
+      while (root.getParent()) {
+        root = root.getParent()!;
+      }
+    } catch {
+      // getParent may throw in some environments
+    }
+    root.dispatch(StackActions.popToTop());
+  }, [navigation]);
+
   if (!shouldShow) return null;
 
   return (
     <TouchableOpacity
       style={[styles.button, { backgroundColor: theme.input }, style]}
-      onPress={() => router.dismissAll()}
+      onPress={handleGoHome}
       activeOpacity={0.7}
       accessibilityLabel="Go to home"
       testID="home-button"
