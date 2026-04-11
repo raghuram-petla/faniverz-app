@@ -25,6 +25,8 @@ export const BROADCAST_USER_ID = '00000000-0000-0000-0000-000000000000';
 
 // Layout dimensions (used by both mobile components and admin preview replicas)
 export const HERO_HEIGHT = 600;
+export const DETAIL_HERO_HEIGHT = 320;
+export const DETAIL_HERO_INFO_OFFSET = 55;
 export const ACTOR_AVATAR_SIZE = 120;
 // Movie status configuration (derived, not stored)
 export const MOVIE_STATUS_CONFIG: Record<MovieStatus, { label: string; color: string }> = {

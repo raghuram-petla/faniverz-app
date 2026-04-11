@@ -1,14 +1,19 @@
 import { StyleSheet, Dimensions } from 'react-native';
 import { colors } from '@/theme/colors';
 import type { SemanticTheme } from '@shared/themes';
+import { DETAIL_HERO_HEIGHT, DETAIL_HERO_INFO_OFFSET } from '@shared/constants';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
-const HERO_HEIGHT = 600;
 
 export const createStyles = (t: SemanticTheme) =>
   StyleSheet.create({
     screen: { flex: 1, backgroundColor: t.background },
-    hero: { height: HERO_HEIGHT, width: SCREEN_WIDTH, overflow: 'hidden' as const },
+    hero: {
+      height: DETAIL_HERO_HEIGHT + DETAIL_HERO_INFO_OFFSET,
+      width: SCREEN_WIDTH,
+      backgroundColor: '#000',
+    },
+    heroBackdrop: { height: DETAIL_HERO_HEIGHT, width: SCREEN_WIDTH, overflow: 'hidden' as const },
     heroHeader: {
       position: 'absolute',
       top: 0,

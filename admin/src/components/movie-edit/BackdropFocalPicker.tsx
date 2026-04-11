@@ -1,12 +1,12 @@
 'use client';
 import { useRef, useCallback, useState } from 'react';
-import { HERO_HEIGHT, DEVICES, SPOTLIGHT_GRADIENT } from '@shared/constants';
+import { DETAIL_HERO_HEIGHT, DEVICES, SPOTLIGHT_GRADIENT } from '@shared/constants';
 
 // @assumes widest device gives the most conservative (smallest) frame for portrait images.
 // Whatever the picker shows as "visible" will be visible on ALL devices.
 const HERO_WIDTH = Math.max(...DEVICES.map((d) => d.width));
-// @coupling HERO_HEIGHT from shared constants must match the mobile SpotlightCard height
-const HERO_ASPECT = HERO_WIDTH / HERO_HEIGHT;
+// @coupling DETAIL_HERO_HEIGHT from shared constants must match the mobile detail backdrop height
+const HERO_ASPECT = HERO_WIDTH / DETAIL_HERO_HEIGHT;
 
 // Pre-compute the spotlight gradient CSS (same gradient used in the mobile hero)
 const GRADIENT_CSS = `linear-gradient(to bottom, ${SPOTLIGHT_GRADIENT.join(', ')})`;
