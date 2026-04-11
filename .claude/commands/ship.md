@@ -94,7 +94,15 @@ EOF
    Worktree commits are squashed into a single commit **inside the worktree branch**, then fast-forward merged into master. This keeps history linear AND allows `git branch --merged` to correctly detect the branch as merged (unlike `merge --squash` which breaks that detection).
 
    ```bash
-   # Still in the worktree directory — squash all commits into one
+   # Still in the worktree directory
+
+   # CRITICAL: Rebase onto master BEFORE squashing.
+   # Without this, the working tree has old file versions from when the branch
+   # was created. `reset --soft master` would stage those old versions as
+   # intentional changes, silently reverting other sessions' commits.
+   git rebase master
+
+   # Now squash all commits into one
    git reset --soft master
    git commit -m "$(cat <<'EOF'
    <type>: <short summary from the worktree work>
@@ -115,6 +123,8 @@ EOF
    git merge "$BRANCH"   # fast-forward since branch is linear from master
    git push
    ```
+
+   If the rebase has conflicts, resolve them before proceeding. The rebase ensures the worktree's working tree includes all of master's latest changes, so `reset --soft` only stages the worktree's own work.
 
    The commit message should summarize the entire worktree's work (not repeat "Merge branch"). Use the same conventional commit format as step 6.
 
@@ -153,18 +163,28 @@ When work was done in a worktree (at `~/faniverz-worktrees/`), the changes live 
    git status
    ```
 
-3. **Fast-forward the worktree branch** if it's behind the main branch:
-
-   ```bash
-   git pull --ff-only
-   ```
-
-4. **Check for migration or file conflicts** introduced by the fast-forward (e.g., duplicate migration numbers). Renumber if needed.
-
-5. **Stage ALL changes and squash into a single commit** in the worktree. Since the worktree is owned entirely by this session, use `git add -A` to stage everything — do NOT selectively pick files.
+3. **Stage all uncommitted changes** so they survive the rebase:
 
    ```bash
    git add -A
+   git commit -m "wip: uncommitted changes" --allow-empty
+   ```
+
+   If there are no uncommitted changes, skip the commit (the `--allow-empty` is a safety net).
+
+4. **Rebase onto master** to pick up any commits other sessions shipped since this branch was created:
+
+   ```bash
+   git rebase master
+   ```
+
+   **Why this is critical:** Without rebasing, the worktree's working tree has old file versions from when the branch was created. The subsequent `reset --soft master` would stage those old versions as intentional changes, silently reverting other sessions' commits on master.
+
+   If the rebase has conflicts, resolve them before proceeding. Also check for migration or file conflicts (e.g., duplicate migration numbers) introduced by the rebase. Renumber if needed.
+
+5. **Squash into a single commit** on top of master:
+
+   ```bash
    git reset --soft master
    git commit -m "$(cat <<'EOF'
    <type>: <summary of all worktree work>
@@ -177,7 +197,7 @@ When work was done in a worktree (at `~/faniverz-worktrees/`), the changes live 
    )"
    ```
 
-   This collapses all worktree commits + uncommitted changes into a single commit on top of master.
+   This collapses all worktree commits + uncommitted changes into a single commit on top of master. Because of the rebase in step 4, only the worktree's own changes are staged — master's changes are already in the base.
 
 6. **Switch back to the main branch directory** and fast-forward merge:
 
