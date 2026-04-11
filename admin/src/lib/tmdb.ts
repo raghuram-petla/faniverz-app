@@ -37,12 +37,14 @@ export const TMDB_IMAGE = {
 // ── HTTP helper ───────────────────────────────────────────────────────────────
 
 // @boundary: no retry logic — transient 429 or 503 responses throw immediately.
+// @edge: 30s timeout prevents hung connections from piling up during bulk imports (EMFILE).
 async function tmdbGet<T>(path: string, params: Record<string, string>): Promise<T> {
   const url = new URL(`${TMDB_BASE}${path}`);
   for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
 
   const res = await fetch(url.toString(), {
     headers: { Accept: 'application/json' },
+    signal: AbortSignal.timeout(30_000),
   });
 
   if (!res.ok) {

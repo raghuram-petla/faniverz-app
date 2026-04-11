@@ -59,7 +59,8 @@ export async function uploadImageFromUrl(
   // usable full URL. getImageUrl recognises TMDB as an external CDN and returns it as-is.
   if (!r2) return sourceUrl;
 
-  const response = await fetch(sourceUrl);
+  // @edge: 30s timeout prevents hung image downloads from exhausting file descriptors (EMFILE)
+  const response = await fetch(sourceUrl, { signal: AbortSignal.timeout(30_000) });
   if (!response.ok) {
     console.warn(`Failed to fetch image: ${sourceUrl} (${response.status})`);
     return sourceUrl;
