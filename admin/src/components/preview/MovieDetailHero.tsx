@@ -1,5 +1,10 @@
 'use client';
-import { HERO_HEIGHT, MOVIE_STATUS_CONFIG, DETAIL_GRADIENT } from '@shared/constants';
+import {
+  DETAIL_HERO_HEIGHT,
+  DETAIL_HERO_INFO_OFFSET,
+  MOVIE_STATUS_CONFIG,
+  DETAIL_GRADIENT,
+} from '@shared/constants';
 import { colors } from '@shared/colors';
 import type { MovieStatus } from '@shared/types';
 
@@ -42,29 +47,42 @@ export function MovieDetailHero({
     <div
       style={{
         width: '100%',
-        height: HERO_HEIGHT,
+        height: DETAIL_HERO_HEIGHT + DETAIL_HERO_INFO_OFFSET,
         position: 'relative',
+        backgroundColor: '#000',
       }}
     >
-      {/** @edge falls back to posterUrl when backdropUrl is missing */}
-      {(backdropUrl || posterUrl) && (
-        <img
-          src={backdropUrl || posterUrl}
-          alt=""
-          style={{
-            position: 'absolute',
-            inset: 0,
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition,
-          }}
-          draggable={false}
-        />
-      )}
+      {/* Backdrop area — image + gradient confined to top portion */}
+      <div
+        style={{
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          right: 0,
+          height: DETAIL_HERO_HEIGHT,
+          overflow: 'hidden',
+        }}
+      >
+        {/** @edge falls back to posterUrl when backdropUrl is missing */}
+        {(backdropUrl || posterUrl) && (
+          <img
+            src={backdropUrl || posterUrl}
+            alt=""
+            style={{
+              position: 'absolute',
+              inset: 0,
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              objectPosition,
+            }}
+            draggable={false}
+          />
+        )}
 
-      {/* Gradient overlay */}
-      <div style={{ position: 'absolute', inset: 0, background: gradientCss }} />
+        {/* Gradient overlay */}
+        <div style={{ position: 'absolute', inset: 0, background: gradientCss }} />
+      </div>
 
       {/* Floating header — positioned at top of hero (parent already has safeArea padding) */}
       <div
@@ -120,7 +138,7 @@ export function MovieDetailHero({
         </div>
       </div>
 
-      {/* Movie info overlay */}
+      {/* Movie info overlay — offset below backdrop */}
       <div
         style={{
           position: 'absolute',

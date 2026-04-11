@@ -280,8 +280,8 @@ describe('BackdropFocalPicker', () => {
   describe('matching aspect ratio (no panning)', () => {
     it('shows "image fits perfectly" hint', () => {
       const { container } = render(<BackdropFocalPicker {...defaultProps} />);
-      // heroAspect = 430/600 — use exact multiples
-      simulateImageLoad(container, 430, 600);
+      // heroAspect = 430/320 — use exact multiples
+      simulateImageLoad(container, 430, 320);
       expect(screen.getByText(/image fits perfectly/)).toBeInTheDocument();
     });
 
@@ -289,7 +289,7 @@ describe('BackdropFocalPicker', () => {
       const { container } = render(
         <BackdropFocalPicker {...defaultProps} focusX={0.5} focusY={0.5} />,
       );
-      simulateImageLoad(container, 430, 600);
+      simulateImageLoad(container, 430, 320);
       expect(container.querySelectorAll('.bg-black\\/60').length).toBe(0);
       expect(container.querySelector('.border-white\\/80')).toBeNull();
       expect(container.querySelector('[style*="linear-gradient"]')).toBeNull();
