@@ -2,21 +2,25 @@ import React from 'react';
 import { render, fireEvent } from '@testing-library/react-native';
 import { HomeButton } from '../HomeButton';
 
-const mockNavigate = jest.fn();
+const mockDispatch = jest.fn();
 const mockState = { index: 1 };
 let mockParent: (() => unknown) | undefined;
 
 jest.mock('expo-router', () => ({
-  useRouter: () => ({ navigate: mockNavigate }),
   useNavigation: () => ({
     getState: () => mockState,
     getParent: () => (mockParent ? mockParent() : undefined),
+    dispatch: mockDispatch,
   }),
+}));
+
+jest.mock('@react-navigation/native', () => ({
+  StackActions: { pop: (n: number) => ({ type: 'POP', payload: { count: n } }) },
 }));
 
 describe('HomeButton', () => {
   beforeEach(() => {
-    mockNavigate.mockClear();
+    mockDispatch.mockClear();
     mockState.index = 1;
     mockParent = undefined;
   });
@@ -51,11 +55,40 @@ describe('HomeButton', () => {
     expect(getByTestId('home-button')).toBeTruthy();
   });
 
-  it('navigates to tabs when pressed', () => {
+  it('pops all screens on root navigator when pressed', () => {
     mockState.index = 2;
     const { getByTestId } = render(<HomeButton />);
     fireEvent.press(getByTestId('home-button'));
-    expect(mockNavigate).toHaveBeenCalledWith('/(tabs)');
+    expect(mockDispatch).toHaveBeenCalledWith({ type: 'POP', payload: { count: 2 } });
+  });
+
+  it('traverses to root stack through parent chain', () => {
+    mockState.index = 0;
+    // Root stack: getParent() returns NavigationContainer (no further parent)
+    const rootDispatch = jest.fn();
+    const rootStack = {
+      getState: () => ({ index: 3 }),
+      getParent: () => ({ getParent: () => undefined }),
+      dispatch: rootDispatch,
+    };
+    // Nested stack: getParent() returns rootStack
+    mockParent = () => ({
+      getState: () => ({ index: 1 }),
+      getParent: () => rootStack,
+      dispatch: jest.fn(),
+    });
+    const { getByTestId } = render(<HomeButton forceShow />);
+    fireEvent.press(getByTestId('home-button'));
+    // Should dispatch pop(3) on root stack, not on nested navigator
+    expect(rootDispatch).toHaveBeenCalledWith({ type: 'POP', payload: { count: 3 } });
+    expect(mockDispatch).not.toHaveBeenCalled();
+  });
+
+  it('does not dispatch when root stack index is 0', () => {
+    mockState.index = 0;
+    const { getByTestId } = render(<HomeButton forceShow />);
+    fireEvent.press(getByTestId('home-button'));
+    expect(mockDispatch).not.toHaveBeenCalled();
   });
 
   it('has correct accessibility label', () => {
@@ -96,7 +129,6 @@ describe('HomeButton', () => {
       throw new Error('No parent');
     };
     const { queryByTestId } = render(<HomeButton />);
-    // Falls back to stackDepth=0, so button is hidden
     expect(queryByTestId('home-button')).toBeNull();
   });
 
@@ -104,7 +136,6 @@ describe('HomeButton', () => {
     mockState.index = 0;
     mockParent = () => ({ getState: () => null });
     const { queryByTestId } = render(<HomeButton />);
-    // parentIndex is null, so stackDepth stays 0
     expect(queryByTestId('home-button')).toBeNull();
   });
 
@@ -116,10 +147,10 @@ describe('HomeButton', () => {
 
   it('handles getState returning undefined (nullish coalescing on state?.index)', () => {
     jest.doMock('expo-router', () => ({
-      useRouter: () => ({ navigate: mockNavigate }),
       useNavigation: () => ({
         getState: () => undefined,
         getParent: () => undefined,
+        dispatch: mockDispatch,
       }),
     }));
     const { getByTestId } = render(<HomeButton forceShow />);
@@ -130,7 +161,6 @@ describe('HomeButton', () => {
     mockState.index = 1;
     mockParent = () => ({ getState: () => ({ index: 1 }) });
     const { queryByTestId } = render(<HomeButton />);
-    // parentIndex (1) is not > stackDepth (1), so stackDepth stays 1, which is < 2
     expect(queryByTestId('home-button')).toBeNull();
   });
 });

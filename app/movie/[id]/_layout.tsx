@@ -4,7 +4,7 @@ import { Stack } from 'expo-router';
 // to coexist as sibling routes under the same dynamic [id] parameter.
 export default function MovieLayout() {
   return (
-    <Stack screenOptions={{ headerShown: false, animation: 'none' }}>
+    <Stack screenOptions={{ headerShown: false, animation: 'slide_from_right' }}>
       <Stack.Screen name="index" />
       <Stack.Screen name="media" />
     </Stack>
