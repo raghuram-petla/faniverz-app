@@ -34,7 +34,7 @@ export const createStyles = (t: SemanticTheme) =>
       alignItems: 'center',
       justifyContent: 'center',
     },
-    heroButtonActive: { backgroundColor: colors.red600 },
+    heroButtonActive: {},
     heroInfo: {
       position: 'absolute',
       bottom: 0,
